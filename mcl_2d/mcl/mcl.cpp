@@ -5,8 +5,8 @@ mcl::mcl()
   m_sync_count =0;
   gen.seed(rd()); //Set random seed for random engine
 
-  gridMap = cv::imread("/home/shapelim/catkin_ws/src/RE510_SLAM/gridmap.png",cv::IMREAD_GRAYSCALE); //Original gridmap (For show)
-  gridMapCV = cv::imread("/home/shapelim/catkin_ws/src/RE510_SLAM/erodedGridmap.png",cv::IMREAD_GRAYSCALE); //grdiamp for use.
+  gridMap = cv::imread("/home/kazuma/colcon_ws/src/mcl_2d/gridmap.png",cv::IMREAD_GRAYSCALE); //Original gridmap (For show)
+  gridMapCV = cv::imread("/home/kazuma/colcon_ws/src/mcl_2d/erodedGridmap.png",cv::IMREAD_GRAYSCALE); //grdiamp for use.
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
   numOfParticle = 2500; // Number of Particles.
