@@ -17,7 +17,7 @@ namespace socketcan_interface {
     SocketcanInterface::SocketcanInterface(const rclcpp::NodeOptions &options) : SocketcanInterface("", options) {}
 
     SocketcanInterface::SocketcanInterface(const std::string &name_space, const rclcpp::NodeOptions &options)
-            : rclcpp::Node("socket_can_node", options) {
+            : rclcpp::Node("socket_can_node", name_space, options) {
         using namespace std::chrono_literals;
 
         declare_parameter("interval_ms", 1);
