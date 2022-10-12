@@ -1,0 +1,35 @@
+<sdf version='1.5'>
+    <model name='ros_symbol'>
+      <static>1</static>
+      <link name='symbol'>
+              <!-- Draw Hexagon -->
+        <collision name='head'>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://RC23_coat/meshes/2023_coat.stl</uri>
+            </mesh>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <bounce/>
+            <friction>
+              <ode/>
+            </friction>
+            <contact>
+              <ode/>
+            </contact>
+          </surface>
+        </collision>
+
+        <visual name='head'>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://RC23_coat/meshes/2023_coat.stl</uri>
+            </mesh>
+          </geometry>
+        </visual>
+    </link>
+  </model>
+</sdf>
