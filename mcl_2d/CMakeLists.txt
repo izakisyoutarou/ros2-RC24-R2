@@ -19,14 +19,17 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(OpenCV REQUIRED)
 
 add_library(mcl_2d_node src/mcl_2d_node.cpp mcl/mcl.cpp tool/tool.cpp)
 target_include_directories(mcl_2d_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
+  $<INSTALL_INTERFACE:include>
+  )
 ament_target_dependencies(
   mcl_2d_node
   "rclcpp"
+  OpenCV
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
