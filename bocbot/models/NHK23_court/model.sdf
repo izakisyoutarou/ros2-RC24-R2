@@ -7,7 +7,7 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <mesh>
-              <uri>model://RC23_coat/meshes/2023_coat.stl</uri>
+              <uri>model://NHK23_court/meshes/NHK23_court.stl</uri>
             </mesh>
           </geometry>
           <max_contacts>10</max_contacts>
@@ -26,7 +26,7 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <mesh>
-              <uri>model://RC23_coat/meshes/2023_coat.stl</uri>
+              <uri>model://NHK23_court/meshes/NHK23_court.stl</uri>
             </mesh>
           </geometry>
         </visual>
