@@ -1,5 +1,5 @@
 <sdf version="1.6">
-  <world name="RC23_coat">
+  <world name="NHK23_court">
     <include>
       <uri>model://ground_plane</uri>
     </include>
@@ -7,7 +7,7 @@
       <uri>model://sun</uri>
     </include>
     <include>
-      <uri>model://RC23_coat</uri>
+      <uri>model://NHK23_court</uri>
       <pose>0 0 0 0 0 0</pose>
     </include>
   </world>
