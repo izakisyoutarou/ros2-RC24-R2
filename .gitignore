@@ -1,5 +1,19 @@
+*.log
+*.urdf
+
+#ディレクトリで指定
+bin/
+logs/
+
+.vs/
 .vscode/
+
 build/
 install/
 log/
 
+
+#ファイル名で指定
+
+
+#例外ファイルを指定
