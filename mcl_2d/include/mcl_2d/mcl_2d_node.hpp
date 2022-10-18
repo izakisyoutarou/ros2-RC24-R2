@@ -8,7 +8,7 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 
 #include "mcl_2d/visibility_control.h"
-#include "../mcl/mcl.h"
+#include "mcl.h"
 
 namespace mcl_2d{
 

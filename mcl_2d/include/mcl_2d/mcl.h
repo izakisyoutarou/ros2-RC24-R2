@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <random>
 #include <cmath>
-#include "../tool/tool.h"
+#include "tool.h"
 
 class mcl
 {

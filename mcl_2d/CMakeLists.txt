@@ -19,16 +19,23 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
 
-add_library(mcl_2d_node src/mcl_2d_node.cpp mcl/mcl.cpp tool/tool.cpp)
+add_library(mcl_2d_node
+  src/mcl_2d_node.cpp
+  src/mcl.cpp
+  src/tool.cpp
+  )
 target_include_directories(mcl_2d_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   )
-ament_target_dependencies(
-  mcl_2d_node
-  "rclcpp"
+ament_target_dependencies(mcl_2d_node
+  rclcpp
+  nav_msgs
+  sensor_msgs
   OpenCV
 )
 
@@ -67,6 +74,13 @@ ament_export_libraries(
 )
 ament_export_targets(
   export_${PROJECT_NAME}
+)
+ament_export_dependencies(
+    rclcpp
+    rclcpp
+    nav_msgs
+    sensor_msgs
+    OpenCV
 )
 
 ament_package()

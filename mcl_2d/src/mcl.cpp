@@ -1,4 +1,4 @@
-#include "mcl.h"
+#include "mcl_2d/mcl.h"
 
 mcl::mcl()
 {
@@ -9,7 +9,7 @@ mcl::mcl()
   gridMapCV = cv::imread("/home/kazuma/colcon_ws/src/mcl_2d/erodedGridmap.png",cv::IMREAD_GRAYSCALE); //grdiamp for use.
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
-  numOfParticle = 2500; // Number of Particles.
+  numOfParticle = 100; // Number of Particles.
   minOdomDistance = 0.1; // [m]
   minOdomAngle = 30; // [deg]
   repropagateCountNeeded = 1; // [num]
@@ -23,12 +23,12 @@ mcl::mcl()
 
   //--DO NOT TOUCH THIS PARAMETERS--//
   imageResolution = 0.05; // [m] per [pixel]
-  tf_laser2robot << -1,0,0,0.2,
-                    0,1,0,0,
-                    0,0,-1,0,
-                    0,0,0,1; // TF (laser frame to robot frame)
+  tf_laser2robot <<  -1,  0,  0,0.4,
+                      0,  1,  0,  0,
+                      0,  0, -1,  0,
+                      0,  0,  0,  1; // TF (laser frame to robot frame)
   mapCenterX = 0; // [m]
-  mapCenterY = -2; // [m]
+  mapCenterY = 0; // [m]
   isOdomInitialized = false; //Will be true when first data incoming.
   predictionCounter = 0;
 

@@ -7,13 +7,13 @@ namespace mcl_2d{
     : rclcpp::Node("mcl_2d_node", name_space, options) {
 
         _subscription_laser = this->create_subscription<sensor_msgs::msg::LaserScan>(
-                "/scan",
+                "scan",
                 _qos,
                 std::bind(&Mcl2D::_subscriber_callback_laser, this, std::placeholders::_1)
         );
 
         _subscription_odom = this->create_subscription<nav_msgs::msg::Odometry>(
-                "/odom",
+                "gazebo_simulator/odom",
                 _qos,
                 std::bind(&Mcl2D::_subscriber_callback_odom, this, std::placeholders::_1)
         );
@@ -70,8 +70,8 @@ namespace mcl_2d{
         Eigen::Matrix4f eigenPose;
         tf2::Quaternion q(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
         tf2::Matrix3x3 m(q);
-        eigenPose<< m[0][0], m[0][1], m[0][2], msg->pose.pose.position.x,
-                    m[1][0], m[1][1], m[1][2], msg->pose.pose.position.y,
+        eigenPose<< m[0][0], m[0][1], m[0][2], -msg->pose.pose.position.x,
+                    m[1][0], m[1][1], m[1][2], -msg->pose.pose.position.y,
                     m[2][0], m[2][1], m[2][2], msg->pose.pose.position.z,
                     0,0,0,1;
 
