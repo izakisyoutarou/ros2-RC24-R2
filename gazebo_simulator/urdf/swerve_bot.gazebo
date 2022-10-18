@@ -5,7 +5,7 @@
   <gazebo>
     <plugin name="object_controller" filename="libgazebo_ros_planar_move.so">
       <ros>
-        <namespace>/swerve_bot</namespace>
+        <namespace>/gazebo_simulator</namespace>
         <!-- <argument>/odom:=odom</argument> -->
         <!-- <argument>/cmd_vel:=cmd_vel</argument> -->
       </ros>
@@ -47,7 +47,7 @@
       </camera>
       <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
         <ros>
-          <namespace>/swerve_bot</namespace>
+          <namespace>/gazebo_simulator</namespace>
           <!-- <argument>camera/image_raw:=/swerve_bot/camera/image</argument> -->
           <!-- <argument>camera/camera_info:=/swerve_bot/camera/image/camera_info</argument> -->
         </ros>

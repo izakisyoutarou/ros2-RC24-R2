@@ -48,4 +48,9 @@ def generate_launch_description():
         ExecuteProcess(
             cmd=['ros2', 'service', 'call', '/spawn_entity', 'gazebo_msgs/SpawnEntity', spwan_args],
             output='screen'),
+        Node(
+            package='gazebo_simulator',
+            executable='planar_bot_converter',
+            output='screen',
+        ),
     ])
