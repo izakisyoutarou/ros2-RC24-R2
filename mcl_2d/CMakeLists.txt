@@ -19,9 +19,11 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(socketcan_interface_msg REQUIRED)
+find_package(utilities REQUIRED)
 
 add_library(mcl_2d_node
   src/mcl_2d_node.cpp
@@ -34,9 +36,11 @@ target_include_directories(mcl_2d_node PUBLIC
   )
 ament_target_dependencies(mcl_2d_node
   rclcpp
-  nav_msgs
+  geometry_msgs
   sensor_msgs
   OpenCV
+  socketcan_interface_msg
+  utilities
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
@@ -78,9 +82,11 @@ ament_export_targets(
 ament_export_dependencies(
     rclcpp
     rclcpp
-    nav_msgs
+    geometry_msgs
     sensor_msgs
     OpenCV
+    socketcan_interface_msg
+    utilities
 )
 
 ament_package()

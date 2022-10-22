@@ -49,4 +49,5 @@ public:
   mcl();
   ~mcl();
   void updateData(Eigen::Matrix4f pose, Eigen::Matrix4Xf laser);
+  double position_x, position_y, angle;
 };

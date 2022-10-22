@@ -1,4 +1,5 @@
 #include "mcl_2d/mcl.h"
+#include <rclcpp/rclcpp.hpp>
 
 mcl::mcl()
 {
@@ -10,23 +11,23 @@ mcl::mcl()
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
   numOfParticle = 100; // Number of Particles.
-  minOdomDistance = 0.1; // [m]
-  minOdomAngle = 30; // [deg]
+  minOdomDistance = 0.01; // [m]
+  minOdomAngle = 10; // [deg]
   repropagateCountNeeded = 1; // [num]
-  odomCovariance[0] = 0.02; // Rotation to Rotation
-  odomCovariance[1] = 0.02; // Translation to Rotation
-  odomCovariance[2] = 0.02; // Translation to Translation
-  odomCovariance[3] = 0.02; // Rotation to Translation
-  odomCovariance[4] = 0.02; // X
-  odomCovariance[5] = 0.02; // Y
+  odomCovariance[0] = 0.0; // Rotation to Rotation
+  odomCovariance[1] = 0.0; // Translation to Rotation
+  odomCovariance[2] = 0.01; // Translation to Translation
+  odomCovariance[3] = 0.01; // Rotation to Translation
+  odomCovariance[4] = 0.0; // X
+  odomCovariance[5] = 0.0; // Y
 
 
   //--DO NOT TOUCH THIS PARAMETERS--//
   imageResolution = 0.05; // [m] per [pixel]
-  tf_laser2robot <<  -1,  0,  0,0.4,
-                      0,  1,  0,  0,
-                      0,  0, -1,  0,
-                      0,  0,  0,  1; // TF (laser frame to robot frame)
+  tf_laser2robot <<  1.0,   0,   0, 0.4,
+                       0, 1.0,   0,   0,
+                       0,   0, 1.0,  0,
+                       0,   0,   0, 1.0; // TF (laser frame to robot frame)
   mapCenterX = 0; // [m]
   mapCenterY = 0; // [m]
   isOdomInitialized = false; //Will be true when first data incoming.
@@ -55,9 +56,12 @@ void mcl::initializeParticles()
   for(int i=0;i<numOfParticle;i++)
   {
     particle particle_temp;
-    float randomX = x_pos(gen);
-    float randomY = y_pos(gen);
-    float randomTheta = theta_pos(gen);
+    // float randomX = x_pos(gen);
+    // float randomY = y_pos(gen);
+    // float randomTheta = theta_pos(gen);
+    float randomX = -5.5f;
+    float randomY = 0.f;
+    float randomTheta = 0.f;
     particle_temp.pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,randomTheta);
     particle_temp.score = 1/(double)numOfParticle;
     particles.push_back(particle_temp);
@@ -277,6 +281,9 @@ void mcl::showInMap()
     }
     int xPos = static_cast<int>((x_all - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
     int yPos = static_cast<int>((y_all - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
+
+    position_x = x_all;
+    position_y = y_all;
 
 
     //---------------------------------------------//
