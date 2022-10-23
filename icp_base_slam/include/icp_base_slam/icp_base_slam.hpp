@@ -45,7 +45,6 @@ public:
 
   void set_odom(double x, double y, double yaw);
   void update_data(double trans_pose_x, double trans_pose_y, double trans_pose_yaw);
-  double low_pass_filter(const double trans_data);
   double degToRad(double degree){return degree*M_PI/180;}
   double radToDeg(double rad){return rad*180/M_PI;}
 
@@ -60,8 +59,8 @@ private:
   void icp_cloud_view(pcl::PointCloud<PointType> map_cloud, pcl::PointCloud<PointType> input_cloud);
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
-  void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg);
+  void simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   double quaternionToYaw(double x, double y, double z, double w);
 
   pcl::NormalDistributionsTransform<PointType, PointType> ndt;
@@ -73,8 +72,8 @@ private:
   chrono::system_clock::time_point  time_start, time_end; // 型は auto で可
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
   rclcpp::Subscription<my_messages::msg::OdomDelay>::SharedPtr odom_delay_subscriber;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr simulator_odom_subscriber;
 
   Pose odom_pose;
   Pose pose;
@@ -94,7 +93,8 @@ private:
 
   //ndt
   double ndt_max_iterations_threshold = 10;
-  double ndt_correspondence_distance_threshold = 0.005;
+  double transformation_epsilon = 1e-8;//最新の変換とそのひとつ前の変換の差の閾値
+  double ndt_correspondence_distance_threshold = 0.5;//対応する最大距離(これ以上の距離は無視)
   double ndt_resolution = 0.005;
   double ndt_step_size = 0.01;
   double voxel_leaf_size = 0.005;

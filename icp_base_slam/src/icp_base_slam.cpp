@@ -8,18 +8,23 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
   "scan", rclcpp::SensorDataQoS(),
   bind(&IcpBaseSlam::scan_callback, this, placeholders::_1));
 
-odom_subscriber = create_subscription<nav_msgs::msg::Odometry>(
-  "odom", rclcpp::SensorDataQoS(),
-  bind(&IcpBaseSlam::odom_callback, this, placeholders::_1));
-
 odom_delay_subscriber = this->create_subscription<my_messages::msg::OdomDelay>(
   "odom_delay", 10, bind(&IcpBaseSlam::odom_delay_callback, this, placeholders::_1));
+
+simulator_odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
+  "gazebo_simulator/odom",
+  rclcpp::SensorDataQoS(),
+  std::bind(&IcpBaseSlam::simulator_odom_callback, this, std::placeholders::_1));
+
   cloud.points.resize(view_ranges/reso);
   input_elephant_cloud.points.resize(50000);
   ndt.setMaximumIterations (ndt_max_iterations_threshold);
   ndt.setResolution(ndt_resolution);   //ボクセルの辺の長さ
-  ndt.setTransformationEpsilon(ndt_correspondence_distance_threshold);   //収束判定
+  ndt.setTransformationEpsilon(1e-8);
+  //  ndt.setEuclideanFitnessEpsilon(1);          //二つの点群のユークリッド二乗誤差が閾値以下で終了
+  ndt.setMaxCorrespondenceDistance(ndt_correspondence_distance_threshold);
   ndt.setStepSize (ndt_step_size);    //ニュートン法のステップサイズ
+  // ndt.setRANSACOutlierRejectionThreshold(num);
   voxel_grid_filter.setLeafSize(voxel_leaf_size, voxel_leaf_size, voxel_leaf_size);
   create_elephant_map();
   if(!use_gazebo_simulator){
@@ -66,16 +71,18 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   RCLCPP_INFO(this->get_logger(), "pose x = %f y = %f yaw = %f°", poses[0], poses[1], poses[2]);
   RCLCPP_INFO(this->get_logger(), "Iteration num->%d", ndt.getFinalNumIteration());
   RCLCPP_INFO(this->get_logger(), "dist->%f", ndt.getFitnessScore());//点群間の平均二乗距離(処理重い)
-  // icp_cloud_view(input_elephant_cloud, cloud);
+  icp_cloud_view(input_elephant_cloud, cloud);
 }
 
-void IcpBaseSlam::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg){
-  if (!use_odom) {return;}
-  double last_pose_x = msg->pose.pose.position.x;
-  double last_pose_y = msg->pose.pose.position.y;
-  double last_pose_yaw = quaternionToYaw(msg->pose.pose.orientation.x,msg->pose.pose.orientation.y,msg->pose.pose.orientation.z,msg->pose.pose.orientation.w);
-  RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f", last_pose_x, last_pose_y, last_pose_yaw);
-  set_odom(last_pose_x, last_pose_y, last_pose_yaw);
+void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg){
+  double yaw = quaternionToYaw(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
+  pose.x    += msg->pose.pose.position.x - last_odom.x;
+  pose.y    += msg->pose.pose.position.y - last_odom.y;
+  pose.yaw  += yaw                       - last_odom.yaw;
+  last_odom.x   =  msg->pose.pose.position.x;
+  last_odom.y   =  msg->pose.pose.position.y;
+  last_odom.yaw =  yaw;
+  // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f°", pose.x, pose.y, radToDeg(pose.yaw));
 }
 
 void IcpBaseSlam::odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg){
