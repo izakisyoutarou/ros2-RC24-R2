@@ -1,26 +1,20 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>main_executor</name>
+  <name>my_subscriber</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="c1000702@planet.kanazawa-it.ac.jp">KazumaFujino</maintainer>
+  <maintainer email="c1013395@planet.kanazawa-it.ac.jp">ryo</maintainer>
   <license>TODO: License declaration</license>
 
-  <build_depend>rclcpp</build_depend>
-  <exec_depend>rclcpp</exec_depend>
-  <test_depend>rclcpp</test_depend>
-
-  <depend>socketcan_interface</depend>
-  <depend>mcl_2d</depend>
-  <build_depend>icp_base_slam</build_depend>
-  <exec_depend>icp_base_slam</exec_depend>
-  <test_depend>icp_base_slam</test_depend>
-  
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+
+  <depend>rclcpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -4,20 +4,34 @@ project(main_executor)
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -fPIC)
 endif()
-find_package(rclcpp REQUIRED)
 find_package(socketcan_interface REQUIRED)
 find_package(mcl_2d REQUIRED)
-add_executable(main_exec
+find_package(ament_cmake REQUIRED)
+find_package(PCL REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(my_messages REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
+find_package(icp_base_slam REQUIRED)
+
+add_executable(main_executor
         src/main.cpp
         )
 
-ament_target_dependencies(main_exec
+ament_target_dependencies(main_executor
         rclcpp
         socketcan_interface
         mcl_2d
+        icp_base_slam
         )
 
-target_include_directories(main_exec
+target_include_directories(main_executor
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -42,7 +56,7 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS
-        main_exec
+        main_executor
         DESTINATION lib/${PROJECT_NAME}
         )
 
