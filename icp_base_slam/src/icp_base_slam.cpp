@@ -8,19 +8,25 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
   "scan", rclcpp::SensorDataQoS(),
   bind(&IcpBaseSlam::scan_callback, this, placeholders::_1));
 
-odom_delay_subscriber = this->create_subscription<my_messages::msg::OdomDelay>(
-  "odom_delay", 10, bind(&IcpBaseSlam::odom_delay_callback, this, placeholders::_1));
+  odom_delay_subscriber = this->create_subscription<my_messages::msg::OdomDelay>(
+    "odom_delay", 10, bind(&IcpBaseSlam::odom_delay_callback, this, placeholders::_1));
 
-simulator_odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
-  "gazebo_simulator/odom",
-  rclcpp::SensorDataQoS(),
-  std::bind(&IcpBaseSlam::simulator_odom_callback, this, std::placeholders::_1));
+  simulator_odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
+    "gazebo_simulator/odom",
+    rclcpp::SensorDataQoS(),
+    std::bind(&IcpBaseSlam::simulator_odom_callback, this, std::placeholders::_1));
+
+  pointcloud2_publisher = create_publisher<sensor_msgs::msg::PointCloud2>(
+    "point_cloud",rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
+
+  map_pointcloud2_publisher = create_publisher<sensor_msgs::msg::PointCloud2>(
+    "map_point_cloud",rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
 
   cloud.points.resize(view_ranges/reso);
   input_elephant_cloud.points.resize(50000);
   ndt.setMaximumIterations (ndt_max_iterations_threshold);
   ndt.setResolution(ndt_resolution);   //ボクセルの辺の長さ
-  ndt.setTransformationEpsilon(1e-8);
+  ndt.setTransformationEpsilon(transformation_epsilon);
   //  ndt.setEuclideanFitnessEpsilon(1);          //二つの点群のユークリッド二乗誤差が閾値以下で終了
   ndt.setMaxCorrespondenceDistance(ndt_correspondence_distance_threshold);
   ndt.setStepSize (ndt_step_size);    //ニュートン法のステップサイズ
@@ -31,7 +37,6 @@ simulator_odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
     pose.x = init_pose_x;
     pose.y = init_pose_y;
   }
-
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
@@ -67,11 +72,11 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
   Eigen::Vector3d poses(odom_pose.x + trans_pose.x, odom_pose.y + trans_pose.y,odom_pose.yaw + trans_pose.yaw);
   RCLCPP_INFO(this->get_logger(), "time->%ld", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
-  RCLCPP_INFO(this->get_logger(), "pose x->%f y->%f yaw->%f°", pose.x, pose.y, radToDeg(pose.yaw));
-  RCLCPP_INFO(this->get_logger(), "pose x = %f y = %f yaw = %f°", poses[0], poses[1], poses[2]);
+  // RCLCPP_INFO(this->get_logger(), "pose x->%f y->%f yaw->%f°", pose.x, pose.y, radToDeg(pose.yaw));
   RCLCPP_INFO(this->get_logger(), "Iteration num->%d", ndt.getFinalNumIteration());
-  RCLCPP_INFO(this->get_logger(), "dist->%f", ndt.getFitnessScore());//点群間の平均二乗距離(処理重い)
-  icp_cloud_view(input_elephant_cloud, cloud);
+  // RCLCPP_INFO(this->get_logger(), "dist->%f", ndt.getFitnessScore());//点群間の平均二乗距離(処理重い)
+  // icp_cloud_view(input_elephant_cloud, cloud);
+  pointcloud2_view(filtered_cloud_ptr, input_elephant_cloud);
 }
 
 void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg){
@@ -118,6 +123,17 @@ void IcpBaseSlam::print4x4Matrix (const Eigen::Matrix4d & matrix){
   RCLCPP_INFO(this->get_logger(), "R = | %3.6f %3.6f %3.6f |", matrix(1,0), matrix(1,1), matrix(1,2));
   RCLCPP_INFO(this->get_logger(), "    | %3.6f %3.6f %3.6f |", matrix(2,0), matrix(2,1), matrix(2,2));
   RCLCPP_INFO(this->get_logger(), "t = < %3.6f, %3.6f, %3.6f >", matrix(0,3), matrix(1,3), matrix(2,3));
+}
+
+void IcpBaseSlam::pointcloud2_view(pcl::PointCloud<PointType>::Ptr cloud_ptr, pcl::PointCloud<PointType> map_cloud){
+  sensor_msgs::msg::PointCloud2::SharedPtr msg_ptr(new sensor_msgs::msg::PointCloud2);
+  pcl::toROSMsg(*cloud_ptr, *msg_ptr);
+  msg_ptr->header.frame_id = "map";
+  pointcloud2_publisher->publish(*msg_ptr);
+  sensor_msgs::msg::PointCloud2::SharedPtr map_msg_ptr(new sensor_msgs::msg::PointCloud2);
+  pcl::toROSMsg(map_cloud, *map_msg_ptr);
+  map_msg_ptr->header.frame_id = "map";
+  map_pointcloud2_publisher->publish(*map_msg_ptr);
 }
 
 void IcpBaseSlam::create_elephant_map(){

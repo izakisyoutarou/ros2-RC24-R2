@@ -18,8 +18,10 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/ndt.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include "sensor_msgs/msg/laser_scan.hpp"
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "lifecycle_msgs/msg/transition.hpp"
@@ -57,6 +59,7 @@ private:
   void print4x4Matrix (const Eigen::Matrix4d & matrix);
   void input_cloud_view(pcl::PointCloud<PointType> input_cloud);
   void icp_cloud_view(pcl::PointCloud<PointType> map_cloud, pcl::PointCloud<PointType> input_cloud);
+  void pointcloud2_view(pcl::PointCloud<PointType>::Ptr cloud_ptr, pcl::PointCloud<PointType> map_cloud);
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg);
@@ -74,6 +77,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<my_messages::msg::OdomDelay>::SharedPtr odom_delay_subscriber;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr simulator_odom_subscriber;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pointcloud2_publisher;
 
   Pose odom_pose;
   Pose pose;
@@ -93,11 +98,11 @@ private:
 
   //ndt
   double ndt_max_iterations_threshold = 10;
-  double transformation_epsilon = 1e-8;//最新の変換とそのひとつ前の変換の差の閾値
+  double transformation_epsilon = 1e-5;//最新の変換とそのひとつ前の変換の差の閾値
   double ndt_correspondence_distance_threshold = 0.5;//対応する最大距離(これ以上の距離は無視)
   double ndt_resolution = 0.005;
-  double ndt_step_size = 0.01;
-  double voxel_leaf_size = 0.005;
+  double ndt_step_size = 0.1;  //探索領域を区切るサイズ(小さいと解の精度が上がり、処理が重くなる)
+  double voxel_leaf_size = 0.05;
 
   bool use_odom{false};
   bool use_gazebo_simulator{true};
