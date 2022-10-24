@@ -65,6 +65,9 @@ private:
   void odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg);
   void simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   double quaternionToYaw(double x, double y, double z, double w);
+  int max_time(int num);
+  int max_iteration(int num);
+
 
   pcl::NormalDistributionsTransform<PointType, PointType> ndt;
   pcl::PointCloud<PointType> cloud;
@@ -79,6 +82,11 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr simulator_odom_subscriber;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pointcloud2_publisher;
+
+  int last_num_time=0;
+  int last_num_iteration=0;
+  double init_pose_x = -5.5;
+  double init_pose_y = 0.0;
 
   Pose odom_pose;
   Pose pose;
@@ -96,16 +104,14 @@ private:
   double rafter_width = 0.05;
   int model_count=0;
 
-  //ndt
-  double ndt_max_iterations_threshold = 10;
-  double transformation_epsilon = 1e-5;//最新の変換とそのひとつ前の変換の差の閾値
-  double ndt_correspondence_distance_threshold = 0.5;//対応する最大距離(これ以上の距離は無視)
-  double ndt_resolution = 0.005;
-  double ndt_step_size = 0.1;  //探索領域を区切るサイズ(小さいと解の精度が上がり、処理が重くなる)
-  double voxel_leaf_size = 0.05;
+  ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
+  //ndt ndt_resolutionとvoxel_leaf_sizeは密接な関係あり
+  double transformation_epsilon = 0.005;//最新の変換とそのひとつ前の変換の差の閾値。
+  double ndt_resolution = 0.005;  //ndtボクセルサイズ
+  double ndt_step_size = 0.00005;  //探索領域を区切るサイズ(小さいと解の精度が上がり、処理が重くなる)
+  double voxel_leaf_size = 0.5; //ダウンサンプリングボクセル
 
   bool use_odom{false};
   bool use_gazebo_simulator{true};
-  double init_pose_x = -5.5;
-  double init_pose_y = 0.0;
+
 };
