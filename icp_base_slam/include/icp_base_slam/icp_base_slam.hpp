@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <iostream>
@@ -30,13 +31,10 @@
 
 #include "my_messages/msg/odom_delay.hpp"
 
-#include "scan.hpp"
+#include "config.hpp"
+#include "icp_base_slam/pose_fuser.hpp"
 
 #include "visibility.h"
-
-
-using namespace std;
-using PointType = pcl::PointXYZ;
 
 class IcpBaseSlam : public rclcpp::Node{
 public:
@@ -57,9 +55,9 @@ private:
   double circle_model_y_dec(double point_x, double circle_y);
   void create_elephant_map();
   void print4x4Matrix (const Eigen::Matrix4d & matrix);
-  void input_cloud_view(pcl::PointCloud<PointType> input_cloud);
-  void icp_cloud_view(pcl::PointCloud<PointType> map_cloud, pcl::PointCloud<PointType> input_cloud);
-  void pointcloud2_view(pcl::PointCloud<PointType>::Ptr cloud_ptr, pcl::PointCloud<PointType> map_cloud);
+  void input_cloud_view(PclCloud input_cloud);
+  void icp_cloud_view(PclCloud map_cloud, PclCloud input_cloud);
+  void pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud);
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg);
@@ -68,11 +66,10 @@ private:
   int max_time(int num);
   int max_iteration(int num);
 
-
   pcl::NormalDistributionsTransform<PointType, PointType> ndt;
-  pcl::PointCloud<PointType> cloud;
-  pcl::PointCloud<PointType> input_circle_cloud;
-  pcl::PointCloud<PointType> input_elephant_cloud;
+  PclCloud cloud;
+  PclCloud input_circle_cloud;
+  PclCloud input_elephant_cloud;
   pcl::VoxelGrid<PointType> voxel_grid_filter;
 
   chrono::system_clock::time_point  time_start, time_end; // 型は auto で可
@@ -83,15 +80,20 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pointcloud2_publisher;
 
+
   int last_num_time=0;
   int last_num_iteration=0;
   double init_pose_x = -5.5;
   double init_pose_y = 0.0;
 
-  Pose odom_pose;
-  Pose pose;
-  Pose trans_pose;
+  Pose odom;
   Pose last_odom;
+  Pose pose;
+  Pose last_estimated;
+  Pose estimated;
+  Pose ndt_estimated;
+  Pose current_scan_odom;
+  Pose last_scan_odom;
   double reso = 0.125;
   double view_ranges = 270.0;
 
@@ -113,5 +115,5 @@ private:
 
   bool use_odom{false};
   bool use_gazebo_simulator{true};
-
+  PoseFuser *pose_fuser;  // センサ融合器
 };
