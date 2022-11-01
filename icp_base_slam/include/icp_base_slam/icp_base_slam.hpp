@@ -70,7 +70,9 @@ private:
   PclCloud cloud;
   PclCloud input_circle_cloud;
   PclCloud input_elephant_cloud;
+  PclCloud global_cloud;
   pcl::VoxelGrid<PointType> voxel_grid_filter;
+  pcl::VoxelGrid<PointType> map_voxel_grid_filter;
 
   chrono::system_clock::time_point  time_start, time_end; // 型は auto で可
 
@@ -112,6 +114,7 @@ private:
   double ndt_resolution = 0.005;  //ndtボクセルサイズ
   double ndt_step_size = 0.00005;  //探索領域を区切るサイズ(小さいと解の精度が上がり、処理が重くなる)
   double voxel_leaf_size = 0.5; //ダウンサンプリングボクセル
+  double map_voxel_leaf_size = 0.01;
 
   bool use_odom{false};
   bool use_gazebo_simulator{true};

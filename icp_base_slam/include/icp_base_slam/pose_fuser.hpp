@@ -1,10 +1,10 @@
 #pragma once
 #include "config.hpp"
 #include "icp_base_slam/icp_base_slam.hpp"
+#include <vector>
 //lidarとオドメトリの推定値を融合する。(imuの融合器はその後作る)
 class PoseFuser{
-public:
-  PoseFuser(){}
+private:
   struct LaserPoint{
     double x;
     double y;
@@ -27,11 +27,18 @@ public:
       laser_point.x = x + other.x;
       laser_point.y = y + other.y;
       return laser_point;
-    };
+    }
   };
-  double distance_min = 12.0;
-  void fuse_pose(const Pose &ndt_estimated, const Pose &scan_odom_motion, const Pose &predict, Pose &fused_pose, Eigen::Matrix3d &fused_cov, const double dt, const PclCloud::Ptr filtered_cloud_ptr, const PclCloud map_cloud, const Pose &scan_trans){
-    find_correspondence(filtered_cloud_ptr, map_cloud, predict, scan_trans);
+
+public:
+  PoseFuser(){}
+
+  const LaserPoint *get_data(const LaserPoint *data){
+    return data;
+  }
+
+  void fuse_pose(const Pose &ndt_estimated, const Pose &scan_odom_motion, const Pose &predict, Pose &fused_pose, Eigen::Matrix3d &fused_cov, const double dt, const PclCloud global_cloud, const PclCloud map_cloud, const Pose &scan_trans){
+    find_correspondence(global_cloud, map_cloud, predict, scan_trans);
     // Eigen::Matrix3d scan_odom_motion_cov;
     // calculate_motion_covariance(scan_odom_motion, dt, scan_odom_motion_cov);  // オドメトリで得た移動量の共分散
     // Eigen::Matrix3d rotate_scan_odom_motion_cov;
@@ -42,46 +49,79 @@ public:
     // fuse(mu1, ecov, mu2, mcov, mu, fusedCov);  // 2つの正規分布の融合
   }
 
-  void find_correspondence(const PclCloud::Ptr filtered_cloud_ptr, const PclCloud map_cloud, const Pose &predict, const Pose &scan_trans){
+  void find_correspondence(const PclCloud global_cloud, const PclCloud map_cloud, const Pose &predict, const Pose &scan_trans){
+    vector<LaserPoint> current_points;   //対応がとれた現在スキャンの点群
+    vector<LaserPoint> reference_points;   //対応がとれた参照スキャンの点群
+    current_points.clear();
+    reference_points.clear();
     LaserPoint global;
-    LaserPoint *current;
-    const LaserPoint *closest_reference;
-    vector<const LaserPoint*> current_points;   //対応がとれた現在スキャンの点群
-    vector<const LaserPoint*> reference_points;   //対応がとれた参照スキャンの点群
+    LaserPoint closest_reference;
 
-    for (size_t i=0; i<filtered_cloud_ptr->points.size(); i++){
-      current->x = filtered_cloud_ptr->points[i].x;
-      current->y = filtered_cloud_ptr->points[i].y;
-      global.x = filtered_cloud_ptr->points[i].x * scan_trans.yaw + scan_trans.x;
-      global.y = filtered_cloud_ptr->points[i].y * scan_trans.yaw + scan_trans.y;
-      closest_reference = find_closest_point(map_cloud, global);
+    for (size_t i=0; i<global_cloud.points.size(); i++){
+      global.x = global_cloud.points[i].x;
+      global.y = global_cloud.points[i].y;
+      closest_reference = find_closest_vertical_point(global);
     }
-    current_points.push_back(current);
+    current_points.push_back(global);
     reference_points.push_back(closest_reference);
   }
 
-  const LaserPoint *find_closest_point(PclCloud map_cloud, LaserPoint global){
+  LaserPoint find_closest_vertical_point(LaserPoint global){
+    LaserPoint closest;
+    LaserPoint vertical_distance;
+    double distance_min_x = 100.0;
+    double distance_min_y = 100.0;
+    double back_rafter_x = 0.05-6.0;
+    double fence_x = 2.0-6.0;
+    double front_rafter_x = 5.9875-6.0;
+    double right_rafter_y = 0.05-6.0;
+    double right_fence_y = 2.0-6.0;
+    double left_fence_y = 10.0-6.0;
+    double left_rafter_y = 11.95-6.0;
+    double x[4] = {back_rafter_x, fence_x, front_rafter_x, 100.0};  //4つ目が最小距離にならないようにしている。
+    double y[4] = {right_rafter_y, right_fence_y, left_fence_y, left_rafter_y};
+    for(int i=0; i<4; i++){
+      vertical_distance.x = fabs(x[i] - global.x);
+      vertical_distance.y = fabs(y[i] - global.y);
+      if(vertical_distance.x < distance_min_x){
+        distance_min_x = vertical_distance.x;
+        closest.x = x[i];
+      }
+      if(vertical_distance.y < distance_min_y){
+        distance_min_y = vertical_distance.y;
+        // printf("distance_min_y -> %f\n", distance_min_y);
+        closest.y = y[i];
+      }
+    }
+    return closest;
+  }
+
+  LaserPoint find_closest_point_in_voxel(PclCloud map_cloud, LaserPoint global){
+    double distance_min = 12.0;
     LaserPoint cell_min;
     LaserPoint cell_max;
     LaserPoint cell_radius;
-    LaserPoint *closest;
+    LaserPoint closest;
     cell_radius.x = cell_radius.y = 0.05;
     cell_min = global - cell_radius;
     cell_max = global + cell_radius;
-
     for(size_t i=0; i<map_cloud.points.size(); i++){
       if(cell_min.x<map_cloud.points[i].x && cell_max.x>map_cloud.points[i].x && cell_min.y<map_cloud.points[i].y && cell_max.y>map_cloud.points[i].y){
         double distance = (map_cloud.points[i].x - global.x)*(map_cloud.points[i].x - global.x) + (map_cloud.points[i].y - global.y)*(map_cloud.points[i].y - global.y);
         if(distance<distance_min){
           distance_min = distance;
-          closest->x = map_cloud.points[i].x;
-          closest->y = map_cloud.points[i].y;
+          closest.x = map_cloud.points[i].x;
+          closest.y = map_cloud.points[i].y;
         }
       }
     }
     return closest;
   }
 };
+
+// void calculate_ndt_covariance(const Pose &pose, vector<const LaserPoint*> &current_points, vector<const LaserPoint*> &reference_points, Eigen::Matrix3d &covariance){
+
+// }
 
 
   // void calculate_motion_covariance(const Pose &scan_odom_motion, const double dt, Eigen::Matrix3d &scan_odom_motion_cov){
