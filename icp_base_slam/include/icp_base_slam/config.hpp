@@ -1,8 +1,11 @@
 #pragma once
 #include <iostream>
+#include "icp_base_slam/icp_base_slam.hpp"
 using namespace std;
+using namespace Eigen;
 using PointType = pcl::PointXYZ;
 using PclCloud = pcl::PointCloud<PointType>;
+
 struct Pose{
   double x;
   double y;
@@ -32,3 +35,4 @@ struct Pose{
     return pose;
   }
 };
+

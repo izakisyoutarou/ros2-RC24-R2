@@ -79,11 +79,11 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   scan_trans.y = transformation_matrix(1,3);
   scan_trans.yaw = transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2);
 
-  global_cloud.points.resize(filtered_cloud_ptr->points.size());
-  for(size_t i=0; i<filtered_cloud_ptr->points.size(); i++){
-    global_cloud.points[i].x = transformation_matrix(0,0)*filtered_cloud_ptr->points[i].x + transformation_matrix(0,1)*filtered_cloud_ptr->points[i].y + transformation_matrix(0,3);
-    global_cloud.points[i].y = transformation_matrix(1,0)*filtered_cloud_ptr->points[i].x + transformation_matrix(1,1)*filtered_cloud_ptr->points[i].y + transformation_matrix(1,3);
-  }
+  // global_cloud.points.resize(filtered_cloud_ptr->points.size());
+  // for(size_t i=0; i<filtered_cloud_ptr->points.size(); i++){
+  //   global_cloud.points[i].x = transformation_matrix(0,0)*filtered_cloud_ptr->points[i].x + transformation_matrix(0,1)*filtered_cloud_ptr->points[i].y + transformation_matrix(0,3);
+  //   global_cloud.points[i].y = transformation_matrix(1,0)*filtered_cloud_ptr->points[i].x + transformation_matrix(1,1)*filtered_cloud_ptr->points[i].y + transformation_matrix(1,3);
+  // }
 
 
   ndt_estimated = predict + scan_trans;
@@ -92,10 +92,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   Pose fused_pose;                       // 融合結果
   Eigen::Matrix3d fused_cov;               // センサ融合後の共分散
   double dt = 0.1;//**************odomの移動時間(scan取得時間の差)。time stampの差分ほしい*********************
-  RCLCPP_INFO(this->get_logger(), "start fuse");
-  pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, fused_pose, fused_cov, dt, global_cloud, input_elephant_cloud, scan_trans);
-  RCLCPP_INFO(this->get_logger(), "end fuse");
-
+  pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, fused_pose, fused_cov, dt, filtered_cloud_ptr, transformation_matrix);
 
   // if(0<ndt.getFinalNumIteration()){
   //   RCLCPP_INFO(this->get_logger(), "trans x->%f y->%f yaw->%f°", transformation_matrix(0,3), transformation_matrix(1,3), radToDeg(transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2)));
