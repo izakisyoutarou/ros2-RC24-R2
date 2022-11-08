@@ -141,7 +141,7 @@ public:
       Jx.push_back  ((vertical_distance_x   - vertical_distance) / dd);
       Jy.push_back  ((vertical_distance_y   - vertical_distance) / dd);
       Jyaw.push_back((vertical_distance_yaw - vertical_distance) / da);
-      printf("%f %f %f\n", (vertical_distance_x - vertical_distance) / dd, (vertical_distance_y - vertical_distance) / dd, (vertical_distance_yaw - vertical_distance) / da);
+      // printf("%f %f %f\n", (vertical_distance_x - vertical_distance) / dd, (vertical_distance_y - vertical_distance) / dd, (vertical_distance_yaw - vertical_distance) / da);
     }
 
     // ヘッセ行列の近似J^TJの計算
@@ -160,10 +160,10 @@ public:
     hes(2,1) = hes(1,2);
 
     ndt_cov = svdInverse(hes);
-    printf("ndt cov\n");
-    printf("| %3.6f %3.6f %3.6f |\n", ndt_cov(0,0), ndt_cov(0,1), ndt_cov(0,2));
-    printf("| %3.6f %3.6f %3.6f |\n", ndt_cov(1,0), ndt_cov(1,1), ndt_cov(1,2));
-    printf("| %3.6f %3.6f %3.6f |\n", ndt_cov(2,0), ndt_cov(2,1), ndt_cov(2,2));
+    // printf("ndt cov\n");
+    // printf("| %3.6f %3.6f %3.6f |\n", ndt_cov(0,0), ndt_cov(0,1), ndt_cov(0,2));
+    // printf("| %3.6f %3.6f %3.6f |\n", ndt_cov(1,0), ndt_cov(1,1), ndt_cov(1,2));
+    // printf("| %3.6f %3.6f %3.6f |\n", ndt_cov(2,0), ndt_cov(2,1), ndt_cov(2,2));
     double vals[2], vec1[2], vec2[2];
     double ratio = calEigen(ndt_cov, vals, vec1, vec2);            // 固有値計算して、退化具合を調べる
 

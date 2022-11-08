@@ -8,11 +8,9 @@
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <build_depend>rclcpp_lifecycle</build_depend>
-  <build_depend>lifecycle_msgs</build_depend>
+  <build_depend>pcl_conversions</build_depend>
 
-  <exec_depend>rclcpp_lifecycle</exec_depend>
-  <exec_depend>lifecycle_msgs</exec_depend>
+  <exec_depend>pcl_conversions</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

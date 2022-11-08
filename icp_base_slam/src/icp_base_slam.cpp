@@ -4,16 +4,18 @@ IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", o
 
 IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions &options)
 :  rclcpp::Node("icp_base_slam", options){
+  RCLCPP_INFO(this->get_logger(), "START");
   declare_parameter("registration_method", "NDT");
   get_parameter("registration_method", registration_method_);
-  declare_parameter("transformation_epsilon", 0.0);
-  get_parameter("transformation_epsilon", transformation_epsilon_);
-  declare_parameter("ndt_resolution", 0.0);
-  get_parameter("ndt_resolution", ndt_resolution_);
-  declare_parameter("ndt_step_size", 0.0);
-  get_parameter("ndt_step_size", ndt_step_size_);
-  declare_parameter("voxel_leaf_size", 0.0);
+  declare_parameter("voxel_leaf_size", 1.);
   get_parameter("voxel_leaf_size", voxel_leaf_size_);
+
+  declare_parameter("transformation_epsilon", 0.05);
+  get_parameter("transformation_epsilon", transformation_epsilon_);
+  declare_parameter("ndt_resolution", 1.7);
+  get_parameter("ndt_resolution", ndt_resolution_);
+  declare_parameter("ndt_step_size", 0.1);
+  get_parameter("ndt_step_size", ndt_step_size_);
 
   declare_parameter("maximum_iterations", 0);
   get_parameter("maximum_iterations", maximum_iterations_);
@@ -31,6 +33,9 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
   get_parameter("optimization_step_size", optimization_step_size_);
   declare_parameter("transformation_epsilon_2d", 0.0);
   get_parameter("transformation_epsilon_2d", transformation_epsilon_2d_);
+  declare_parameter("map_voxel_leaf_size", 0.0);
+  get_parameter("map_voxel_leaf_size", map_voxel_leaf_size_);
+
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
   "scan", rclcpp::SensorDataQoS(),
@@ -53,32 +58,35 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
   cloud.points.resize(view_ranges/reso);
   input_elephant_cloud.points.resize(50000);
 
-  // ndt.setResolution(ndt_resolution_);
-  // ndt.setTransformationEpsilon(transformation_epsilon_);
-  // ndt.setStepSize (ndt_step_size_);    //ニュートン法のステップサイズ
-
-  ndt2d.setMaximumIterations (maximum_iterations_);
-  ndt2d.setGridCentre (Eigen::Vector2f (grid_centre_x_,grid_centre_y_));
-  ndt2d.setGridExtent (Eigen::Vector2f (grid_extent_x_,grid_extent_y_));
-  ndt2d.setGridStep (Eigen::Vector2f (grid_step_,grid_step_));
-  ndt2d.setOptimizationStepSize (Eigen::Vector3d (optimization_step_size_,optimization_step_size_,0.1));
-  ndt2d.setTransformationEpsilon (transformation_epsilon_2d_);
-
+  if(registration_method_ == "NDT"){
+    RCLCPP_INFO(this->get_logger(), "method NDT");
+    ndt.setTransformationEpsilon(transformation_epsilon_);
+    ndt.setResolution(ndt_resolution_);
+    ndt.setStepSize (ndt_step_size_);    //ニュートン法のステップサイズ
+  }
+  else{
+    RCLCPP_INFO(this->get_logger(), "method NDT2D");
+    ndt2d.setMaximumIterations (maximum_iterations_);
+    ndt2d.setGridCentre (Eigen::Vector2f (grid_centre_x_,grid_centre_y_));
+    ndt2d.setGridExtent (Eigen::Vector2f (grid_extent_x_,grid_extent_y_));
+    ndt2d.setGridStep (Eigen::Vector2f (grid_step_,grid_step_));
+    ndt2d.setOptimizationStepSize (Eigen::Vector3d (optimization_step_size_,optimization_step_size_,0.1));
+    ndt2d.setTransformationEpsilon (transformation_epsilon_2d_);
+  }
   voxel_grid_filter.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
 
   create_elephant_map();
-  map_voxel_grid_filter.setLeafSize(map_voxel_leaf_size, map_voxel_leaf_size, map_voxel_leaf_size);
-  PclCloud::Ptr map_filtered_cloud_ptr(new PclCloud());
-  PclCloud::Ptr map_cloud_ptr(new PclCloud(input_elephant_cloud));
+  // map_voxel_grid_filter.setLeafSize(map_voxel_leaf_size, map_voxel_leaf_size, map_voxel_leaf_size);
+  // PclCloud::Ptr map_filtered_cloud_ptr(new PclCloud());
+  // PclCloud::Ptr map_cloud_ptr(new PclCloud(input_elephant_cloud));
 
-  voxel_grid_filter.setInputCloud(map_cloud_ptr);
-  voxel_grid_filter.filter(*map_filtered_cloud_ptr);
+  // voxel_grid_filter.setInputCloud(map_cloud_ptr);
+  // voxel_grid_filter.filter(*map_filtered_cloud_ptr);
 
   if(!use_gazebo_simulator){
     pose.x = init_pose_x;
     pose.y = init_pose_y;
   }
-  self_test();
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
@@ -104,94 +112,50 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
   voxel_grid_filter.setInputCloud(cloud_ptr);
   voxel_grid_filter.filter(*filtered_cloud_ptr);
-  // ndt.setInputSource(filtered_cloud_ptr);
-  ndt2d.setInputSource(filtered_cloud_ptr);
-
   PclCloud result;
   time_start = chrono::system_clock::now();
-  // ndt.align(result);
-  RCLCPP_INFO(this->get_logger(), "point 1");
-  pointcloud2_view(filtered_cloud_ptr, input_elephant_cloud);
-  ndt2d.align(result);
-  RCLCPP_INFO(this->get_logger(), "point 2");
-
-  Eigen::Matrix4d transformation_matrix = ndt.getFinalTransformation().cast<double>();
+  Eigen::Matrix4d transformation_matrix;
+  if(registration_method_ == "NDT"){
+    ndt.setInputSource(filtered_cloud_ptr);
+    ndt.align(result);
+    transformation_matrix = ndt.getFinalTransformation().cast<double>();
+  }
+  else{
+    ndt2d.setInputSource(filtered_cloud_ptr);
+    ndt2d.align(result);
+    transformation_matrix = ndt2d.getFinalTransformation().cast<double>();
+  }
+  time_end = chrono::system_clock::now();
   Pose scan_trans;
   scan_trans.x = transformation_matrix(0,3);
   scan_trans.y = transformation_matrix(1,3);
   scan_trans.yaw = transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2);
 
-  // global_cloud.points.resize(filtered_cloud_ptr->points.size());
+  ndt_estimated = predict + scan_trans;
+  Pose fused_pose;                       // 融合結果
+  Eigen::Matrix3d fused_cov;               // センサ融合後の共分散
+  double dt = 0.1;//**************odomの移動時間(scan取得時間の差)。time stampの差分ほしい*********************
+  // pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, fused_pose, fused_cov, dt, filtered_cloud_ptr, transformation_matrix);
+  if(0<ndt.getFinalNumIteration() && registration_method_ == "NDT"){
+  //   RCLCPP_INFO(this->get_logger(), "trans x->%f y->%f yaw->%f°", transformation_matrix(0,3), transformation_matrix(1,3), radToDeg(transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2)));
+
+  //   RCLCPP_INFO(this->get_logger(), "iteration num->%d", ndt.getFinalNumIteration());
+    RCLCPP_INFO(this->get_logger(), "Max iteration num->%d", max_iteration(ndt.getFinalNumIteration()));
+  //   RCLCPP_INFO(this->get_logger(), "step_size->%f", ndt.getStepSize());
+  //   RCLCPP_INFO(this->get_logger(), "TransformationEpsilon->%f", ndt.getTransformationEpsilon());
+  //   RCLCPP_INFO(this->get_logger(), "Max time->%d", max_time(chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count()));
+    // RCLCPP_INFO(this->get_logger(), "time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
+  }
+  last_scan_odom = current_scan_odom;
+  last_estimated = estimated;
+    // global_cloud.points.resize(filtered_cloud_ptr->points.size());
   // for(size_t i=0; i<filtered_cloud_ptr->points.size(); i++){
   //   global_cloud.points[i].x = transformation_matrix(0,0)*filtered_cloud_ptr->points[i].x + transformation_matrix(0,1)*filtered_cloud_ptr->points[i].y + transformation_matrix(0,3);
   //   global_cloud.points[i].y = transformation_matrix(1,0)*filtered_cloud_ptr->points[i].x + transformation_matrix(1,1)*filtered_cloud_ptr->points[i].y + transformation_matrix(1,3);
   // }
-
-
-  ndt_estimated = predict + scan_trans;
-  double inlier_ratio = 1.0 - ndt.getOulierRatio();
-
-  Pose fused_pose;                       // 融合結果
-  Eigen::Matrix3d fused_cov;               // センサ融合後の共分散
-  double dt = 0.1;//**************odomの移動時間(scan取得時間の差)。time stampの差分ほしい*********************
-  pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, fused_pose, fused_cov, dt, filtered_cloud_ptr, transformation_matrix);
-
-  // if(0<ndt.getFinalNumIteration()){
-  //   RCLCPP_INFO(this->get_logger(), "trans x->%f y->%f yaw->%f°", transformation_matrix(0,3), transformation_matrix(1,3), radToDeg(transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2)));
-
-  //   RCLCPP_INFO(this->get_logger(), "iteration num->%d", ndt.getFinalNumIteration());
-  //   RCLCPP_INFO(this->get_logger(), "Max iteration num->%d", max_iteration(ndt.getFinalNumIteration()));
-  //   RCLCPP_INFO(this->get_logger(), "step_size->%f", ndt.getStepSize());
-  //   RCLCPP_INFO(this->get_logger(), "TransformationEpsilon->%f", ndt.getTransformationEpsilon());
-  //   RCLCPP_INFO(this->get_logger(), "time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
-  //   RCLCPP_INFO(this->get_logger(), "Max time->%d", max_time(chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count()));
-  // }
-  last_scan_odom = current_scan_odom;
-  last_estimated = estimated;
-  PclCloud::Ptr global_cloud_ptr(new PclCloud(global_cloud));
-  pointcloud2_view(global_cloud_ptr, input_elephant_cloud);
+  // PclCloud::Ptr global_cloud_ptr(new PclCloud(global_cloud));
+  pointcloud2_view(filtered_cloud_ptr, input_elephant_cloud);
 }
-
-void IcpBaseSlam::self_test(){
-  using PointType = pcl::PointXYZ;
-  using Cloud = pcl::PointCloud<PointType>;
-  using CloudConstPtr = Cloud::ConstPtr;
-  using CloudPtr = Cloud::Ptr;
-  CloudPtr data (new Cloud);
-  data->points.emplace_back(0,0,0);
-  data->points.emplace_back(0,2,0);
-  data->points.emplace_back(2,0,0);
-
-  pcl::console::setVerbosityLevel (pcl::console::L_DEBUG);
-
-  pcl::NormalDistributionsTransform2D<PointType, PointType> ndt2d;
-  ndt2d.setMaximumIterations (maximum_iterations_);
-  ndt2d.setGridCentre (Eigen::Vector2f (grid_centre_x_,grid_centre_y_));
-  ndt2d.setGridExtent (Eigen::Vector2f (grid_extent_x_,grid_extent_y_));
-  ndt2d.setGridStep (Eigen::Vector2f (grid_step_,grid_step_));
-  ndt2d.setOptimizationStepSize (Eigen::Vector3d (optimization_step_size_,optimization_step_size_,0.1));
-  ndt2d.setTransformationEpsilon (transformation_epsilon_2d_);
-  // pcl::VoxelGrid<PointType> voxel_grid_filter_map;
-  // pcl::PointCloud<PointType>::Ptr filtered_elephant_cloud_ptr(new pcl::PointCloud<PointType>());
-  // pcl::PointCloud<PointType>::Ptr input_elephant_cloud_ptr(new pcl::PointCloud<PointType>(input_elephant_cloud));
-  // voxel_grid_filter_map.setLeafSize(0.05, 0.05, 0.05);
-  // voxel_grid_filter_map.setInputCloud(input_elephant_cloud_ptr);
-  // voxel_grid_filter_map.filter(*filtered_elephant_cloud_ptr);
-  // ndt2d.setInputTarget(filtered_elephant_cloud_ptr);
-
-  ndt2d.setInputTarget(input_elephant_cloud.makeShared());
-  ndt2d.setInputSource (data);
-
-  CloudPtr tmp (new Cloud);
-  time_start = chrono::system_clock::now();
-  ndt2d.align (*tmp);
-  time_end = chrono::system_clock::now();
-
-  RCLCPP_INFO(this->get_logger(), "time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
-  std::cout << ndt2d.getFinalTransformation () << std::endl;
-
-}
-
 
 void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg){
   double yaw = quaternionToYaw(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
@@ -246,18 +210,6 @@ void IcpBaseSlam::pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud){
   map_msg_ptr->header.frame_id = "map";
   map_pointcloud2_publisher->publish(*map_msg_ptr);
 }
-
-void IcpBaseSlam::pointcloud2_view_ptr(pcl::PointCloud<PointType>::Ptr cloud_ptr, pcl::PointCloud<PointType>::Ptr map_cloud_ptr){
-  sensor_msgs::msg::PointCloud2::SharedPtr msg_ptr(new sensor_msgs::msg::PointCloud2);
-  pcl::toROSMsg(*cloud_ptr, *msg_ptr);
-  msg_ptr->header.frame_id = "map";
-  pointcloud2_publisher->publish(*msg_ptr);
-  sensor_msgs::msg::PointCloud2::SharedPtr map_msg_ptr(new sensor_msgs::msg::PointCloud2);
-  pcl::toROSMsg(*map_cloud_ptr, *map_msg_ptr);
-  map_msg_ptr->header.frame_id = "map";
-  map_pointcloud2_publisher->publish(*map_msg_ptr);
-}
-
 
 void IcpBaseSlam::create_elephant_map(){
   double rafter_length = 12.;
@@ -324,19 +276,24 @@ void IcpBaseSlam::create_elephant_map(){
     input_elephant_cloud.points[i+count_sum].y = double(i)/1000 + fence_left_y;
     count++;
   }
-
   //原点を合わせる
   for(size_t i=0; i<input_elephant_cloud.size(); i++){
     input_elephant_cloud.points[i].x -= 6.0;
     input_elephant_cloud.points[i].y -= 6.0;
   }
-  pcl::VoxelGrid<PointType> voxel_grid_filter_map;
-  pcl::PointCloud<PointType>::Ptr filtered_elephant_cloud_ptr(new pcl::PointCloud<PointType>());
-  pcl::PointCloud<PointType>::Ptr input_elephant_cloud_ptr(new pcl::PointCloud<PointType>(input_elephant_cloud));
-  voxel_grid_filter_map.setLeafSize(0.3, 0.3, 0.3);
-  voxel_grid_filter_map.setInputCloud(input_elephant_cloud_ptr);
-  voxel_grid_filter_map.filter(*filtered_elephant_cloud_ptr);
-  ndt2d.setInputTarget(filtered_elephant_cloud_ptr);
+
+  if(registration_method_ == "NDT"){
+    ndt.setInputTarget(input_elephant_cloud.makeShared());
+  }
+  else{
+    pcl::VoxelGrid<PointType> voxel_grid_filter_map;
+    pcl::PointCloud<PointType>::Ptr filtered_elephant_cloud_ptr(new pcl::PointCloud<PointType>());
+    pcl::PointCloud<PointType>::Ptr input_elephant_cloud_ptr(new pcl::PointCloud<PointType>(input_elephant_cloud));
+    voxel_grid_filter_map.setLeafSize(map_voxel_leaf_size_, map_voxel_leaf_size_, map_voxel_leaf_size_);
+    voxel_grid_filter_map.setInputCloud(input_elephant_cloud_ptr);
+    voxel_grid_filter_map.filter(*filtered_elephant_cloud_ptr);
+    ndt2d.setInputTarget(filtered_elephant_cloud_ptr);
+  }
 }
 
 

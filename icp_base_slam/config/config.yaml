@@ -1,16 +1,20 @@
 icp_base_slam:
   ros__parameters:
     registration_method: "NDT"
+    voxel_leaf_size: 1.0
+
+    #ndt
     transformation_epsilon: 0.05
     ndt_resolution: 1.7
     ndt_step_size: 0.1
-    voxel_leaf_size: 1.
+
     # ndt2d
     maximum_iterations: 1
-    grid_centre_x: -6.
-    grid_centre_y: -6.
-    grid_extent_x: 7.
-    grid_extent_y: 13.
+    grid_centre_x: -6.0
+    grid_centre_y: -6.0
+    grid_extent_x: 7.0
+    grid_extent_y: 13.0
     grid_step: 1.7
     optimization_step_size: 0.3
     transformation_epsilon_2d: 0.1
+    map_voxel_leaf_size: 0.3

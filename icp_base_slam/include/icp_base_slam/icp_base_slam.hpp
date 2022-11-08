@@ -73,6 +73,7 @@ private:
 
   pcl::NormalDistributionsTransform<PointType, PointType> ndt;
   pcl::NormalDistributionsTransform2D<PointType, PointType> ndt2d;
+  pcl::Registration<PointType, PointType>::Ptr registration_;
 
   PclCloud cloud;
   PclCloud input_circle_cloud;
@@ -119,11 +120,10 @@ private:
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
   std::string registration_method_;
   //ndt ndt_resolutionとvoxel_leaf_sizeは密接な関係あり
-  double map_voxel_leaf_size = 0.01;
-  double transformation_epsilon_ = 0.05;//最新の変換とそのひとつ前の変換の差の閾値。
-  double ndt_resolution_ = 1.7;  //ndtボクセルサイズ
-  double ndt_step_size_ = 0.1;  //探索領域を区切るサイズ
-  double voxel_leaf_size_ = 1.; //ダウンサンプリングボクセル
+  double transformation_epsilon_;//最新の変換とそのひとつ前の変換の差の閾値。
+  double ndt_resolution_;  //ndtボクセルサイズ
+  double ndt_step_size_;  //探索領域を区切るサイズ
+  double voxel_leaf_size_; //ダウンサンプリングボクセル
 
   int maximum_iterations_;
   double grid_centre_x_;
@@ -133,6 +133,7 @@ private:
   double grid_step_;
   double optimization_step_size_;
   double transformation_epsilon_2d_;
+  double map_voxel_leaf_size_;
 
   bool use_odom{false};
   bool use_gazebo_simulator{true};

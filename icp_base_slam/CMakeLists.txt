@@ -27,16 +27,12 @@ find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(my_messages REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(lifecycle_msgs REQUIRED)
 
 
 #add_library(${PROJECT_NAME} ${SRC_FILES})
 include_directories(icp_base_slam
   include
   ${PCL_INCLUDE_DIRS}
-  ${lifecycle_msgs_INCLUDE_DIRS}
-  ${rclcpp_lifecycle_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS}
 )
 add_library(icp_base_slam
@@ -67,7 +63,6 @@ ament_target_dependencies(icp_base_slam
 
 target_link_libraries(icp_base_slam
   ${PCL_LIBRARIES}
-  ${rclcpp_lifecycle_LIBRARIES}
   ${std_msgs_LIBRARIES}
 )
 
