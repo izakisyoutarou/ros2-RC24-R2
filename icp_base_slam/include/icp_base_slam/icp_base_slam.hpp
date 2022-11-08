@@ -18,6 +18,7 @@
 #include <pcl/console/print.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/ndt.h>
+#include <pcl/registration/ndt_2d.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -36,10 +37,13 @@
 
 #include "visibility.h"
 
+#include <pcl/console/print.h>
+
 class IcpBaseSlam : public rclcpp::Node{
 public:
   ICP_BASE_SLAM_PUBLIC
   explicit IcpBaseSlam(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+  // explicit IcpBaseSlam(const rclcpp::NodeOptions& options);
   ICP_BASE_SLAM_PUBLIC
   explicit IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
@@ -65,14 +69,18 @@ private:
   double quaternionToYaw(double x, double y, double z, double w);
   int max_time(int num);
   int max_iteration(int num);
+  void self_test();
 
   pcl::NormalDistributionsTransform<PointType, PointType> ndt;
+  pcl::NormalDistributionsTransform2D<PointType, PointType> ndt2d;
+
   PclCloud cloud;
   PclCloud input_circle_cloud;
   PclCloud input_elephant_cloud;
   PclCloud global_cloud;
   pcl::VoxelGrid<PointType> voxel_grid_filter;
   pcl::VoxelGrid<PointType> map_voxel_grid_filter;
+
 
   chrono::system_clock::time_point  time_start, time_end; // 型は auto で可
 
@@ -109,12 +117,22 @@ private:
   int model_count=0;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
+  std::string registration_method_;
   //ndt ndt_resolutionとvoxel_leaf_sizeは密接な関係あり
-  double transformation_epsilon = 0.005;//最新の変換とそのひとつ前の変換の差の閾値。
-  double ndt_resolution = 0.005;  //ndtボクセルサイズ
-  double ndt_step_size = 0.00005;  //探索領域を区切るサイズ(小さいと解の精度が上がり、処理が重くなる)
-  double voxel_leaf_size = 0.5; //ダウンサンプリングボクセル
   double map_voxel_leaf_size = 0.01;
+  double transformation_epsilon_ = 0.05;//最新の変換とそのひとつ前の変換の差の閾値。
+  double ndt_resolution_ = 1.7;  //ndtボクセルサイズ
+  double ndt_step_size_ = 0.1;  //探索領域を区切るサイズ
+  double voxel_leaf_size_ = 1.; //ダウンサンプリングボクセル
+
+  int maximum_iterations_;
+  double grid_centre_x_;
+  double grid_centre_y_;
+  double grid_extent_x_;
+  double grid_extent_y_;
+  double grid_step_;
+  double optimization_step_size_;
+  double transformation_epsilon_2d_;
 
   bool use_odom{false};
   bool use_gazebo_simulator{true};
