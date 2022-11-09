@@ -77,6 +77,7 @@ namespace socketcan_interface {
                 break;
             }
             RCLCPP_INFO(this->get_logger(), "Published ID:0x%03X [%d] ", frame.can_id, frame.can_dlc);
+            msg->header.stamp = this->now();
             msg->canid = frame.can_id;
             msg->candlc = frame.can_dlc;
             for (int i = 0; i < frame.can_dlc; i++) {
