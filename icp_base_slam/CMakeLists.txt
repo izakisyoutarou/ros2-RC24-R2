@@ -17,23 +17,24 @@ endif()
 
 # find dependencies
 
-find_package(ament_cmake REQUIRED)
-find_package(PCL REQUIRED)
-find_package(pcl_conversions REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(my_messages REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
+
+set(dependencies
+  ament_cmake
+  rclcpp
+  sensor_msgs
+  nav_msgs
+  geometry_msgs
+  PCL
+  pcl_conversions
+)
 
 
 #add_library(${PROJECT_NAME} ${SRC_FILES})
 include_directories(icp_base_slam
   include
   ${PCL_INCLUDE_DIRS}
-  ${rclcpp_INCLUDE_DIRS}
 )
 add_library(icp_base_slam
   src/icp_base_slam.cpp
@@ -46,35 +47,21 @@ target_compile_options(icp_base_slam PUBLIC -Wall)
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-# add_executable(icp_base_slam
-#   src/icp_base_slam.cpp
-# )
-
 ament_target_dependencies(icp_base_slam
-  sensor_msgs
-  geometry_msgs
-  rclcpp
-  ament_cmake
-  nav_msgs
-  std_msgs
-  my_messages
-  pcl_conversions
+  ${dependencies}
 )
 
 target_link_libraries(icp_base_slam
   ${PCL_LIBRARIES}
-  ${std_msgs_LIBRARIES}
 )
 
 target_include_directories(icp_base_slam PUBLIC
-  ${EIGEN3_INCLUDE_DIRS}
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(
-  rclcpp
-  my_messages
+  ${dependencies}
 )
 ament_export_libraries(${PROJECT_NAME})
 ament_export_include_directories(include)
