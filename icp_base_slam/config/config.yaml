@@ -1,6 +1,6 @@
 icp_base_slam:
   ros__parameters:
-    registration_method: "NDT"
+    registration_method: "NDT2d"
     voxel_leaf_size: 1.0
 
     #ndt

@@ -1,5 +1,6 @@
 #include "icp_base_slam/icp_base_slam.hpp"
 
+namespace self_localization{
 IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", options) {}
 
 IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions &options)
@@ -41,8 +42,8 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
   "scan", rclcpp::SensorDataQoS(),
   bind(&IcpBaseSlam::scan_callback, this, placeholders::_1));
 
-  odom_delay_subscriber = this->create_subscription<my_messages::msg::OdomDelay>(
-    "odom_delay", 10, bind(&IcpBaseSlam::odom_delay_callback, this, placeholders::_1));
+  // odom_delay_subscriber = this->create_subscription<my_messages::msg::OdomDelay>(
+  //   "odom_delay", 10, bind(&IcpBaseSlam::odom_delay_callback, this, placeholders::_1));
 
   simulator_odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
     "gazebo_simulator/odom",
@@ -165,15 +166,15 @@ void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedP
   // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f°", pose.x, pose.y, radToDeg(pose.yaw));
 }
 
-void IcpBaseSlam::odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg){
-  pose.x        += msg->x   - last_odom.x;
-  pose.y        += msg->y   - last_odom.y;
-  pose.yaw      += msg->yaw - last_odom.yaw;
-  last_odom.x   =  msg->x;
-  last_odom.y   =  msg->y;
-  last_odom.yaw =  msg->yaw;
-  // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f", pose.x, pose.y, pose.yaw);
-}
+// void IcpBaseSlam::odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg){
+//   pose.x        += msg->x   - last_odom.x;
+//   pose.y        += msg->y   - last_odom.y;
+//   pose.yaw      += msg->yaw - last_odom.yaw;
+//   last_odom.x   =  msg->x;
+//   last_odom.y   =  msg->y;
+//   last_odom.yaw =  msg->yaw;
+//   // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f", pose.x, pose.y, pose.yaw);
+// }
 
 void IcpBaseSlam::set_odom(double x, double y, double yaw){
   odom.x=x;
@@ -344,30 +345,6 @@ double IcpBaseSlam::circle_model_y_dec(double point_x, double circle_y){
   return circle_y - sqrt(pow(R,2) - pow(point_x - circle_x, 2));
 }
 
-void IcpBaseSlam::input_cloud_view(PclCloud input_cloud){
-  pcl::visualization::PCLVisualizer viewer("input cloud");
-  viewer.setBackgroundColor(0,0,0);
-  pcl::visualization::PointCloudColorHandlerCustom<PointType> single_color(input_cloud.makeShared(), 0, 0, 255);
-  viewer.addPointCloud<PointType>(input_cloud.makeShared(), single_color, "all clouds");
-  while(!viewer.wasStopped()){
-    viewer.spinOnce(1);
-  }
-}
-
-void IcpBaseSlam::icp_cloud_view(PclCloud map_cloud, PclCloud input_cloud){
-  pcl::visualization::PCLVisualizer viewer("input cloud");
-  viewer.setBackgroundColor(0,0,0);
-  pcl::visualization::PointCloudColorHandlerCustom<PointType> elephant_color(map_cloud.makeShared(), 0, 0, 255);
-  viewer.addPointCloud<PointType>(map_cloud.makeShared(), elephant_color, "map clouds");
-  pcl::visualization::PointCloudColorHandlerCustom<PointType> laser_color(input_cloud.makeShared(), 0, 255, 0);
-  viewer.addPointCloud<PointType>(input_cloud.makeShared(), laser_color, "input clouds");
-  while(!viewer.wasStopped()){
-    viewer.spinOnce(1);
-  }
-}
-
-
-
 int IcpBaseSlam::max_time(int num){
   if(num > last_num_time){
     last_num_time = num;
@@ -380,4 +357,5 @@ int IcpBaseSlam::max_iteration(int num){
     last_num_iteration = num;
   }
   return last_num_iteration;
+}
 }

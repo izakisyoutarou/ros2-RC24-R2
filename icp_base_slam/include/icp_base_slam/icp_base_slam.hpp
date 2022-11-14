@@ -11,8 +11,6 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_circle.h>
 #include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/visualization/cloud_viewer.h>
-#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/print.h>
@@ -39,6 +37,7 @@
 
 #include <pcl/console/print.h>
 
+namespace self_localization{
 class IcpBaseSlam : public rclcpp::Node{
 public:
   ICP_BASE_SLAM_PUBLIC
@@ -59,8 +58,6 @@ private:
   double circle_model_y_dec(double point_x, double circle_y);
   void create_elephant_map();
   void print4x4Matrix (const Eigen::Matrix4d & matrix);
-  void input_cloud_view(PclCloud input_cloud);
-  void icp_cloud_view(PclCloud map_cloud, PclCloud input_cloud);
   void pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud);
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
@@ -139,3 +136,4 @@ private:
   bool use_gazebo_simulator{true};
   PoseFuser *pose_fuser;  // センサ融合器
 };
+}

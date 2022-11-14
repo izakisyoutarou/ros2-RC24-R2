@@ -11,12 +11,8 @@
   <exec_depend>rclcpp</exec_depend>
   <test_depend>rclcpp</test_depend>
 
-  <depend>socketcan_interface</depend>
-  <depend>mcl_2d</depend>
-  <build_depend>icp_base_slam</build_depend>
-  <exec_depend>icp_base_slam</exec_depend>
-  <test_depend>icp_base_slam</test_depend>
-  
+  <depend>icp_base_slam</depend>
+
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <test_depend>ament_lint_auto</test_depend>
