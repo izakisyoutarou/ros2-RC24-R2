@@ -43,6 +43,19 @@ ament_target_dependencies(mcl_2d_node
   utilities
 )
 
+add_executable(odom_printer
+  src/odom_printer
+)
+target_include_directories(odom_printer PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+ament_target_dependencies(odom_printer
+  rclcpp
+  socketcan_interface_msg
+  utilities
+)
+
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
 target_compile_definitions(mcl_2d_node PRIVATE "MCL_2D_BUILDING_LIBRARY")
@@ -51,12 +64,16 @@ install(
   DIRECTORY include/
   DESTINATION include
 )
-install(
-  TARGETS mcl_2d_node
+install(TARGETS
+  mcl_2d_node
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
+)
+install(TARGETS
+  odom_printer
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

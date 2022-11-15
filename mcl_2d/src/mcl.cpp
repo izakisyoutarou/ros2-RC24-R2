@@ -6,8 +6,8 @@ mcl::mcl()
   m_sync_count =0;
   gen.seed(rd()); //Set random seed for random engine
 
-  gridMap = cv::imread("/home/kitrp/colcon_ws/src/mcl_2d/gridmap.png",cv::IMREAD_GRAYSCALE); //Original gridmap (For show)
-  gridMapCV = cv::imread("/home/kitrp/colcon_ws/src/mcl_2d/erodedGridmap.png",cv::IMREAD_GRAYSCALE); //grdiamp for use.
+  gridMap = cv::imread("src/mcl_2d/gridmap.png",cv::IMREAD_GRAYSCALE); //Original gridmap (For show)
+  gridMapCV = cv::imread("src/mcl_2d/erodedGridmap.png",cv::IMREAD_GRAYSCALE); //grdiamp for use.
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
   numOfParticle = 100; // Number of Particles.
@@ -16,8 +16,8 @@ mcl::mcl()
   repropagateCountNeeded = 1; // [num]
   odomCovariance[0] = 0.0; // Rotation to Rotation
   odomCovariance[1] = 0.0; // Translation to Rotation
-  odomCovariance[2] = 0.01; // Translation to Translation
-  odomCovariance[3] = 0.01; // Rotation to Translation
+  odomCovariance[2] = 0.0; // Translation to Translation
+  odomCovariance[3] = 0.0; // Rotation to Translation
   odomCovariance[4] = 0.0; // X
   odomCovariance[5] = 0.0; // Y
 
@@ -25,8 +25,8 @@ mcl::mcl()
   //--DO NOT TOUCH THIS PARAMETERS--//
   imageResolution = 0.05; // [m] per [pixel]
   tf_laser2robot <<  1.0,   0,   0, 0.4,
-                       0, 1.0,   0,   0,
-                       0,   0, 1.0,  0,
+                       0, -1.0,   0,   0,
+                       0,   0,  1.0,  0,
                        0,   0,   0, 1.0; // TF (laser frame to robot frame)
   mapCenterX = 0; // [m]
   mapCenterY = 0; // [m]

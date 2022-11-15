@@ -29,7 +29,8 @@ namespace mcl_2d{
 
     void Mcl2D::check_data(){
         // RCLCPP_INFO(this->get_logger(), "pose size:%lf  laser size:%lf", vec_poses.size(), vec_lasers.size());
-        RCLCPP_INFO(this->get_logger(), "POSE x:%lf  y:%lf", mclocalizer.position_x, mclocalizer.position_y);
+        // RCLCPP_INFO(this->get_logger(), "POSE x:%lf  y:%lf", mclocalizer.position_x, mclocalizer.position_y);
+
         while((vec_poses.size()!=0 && vec_lasers.size()!=0)){
             if(fabs(vec_poses_time[0] - vec_lasers_time[0])>0.1){
 
@@ -88,17 +89,18 @@ namespace mcl_2d{
         for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
         double yaw = (double)bytes_to_float(_candata);
 
-        // RCLCPP_INFO(this->get_logger(), "x:%lf  y:%lf  a:%lf", latest_pose.x, latest_pose.y, yaw);
+        RCLCPP_INFO(this->get_logger(), "ODM   x:%lf  y:%lf  ang:%lf", latest_pose.x, latest_pose.y, yaw);
 
         Eigen::Matrix4f eigenPose;
         // tf2::Quaternion q(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
         tf2::Quaternion q;
         q.setRPY(0.0, 0.0, yaw);
         tf2::Matrix3x3 m(q);
-        // eigenPose<< m[0][0], m[0][1], m[0][2], latest_pose.x,
-        //             m[1][0], m[1][1], m[1][2], latest_pose.y,
-        //             m[2][0], m[2][1], m[2][2], latest_pose.z,
-        //             0,0,0,1;
+
+        //テスト補正
+        latest_pose.x += -5.5;
+        //ここまで
+
         eigenPose<< m[0][0], m[0][1], m[0][2], latest_pose.x,
                     m[1][0], m[1][1], m[1][2], latest_pose.y,
                     m[2][0], m[2][1], m[2][2], latest_pose.z,
