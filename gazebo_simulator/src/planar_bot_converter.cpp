@@ -46,9 +46,11 @@ void PlanarBotConverter::callback_odom(const nav_msgs::msg::Odometry::SharedPtr 
     auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
     msg_linear->canid = 0x100;
     msg_linear->candlc = 8;
+    msg_linear->header = msg->header;
     auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
     msg_angular->canid = 0x101;
     msg_angular->candlc = 4;
+    msg_angular->header = msg->header;
 
 
     uint8_t _candata[8];

@@ -9,7 +9,7 @@
 
   <!-- 初期位置の指定 -->
   <joint name="robot_footprint_joint" type="fixed">
-    <origin xyz="-5.5 0 0" rpy="0 0 0" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
     <parent link="robot_footprint"/>
     <child link="chassis" />
   </joint>
@@ -26,14 +26,14 @@
     <collision name='collision'>
       <origin xyz="0 0 0" rpy=" 0 0 0"/>
       <geometry>
-        <box size=".8 .8 .1"/>
+        <box size=".8 .8 .15"/>
       </geometry>
     </collision>
 
     <visual name='chassis_visual'>
       <origin xyz="0 0 0" rpy=" 0 0 0"/>
       <geometry>
-        <box size=".8 .8 .1"/>
+        <box size=".8 .8 .15"/>
       </geometry>
     </visual>
 
@@ -210,7 +210,7 @@
   </joint>
 
   <joint type="fixed" name="camera_joint">
-    <origin xyz="0.15 0 0.1" rpy="0 0 0"/>
+    <origin xyz="0.3 0 0.1" rpy="0 0 0"/>
     <child link="camera"/>
     <parent link="chassis"/>
     <axis xyz="0 1 0" rpy="0 0 0"/>
