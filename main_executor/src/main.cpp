@@ -11,8 +11,8 @@ int main(int argc, char * argv[]){
     auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>();
     auto mcl_2d_node = std::make_shared<mcl_2d::Mcl2D>();
 
-    // exec.add_node(socketcan_node);
-    exec.add_node(mcl_2d_node);
+    exec.add_node(socketcan_node);
+    // exec.add_node(mcl_2d_node);
 
     exec.spin();
     rclcpp::shutdown();
