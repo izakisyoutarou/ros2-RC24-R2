@@ -24,15 +24,40 @@ namespace mcl_2d{
                 _qos,
                 std::bind(&Mcl2D::_subscriber_callback_odom_angular, this, std::placeholders::_1)
         );
+        _subscription_initialize = this->create_subscription<std_msgs::msg::Empty>(
+                "self_pose_initialize",
+                _qos,
+                std::bind(&Mcl2D::_subscriber_callback_initialize, this, std::placeholders::_1)
+        );
+
+        publisher_selfpose = this->create_publisher<geometry_msgs::msg::PointStamped>("self_pose", _qos);
+
+        int numOfParticle = 50;
+        float odomCovariance[6] = {
+            0.0,    // Rotation to Rotation
+            0.0,    // Translation to Rotation
+            0.0,    // Translation to Translation
+            0.0,    // Rotation to Translation
+            0.01,   // X
+            0.01    // Y
+        };
+        Eigen::Matrix4f tf_laser2robot;
+        tf_laser2robot << 1.0,    0,    0,0.4655, //gazebosim 0.425
+                            0, -1.0,    0,    0,
+                            0,    0,  1.0,    0,
+                            0,    0,    0,  1.0; // TF (laser frame to robot frame)
+        float randomX = -5.5f;
+        float randomY = 0.f;
+        float randomTheta = 0.f;
+        Eigen::Matrix4f initial_pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,randomTheta);
+        mclocalizer.setup(numOfParticle, odomCovariance, tf_laser2robot, initial_pose);
     }
 
 
     void Mcl2D::check_data(){
-        // RCLCPP_INFO(this->get_logger(), "pose size:%lf  laser size:%lf", vec_poses.size(), vec_lasers.size());
-        // RCLCPP_INFO(this->get_logger(), "POSE x:%lf  y:%lf", mclocalizer.position_x, mclocalizer.position_y);
 
         while((vec_poses.size()!=0 && vec_lasers.size()!=0)){
-            if(fabs(vec_poses_time[0] - vec_lasers_time[0])>0.1){
+            if(fabs(vec_poses_time[0] - vec_lasers_time[0])>0.01){
 
                 if(vec_poses_time[0]>vec_lasers_time[0]){
                     vec_lasers.erase(vec_lasers.begin());
@@ -51,6 +76,18 @@ namespace mcl_2d{
                 vec_poses_time.erase(vec_poses_time.begin());
             }
         }
+
+        // RCLCPP_INFO(this->get_logger(), "pose size:%lf  laser size:%lf", vec_poses.size(), vec_lasers.size());
+        // RCLCPP_INFO(this->get_logger(), "POSE x:%lf  y:%lf  a:%lf", mclocalizer.x, mclocalizer.y, mclocalizer.angle);
+
+        auto self_pose = std::make_shared<geometry_msgs::msg::PointStamped>();
+        // self_pose->header.frame_id = "";
+        self_pose->header.stamp = observed_time;
+        self_pose->point.x = mclocalizer.x;
+        self_pose->point.y = mclocalizer.y;
+        self_pose->point.z = mclocalizer.angle;
+
+        publisher_selfpose->publish(*self_pose);
     }
 
     void Mcl2D::_subscriber_callback_laser(const sensor_msgs::msg::LaserScan::SharedPtr msg){
@@ -71,9 +108,10 @@ namespace mcl_2d{
         }
         vec_lasers.push_back(eigenLaser);
         vec_lasers_time.push_back(msg->header.stamp.sec + msg->header.stamp.nanosec*1e-9);
+        observed_time = msg->header.stamp;
         this->check_data();
 
-        RCLCPP_INFO(this->get_logger(), "laser stamp : %lf", msg->header.stamp.sec + msg->header.stamp.nanosec*1e-9);
+        // RCLCPP_INFO(this->get_logger(), "laser stamp : %lf", msg->header.stamp.sec + msg->header.stamp.nanosec*1e-9);
     }
 
 
@@ -88,8 +126,6 @@ namespace mcl_2d{
         uint8_t _candata[8];
         for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
         double yaw = (double)bytes_to_float(_candata);
-
-        RCLCPP_INFO(this->get_logger(), "ODM   x:%lf  y:%lf  ang:%lf", latest_pose.x, latest_pose.y, yaw);
 
         Eigen::Matrix4f eigenPose;
         // tf2::Quaternion q(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
@@ -116,7 +152,12 @@ namespace mcl_2d{
 
         vec_poses.push_back(eigenPose);
         vec_poses_time.push_back(msg->header.stamp.sec + msg->header.stamp.nanosec*1e-9);
+        observed_time = msg->header.stamp;
         check_data();
+    }
+
+    void Mcl2D::_subscriber_callback_initialize(const std_msgs::msg::Empty::SharedPtr msg){
+        mclocalizer.odomInitialize();
     }
 
 }  // namespace mcl_2d

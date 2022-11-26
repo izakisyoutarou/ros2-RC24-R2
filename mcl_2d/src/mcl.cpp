@@ -1,33 +1,32 @@
 #include "mcl_2d/mcl.h"
 #include <rclcpp/rclcpp.hpp>
 
-mcl::mcl()
-{
+mcl::mcl(){
   m_sync_count =0;
   gen.seed(rd()); //Set random seed for random engine
+}
+
+int mcl::setup(const int numOfParticle, const float odomCovariance[6], const Eigen::Matrix4f tf_laser2robot, const Eigen::Matrix4f initial_pose){
 
   gridMap = cv::imread("src/mcl_2d/gridmap.png",cv::IMREAD_GRAYSCALE); //Original gridmap (For show)
   gridMapCV = cv::imread("src/mcl_2d/erodedGridmap.png",cv::IMREAD_GRAYSCALE); //grdiamp for use.
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
-  numOfParticle = 100; // Number of Particles.
-  minOdomDistance = 0.01; // [m]
-  minOdomAngle = 10; // [deg]
+  this->numOfParticle = numOfParticle;  // Number of Particles.
+  minOdomDistance = 0.001; // [m]
+  minOdomAngle = 0.1; // [deg]
   repropagateCountNeeded = 1; // [num]
-  odomCovariance[0] = 0.0; // Rotation to Rotation
-  odomCovariance[1] = 0.0; // Translation to Rotation
-  odomCovariance[2] = 0.0; // Translation to Translation
-  odomCovariance[3] = 0.0; // Rotation to Translation
-  odomCovariance[4] = 0.0; // X
-  odomCovariance[5] = 0.0; // Y
 
+  for(int i=0; i<6; i++){
+    this->odomCovariance[i] = odomCovariance[i];
+  }
 
   //--DO NOT TOUCH THIS PARAMETERS--//
   imageResolution = 0.05; // [m] per [pixel]
-  tf_laser2robot <<  1.0,   0,   0, 0.4,
-                       0, -1.0,   0,   0,
-                       0,   0,  1.0,  0,
-                       0,   0,   0, 1.0; // TF (laser frame to robot frame)
+
+  this->tf_laser2robot = tf_laser2robot;
+  this->initial_pose = initial_pose;
+
   mapCenterX = 0; // [m]
   mapCenterY = 0; // [m]
   isOdomInitialized = false; //Will be true when first data incoming.
@@ -35,11 +34,8 @@ mcl::mcl()
 
   initializeParticles(); // Initialize particles.
   showInMap();
-}
 
-mcl::~mcl()
-{
-
+  return 0;
 }
 
 /* INITIALIZE PARTICLES UNIFORMLY TO THE MAP
@@ -56,13 +52,8 @@ void mcl::initializeParticles()
   for(int i=0;i<numOfParticle;i++)
   {
     particle particle_temp;
-    // float randomX = x_pos(gen);
-    // float randomY = y_pos(gen);
-    // float randomTheta = theta_pos(gen);
-    float randomX = -5.5f;
-    float randomY = 0.f;
-    float randomTheta = 0.f;
-    particle_temp.pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,randomTheta);
+
+    particle_temp.pose = initial_pose;
     particle_temp.score = 1/(double)numOfParticle;
     particles.push_back(particle_temp);
   }
@@ -73,11 +64,6 @@ void mcl::prediction(Eigen::Matrix4f diffPose)
 {
   std::cout<<"Predicting..."<<m_sync_count<<std::endl;
   Eigen::VectorXf diff_xyzrpy = tool::eigen2xyzrpy(diffPose); // {x,y,z,roll,pitch,yaw} (z,roll,pitch assume to 0)
-
-  /* Your work.
-   * Input : diffPose,diff_xyzrpy (difference of odometry pose).
-   * To do : update(propagate) particle's pose.
-   */
 
   //------------  FROM HERE   ------------------//
   //// Using odometry model
@@ -145,18 +131,8 @@ void mcl::weightning(Eigen::Matrix4Xf laser)
   float maxScore = 0;
   float scoreSum = 0;
 
-  /* Your work.
-   * Input : laser measurement data
-   * To do : update particle's weight(score)
-   */
-
   for(int i=0;i<(int)particles.size();i++)
   {
-    //Todo : Transform laser data into global frame to map matching
-    //Input : laser (4 x N matrix of laser points in lidar sensor's frame)
-    //        particles.at(i).pose (4 x 4 matrix of robot pose)
-    //        tf_laser2robot (4 x 4 matrix of transformatino between robot and sensor)
-    //Output : transLaser (4 x N matrix of laser points in global frame)
 
     Eigen::Matrix4Xf transLaser = particles.at(i).pose* tf_laser2robot* laser; // now this is lidar sensor's frame.
 
@@ -166,12 +142,6 @@ void mcl::weightning(Eigen::Matrix4Xf laser)
 
     for(int j=0;j<transLaser.cols();j++)
     {
-      //TODO :  translate each laser point (in [m]) to pixel frame.  (transLaser(0,i) 's unit is [m]) (You will use it in MCL too! remember!)
-      //Input :  transLaser(0,j), transLaser(1,j)  (laser point's pose in global frame)
-      //         imageResolution
-      //         gridMap.rows , gridMap.cols (size of image)
-      //         mapCenterX, mapCenterY (center of map's position)
-      //Output : ptX, ptY (laser point's pixel position)
 
       int ptX  = static_cast<int>((transLaser(0, j) - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
       int ptY = static_cast<int>((transLaser(1, j) - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
@@ -223,8 +193,6 @@ void mcl::resampling()
     auto lowerBound = std::lower_bound(particleScores.begin(), particleScores.end(), darted);
     int particleIndex = lowerBound - particleScores.begin(); // Index of particle in particles.
 
-    //TODO : put selected particle to array 'particleSampled' with score reset.
-
     particle selectedParticle = particles.at(particleIndex); // Which one you have to select?
 
     particleSampled.push_back(selectedParticle);
@@ -245,12 +213,6 @@ void mcl::showInMap()
 
   for(int i=0;i<numOfParticle;i++)
   {
-    //Todo : Convert robot pose in image frame
-    //Input :  particles[i].pose(0,3), particles[i].pose(1,3) (x,y position in [m])
-    //         imageResolution
-    //         gridMap.rows , gridMap.cols (size of image)
-    //         mapCenterX, mapCenterY (center of map's position)
-    //Output : xPos, yPos (pose in pixel value)
 
     int xPos  = static_cast<int>((particles.at(i).pose(0, 3) - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
     int yPos = static_cast<int>((particles.at(i).pose(1, 3) - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
@@ -260,41 +222,29 @@ void mcl::showInMap()
   }
   if(maxProbParticle.score > 0)
   {
-    //Todo : Convert robot pose in image frame
-    //Input :  maxProbParticle.pose(0,3), maxProbParticle.pose(1,3) (x,y position in [m])
-    //         imageResolution
-    //         gridMap.rows , gridMap.cols (size of image)
-    //         mapCenterX, mapCenterY (center of map's position)
-    //Output : xPos, yPos (pose in pixel value)
-
-    //// Original
-//    int xPos = static_cast<int>((maxProbParticle.pose(0, 3) - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
-//    int yPos = static_cast<int>((maxProbParticle.pose(1, 3) - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
-
     //// Estimate position using all particles
     float x_all = 0;
     float y_all = 0;
-    for(int i=0;i<(int)particles.size();i++)
-    {
-      x_all = x_all + particles.at(i).pose(0,3) * particles.at(i).score;
-      y_all = y_all + particles.at(i).pose(1,3) * particles.at(i).score;
+    float r11 = 0;
+    float r21 = 0;
+    for(int i=0;i<(int)particles.size();i++){
+      float const score = particles.at(i).score;
+      x_all = x_all + particles.at(i).pose(0,3) * score;
+      y_all = y_all + particles.at(i).pose(1,3) * score;
+      r11 = r11 + particles.at(i).pose(0,0) * score;
+      r21 = r21 + particles.at(i).pose(1,0) * score;
     }
     int xPos = static_cast<int>((x_all - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
     int yPos = static_cast<int>((y_all - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
 
-    position_x = x_all;
-    position_y = y_all;
+    this->x = (double)x_all;
+    this->y = (double)y_all;
+    this->angle = (double)atan2f(r21,r11);
 
 
     //---------------------------------------------//
 
     cv::circle(showMap,cv::Point(xPos,yPos),2,cv::Scalar(0,0,255),-1);
-
-    //Todo : Transform laser data into global frame to map matching
-    //Input : maxProbParticle.scan (4 x N matrix of laser points in lidar sensor's frame)
-    //        maxProbParticle.posee (4 x 4 matrix of robot pose)
-    //        tf_laser2robot (4 x 4 matrix of transformatino between robot and sensor)
-    //Output : transLaser (4 x N matrix of laser points in global frame)
 
     Eigen::Matrix4Xf transLaser = maxProbParticle.pose * tf_laser2robot * maxProbParticle.scan;
 
@@ -302,12 +252,6 @@ void mcl::showInMap()
 
     for(int i=0;i<transLaser.cols();i++)
     {
-      //TODO :  translate each laser point (in [m]) to pixel frame.  (transLaser(0,i) 's unit is [m]) (You will use it in MCL too! remember!)
-      //Input :  transLaser(0,i), transLaser(1,i)  (laser point's pose in global frame)
-      //         imageResolution
-      //         gridMap.rows , gridMap.cols (size of image)
-      //         mapCenterX, mapCenterY (center of map's position)
-      //Output : xPos, yPos (laser point's pixel position)
 
       int xPos = static_cast<int>((transLaser(0, i) - mapCenterX + (300.0*imageResolution)/2)/imageResolution);
       int yPos = static_cast<int>((transLaser(1, i) - mapCenterY + (300.0*imageResolution)/2)/imageResolution);
@@ -321,8 +265,7 @@ void mcl::showInMap()
   cv::waitKey(1);
 }
 
-void mcl::updateData(Eigen::Matrix4f pose, Eigen::Matrix4Xf laser)
-{
+void mcl::updateData(Eigen::Matrix4f pose, Eigen::Matrix4Xf laser){
   if(!isOdomInitialized)
   {
     odomBefore = pose; // Odom used at last prediction.

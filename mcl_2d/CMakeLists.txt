@@ -19,6 +19,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -36,6 +37,7 @@ target_include_directories(mcl_2d_node PUBLIC
   )
 ament_target_dependencies(mcl_2d_node
   rclcpp
+  std_msgs
   geometry_msgs
   sensor_msgs
   OpenCV

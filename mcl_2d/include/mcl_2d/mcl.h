@@ -14,6 +14,17 @@ class mcl
     Eigen::Matrix4Xf scan; // Only for maximum probability particle.
   };
 
+public:
+  mcl();
+  ~mcl(){};
+  int setup(const int numOfParticle, const float odomCovariance[6],
+            const Eigen::Matrix4f tf_laser2robot,
+            const Eigen::Matrix4f initial_pose);
+
+  void odomInitialize(){isOdomInitialized = false;};
+  void updateData(Eigen::Matrix4f pose, Eigen::Matrix4Xf laser);
+  double x, y, angle;
+
 private:
   int m_sync_count;
 
@@ -30,6 +41,7 @@ private:
   cv::Mat gridMap; // Gridmap for showing
   cv::Mat gridMapCV; // Gridmap for use (gaussian-blurred)
   Eigen::Matrix4f tf_laser2robot;
+  Eigen::Matrix4f initial_pose;
   Eigen::Matrix4f odomBefore;
   float minOdomDistance;
   float minOdomAngle;
@@ -44,10 +56,4 @@ private:
   void resampling();
   void showInMap();
 
-
-public:
-  mcl();
-  ~mcl();
-  void updateData(Eigen::Matrix4f pose, Eigen::Matrix4Xf laser);
-  double position_x, position_y, angle;
 };
