@@ -1,0 +1,16 @@
+launch:
+  ros__parameters:
+    real: false
+
+mcl_2d_node:
+  ros__parameters:
+    num_of_particle: 50     #粒子数
+    odom_convariance:
+      param1: 0.0   #回転成分から生まれる回転成分のズレ
+      param2: 0.0   #並進成分から生まれる回転成分のズレ
+      param3: 0.0   #並進成分から生まれる並進成分のズレ
+      param4: 0.0   #回転成分から生まれる並進成分のズレ
+      param5: 0.01   #Xのズレ
+      param6: 0.01   #Yのズレ
+    initial_pose: [-5.45, 0.0, 0.0]  #初期位置[x,y,yaw]
+    tf_laser2robot: [0.4655,0.0,0.0,  3.14159,0.0,0.0]  #TF[x,y,z,r,p,y]
