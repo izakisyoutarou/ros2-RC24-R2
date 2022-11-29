@@ -1,14 +1,19 @@
 #include "icp_base_slam/icp_base_slam.hpp"
 
+namespace self_localization{
 IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", options) {}
 
 IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions &options)
-:  rclcpp::Node("icp_base_slam", options){
+:  rclcpp::Node("icp_base_slam", options) {
   RCLCPP_INFO(this->get_logger(), "START");
   declare_parameter("registration_method", "NDT");
   get_parameter("registration_method", registration_method_);
   declare_parameter("voxel_leaf_size", 1.);
   get_parameter("voxel_leaf_size", voxel_leaf_size_);
+  declare_parameter("laser_weight", 1.);
+  get_parameter("laser_weight", laser_weight_);
+  declare_parameter("odom_weight", 1.);
+  get_parameter("odom_weight", odom_weight_);
 
   declare_parameter("transformation_epsilon", 0.05);
   get_parameter("transformation_epsilon", transformation_epsilon_);
@@ -17,32 +22,29 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
   declare_parameter("ndt_step_size", 0.1);
   get_parameter("ndt_step_size", ndt_step_size_);
 
-  declare_parameter("maximum_iterations", 0);
+  declare_parameter("maximum_iterations", 1);
   get_parameter("maximum_iterations", maximum_iterations_);
-  declare_parameter("grid_centre_x", 0.0);
+  declare_parameter("grid_centre_x", -6.0);
   get_parameter("grid_centre_x", grid_centre_x_);
-  declare_parameter("grid_centre_y", 0.0);
+  declare_parameter("grid_centre_y", -6.0);
   get_parameter("grid_centre_y", grid_centre_y_);
-  declare_parameter("grid_extent_x", 0.0);
+  declare_parameter("grid_extent_x", 7.0);
   get_parameter("grid_extent_x", grid_extent_x_);
-  declare_parameter("grid_extent_y", 0.0);
+  declare_parameter("grid_extent_y", 13.0);
   get_parameter("grid_extent_y", grid_extent_y_);
-  declare_parameter("grid_step", 0.0);
+  declare_parameter("grid_step", 1.7);
   get_parameter("grid_step", grid_step_);
-  declare_parameter("optimization_step_size", 0.0);
+  declare_parameter("optimization_step_size", 0.3);
   get_parameter("optimization_step_size", optimization_step_size_);
-  declare_parameter("transformation_epsilon_2d", 0.0);
+  declare_parameter("transformation_epsilon_2d", 0.1);
   get_parameter("transformation_epsilon_2d", transformation_epsilon_2d_);
-  declare_parameter("map_voxel_leaf_size", 0.0);
+  declare_parameter("map_voxel_leaf_size", 0.3);
   get_parameter("map_voxel_leaf_size", map_voxel_leaf_size_);
 
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
   "scan", rclcpp::SensorDataQoS(),
   bind(&IcpBaseSlam::scan_callback, this, placeholders::_1));
-
-  odom_delay_subscriber = this->create_subscription<my_messages::msg::OdomDelay>(
-    "odom_delay", 10, bind(&IcpBaseSlam::odom_delay_callback, this, placeholders::_1));
 
   simulator_odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
     "gazebo_simulator/odom",
@@ -82,38 +84,49 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
 
   // voxel_grid_filter.setInputCloud(map_cloud_ptr);
   // voxel_grid_filter.filter(*map_filtered_cloud_ptr);
-
-  if(!use_gazebo_simulator){
-    pose.x = init_pose_x;
-    pose.y = init_pose_y;
+  if(use_gazebo_simulator){
+    last_scan_odom.x = init_pose_x;
+    last_scan_odom.y = init_pose_y;
   }
+  else{
+    odom.x = init_pose_x;
+    odom.y = init_pose_y;
+  }
+  // last_estimated.set_init();
+  last_estimated.x = init_pose_x;
+  last_estimated.y = init_pose_y;
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
-  current_scan_odom = odom;
+  time_start = chrono::system_clock::now();
+  double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
+  double dt_scan = current_scan_received_time - last_scan_received_time;
+  last_scan_received_time = current_scan_received_time;
+  if (dt_scan > 0.05 /* [sec] */) {
+    RCLCPP_WARN(this->get_logger(), "scan time interval is too large");
+  }
+
+  Pose current_scan_odom = estimated_odom;
   Pose scan_odom_motion = current_scan_odom - last_scan_odom; //前回scanからのオドメトリ移動量
   Pose predict = last_estimated + scan_odom_motion;  //前回の推定値にscan間オドメトリ移動量を足し、予測位置を計算
-  // RCLCPP_INFO(this->get_logger(), "current x->%f y->%f yaw->%f", current_scan_odom.x, current_scan_odom.y, current_scan_odom.yaw);
 
   //予測位置を基準にndtを実行
   double odom_to_lidar_length = 0.4;
-  double odom_to_lidar_x = odom_to_lidar_length * cos(current_scan_odom.yaw);
-  double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom.yaw);
+  double odom_to_lidar_x = odom_to_lidar_length * cos(predict.yaw);
+  double odom_to_lidar_y = odom_to_lidar_length * sin(predict.yaw);
 
   for(size_t i=0; i< msg->ranges.size(); ++i) {
     if(msg->ranges[i] > 30 || msg->ranges[i] < 0){msg->ranges[i] = 0;}
-    cloud.points[i].x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i + current_scan_odom.yaw) + current_scan_odom.x + odom_to_lidar_x;
-    cloud.points[i].y = msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i + current_scan_odom.yaw) + current_scan_odom.y + odom_to_lidar_y;
+    cloud.points[i].x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i + predict.yaw) + predict.x + odom_to_lidar_x;
+    cloud.points[i].y = msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i + predict.yaw) + predict.y + odom_to_lidar_y;
   }
 
   PclCloud::Ptr filtered_cloud_ptr(new PclCloud());
   PclCloud::Ptr cloud_ptr(new PclCloud(cloud));
-
-
   voxel_grid_filter.setInputCloud(cloud_ptr);
   voxel_grid_filter.filter(*filtered_cloud_ptr);
+
   PclCloud result;
-  time_start = chrono::system_clock::now();
   Eigen::Matrix4d transformation_matrix;
   if(registration_method_ == "NDT"){
     ndt.setInputSource(filtered_cloud_ptr);
@@ -125,66 +138,51 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
     ndt2d.align(result);
     transformation_matrix = ndt2d.getFinalTransformation().cast<double>();
   }
-  time_end = chrono::system_clock::now();
+
   Pose scan_trans;
-  scan_trans.x = transformation_matrix(0,3);
-  scan_trans.y = transformation_matrix(1,3);
+  scan_trans.x   = transformation_matrix(0,3);
+  scan_trans.y   = transformation_matrix(1,3);
   scan_trans.yaw = transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2);
-
-  ndt_estimated = predict + scan_trans;
-  Pose fused_pose;                       // 融合結果
-  Eigen::Matrix3d fused_cov;               // センサ融合後の共分散
-  double dt = 0.1;//**************odomの移動時間(scan取得時間の差)。time stampの差分ほしい*********************
-  // pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, fused_pose, fused_cov, dt, filtered_cloud_ptr, transformation_matrix);
-  if(0<ndt.getFinalNumIteration() && registration_method_ == "NDT"){
+  ndt_estimated = predict;
+  ndt_estimated += scan_trans;
+  if (ndt_estimated.yaw < -M_PI)
+    ndt_estimated.yaw += 2*M_PI;
+  else if (ndt_estimated.yaw >= M_PI)
+    ndt_estimated.yaw -= 2*M_PI;
+  Pose estimated;
+  pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, dt_scan, filtered_cloud_ptr, transformation_matrix, estimated);
+  RCLCPP_INFO(this->get_logger(), "estimated x->%f y->%f yaw->%f", estimated.x, estimated.y, estimated.yaw);
+  diff_estimated = estimated - current_scan_odom;
+  if(registration_method_ == "NDT"){
   //   RCLCPP_INFO(this->get_logger(), "trans x->%f y->%f yaw->%f°", transformation_matrix(0,3), transformation_matrix(1,3), radToDeg(transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2)));
-
   //   RCLCPP_INFO(this->get_logger(), "iteration num->%d", ndt.getFinalNumIteration());
-    RCLCPP_INFO(this->get_logger(), "Max iteration num->%d", max_iteration(ndt.getFinalNumIteration()));
+    // RCLCPP_INFO(this->get_logger(), "Max iteration num->%d", max_iteration(ndt.getFinalNumIteration()));
   //   RCLCPP_INFO(this->get_logger(), "step_size->%f", ndt.getStepSize());
   //   RCLCPP_INFO(this->get_logger(), "TransformationEpsilon->%f", ndt.getTransformationEpsilon());
   //   RCLCPP_INFO(this->get_logger(), "Max time->%d", max_time(chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count()));
     // RCLCPP_INFO(this->get_logger(), "time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
   }
-  last_scan_odom = current_scan_odom;
   last_estimated = estimated;
-    // global_cloud.points.resize(filtered_cloud_ptr->points.size());
-  // for(size_t i=0; i<filtered_cloud_ptr->points.size(); i++){
-  //   global_cloud.points[i].x = transformation_matrix(0,0)*filtered_cloud_ptr->points[i].x + transformation_matrix(0,1)*filtered_cloud_ptr->points[i].y + transformation_matrix(0,3);
-  //   global_cloud.points[i].y = transformation_matrix(1,0)*filtered_cloud_ptr->points[i].x + transformation_matrix(1,1)*filtered_cloud_ptr->points[i].y + transformation_matrix(1,3);
-  // }
-  // PclCloud::Ptr global_cloud_ptr(new PclCloud(global_cloud));
+  last_scan_odom = current_scan_odom;
   pointcloud2_view(filtered_cloud_ptr, input_elephant_cloud);
+  time_end = chrono::system_clock::now();
+  // RCLCPP_INFO(this->get_logger(), "time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
 }
 
 void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg){
+  double current_odom_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
+  double dt_odom = current_odom_received_time - last_odom_received_time;
+  last_odom_received_time = current_odom_received_time;
+  if (dt_odom > 0.03 /* [sec] */) {
+    RCLCPP_WARN(this->get_logger(), "odom time interval is too large");
+  }
   double yaw = quaternionToYaw(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
-  odom.x    = msg->pose.pose.position.x;
-  odom.y    = msg->pose.pose.position.y;
-  odom.yaw  = yaw;
-  // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f°", pose.x, pose.y, radToDeg(pose.yaw));
-}
-
-void IcpBaseSlam::odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg){
-  pose.x        += msg->x   - last_odom.x;
-  pose.y        += msg->y   - last_odom.y;
-  pose.yaw      += msg->yaw - last_odom.yaw;
-  last_odom.x   =  msg->x;
-  last_odom.y   =  msg->y;
-  last_odom.yaw =  msg->yaw;
-  // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f", pose.x, pose.y, pose.yaw);
-}
-
-void IcpBaseSlam::set_odom(double x, double y, double yaw){
-  odom.x=x;
-  odom.y=y;
-  odom.yaw=yaw;
-}
-
-void IcpBaseSlam::update_data(double trans_pose_x, double trans_pose_y, double trans_pose_yaw){
-  pose.x+=trans_pose_x;
-  pose.y+=trans_pose_y;
-  pose.yaw+=trans_pose_yaw;
+  diff_odom.x = msg->pose.pose.position.x - last_odom.x;
+  diff_odom.y = msg->pose.pose.position.y - last_odom.y;
+  diff_odom.yaw = yaw - last_odom.yaw;
+  odom += diff_odom;
+  last_odom = odom;
+  estimated_odom = odom + diff_estimated;
 }
 
 double IcpBaseSlam::quaternionToYaw(double x, double y, double z, double w){
@@ -344,30 +342,6 @@ double IcpBaseSlam::circle_model_y_dec(double point_x, double circle_y){
   return circle_y - sqrt(pow(R,2) - pow(point_x - circle_x, 2));
 }
 
-void IcpBaseSlam::input_cloud_view(PclCloud input_cloud){
-  pcl::visualization::PCLVisualizer viewer("input cloud");
-  viewer.setBackgroundColor(0,0,0);
-  pcl::visualization::PointCloudColorHandlerCustom<PointType> single_color(input_cloud.makeShared(), 0, 0, 255);
-  viewer.addPointCloud<PointType>(input_cloud.makeShared(), single_color, "all clouds");
-  while(!viewer.wasStopped()){
-    viewer.spinOnce(1);
-  }
-}
-
-void IcpBaseSlam::icp_cloud_view(PclCloud map_cloud, PclCloud input_cloud){
-  pcl::visualization::PCLVisualizer viewer("input cloud");
-  viewer.setBackgroundColor(0,0,0);
-  pcl::visualization::PointCloudColorHandlerCustom<PointType> elephant_color(map_cloud.makeShared(), 0, 0, 255);
-  viewer.addPointCloud<PointType>(map_cloud.makeShared(), elephant_color, "map clouds");
-  pcl::visualization::PointCloudColorHandlerCustom<PointType> laser_color(input_cloud.makeShared(), 0, 255, 0);
-  viewer.addPointCloud<PointType>(input_cloud.makeShared(), laser_color, "input clouds");
-  while(!viewer.wasStopped()){
-    viewer.spinOnce(1);
-  }
-}
-
-
-
 int IcpBaseSlam::max_time(int num){
   if(num > last_num_time){
     last_num_time = num;
@@ -380,4 +354,5 @@ int IcpBaseSlam::max_iteration(int num){
     last_num_iteration = num;
   }
   return last_num_iteration;
+}
 }
