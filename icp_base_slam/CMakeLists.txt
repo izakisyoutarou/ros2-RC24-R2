@@ -33,11 +33,11 @@ set(dependencies
 
 #add_library(${PROJECT_NAME} ${SRC_FILES})
 include_directories(icp_base_slam
-  include
   ${PCL_INCLUDE_DIRS}
 )
 add_library(icp_base_slam
   src/icp_base_slam.cpp
+  src/pose_fuser.cpp
 )
 target_compile_definitions(icp_base_slam
   PRIVATE "ICP_BASE_SLAM_LIBRARY"

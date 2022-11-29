@@ -5,11 +5,30 @@
 using namespace std;
 
 struct Pose{
-  double x;
-  double y;
-  double yaw;
+  double x = 0.0;
+  double y = 0.0;
+  double yaw = 0.0;
 
-  Pose():x(0.0),y(0.0),yaw(0.0){}
+  // Pose():x(0.0),y(0.0),yaw(0.0){}
+  Pose():Pose(0.0,0.0,0.0){}
+
+  Pose(double x, double y, double yaw){
+    this->x = x;
+    this->y = y;
+    this->yaw = yaw;
+  }
+
+  void set_val(double x, double y, double yaw) {
+    this->x = x;
+    this->y = y;
+    this->yaw = yaw;
+  }
+
+  void set_init(){
+    x = -5.5;
+    y = 0.0;
+    yaw = 0.0;
+  }
 
   void operator=(const Pose &other) {
     x   = other.x;
@@ -19,17 +38,17 @@ struct Pose{
 
   Pose operator-(const Pose &other){
     Pose pose;
-    pose.x   = x   - other.x;
-    pose.y   = y   - other.y;
-    pose.yaw = yaw - other.yaw;
+    pose.x   = this->x   - other.x;
+    pose.y   = this->y   - other.y;
+    pose.yaw = this->yaw - other.yaw;
     return pose;
   }
 
   Pose operator+(const Pose &other){
     Pose pose;
-    pose.x   = x   + other.x;
-    pose.y   = y   + other.y;
-    pose.yaw = yaw + other.yaw;
+    pose.x   = this->x   + other.x;
+    pose.y   = this->y   + other.y;
+    pose.yaw = this->yaw + other.yaw;
     return pose;
   }
 
