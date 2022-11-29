@@ -47,6 +47,7 @@ class Mcl2D : public rclcpp::Node {
         std::vector<double>vec_lasers_time;
 
         geometry_msgs::msg::Point latest_pose;
+        geometry_msgs::msg::Point initial_pose;
         rclcpp::Time observed_time;
 };
 

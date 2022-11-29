@@ -32,25 +32,29 @@ namespace mcl_2d{
 
         publisher_selfpose = this->create_publisher<geometry_msgs::msg::PointStamped>("self_pose", _qos);
 
-        int numOfParticle = 50;
+        /*パラメータ設定*/
+        auto numOfParticle = this->get_parameter("num_of_particle").as_int();
+        auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
+        auto pose_array = this->get_parameter("initial_pose").as_double_array();
+
+        this->initial_pose.x = pose_array[0];
+        this->initial_pose.y = pose_array[1];
+        this->initial_pose.z = pose_array[2];
+
         float odomCovariance[6] = {
-            0.0,    // Rotation to Rotation
-            0.0,    // Translation to Rotation
-            0.0,    // Translation to Translation
-            0.0,    // Rotation to Translation
-            0.01,   // X
-            0.01    // Y
+            (float)this->get_parameter("odom_convariance.param1").as_double(),     // Rotation to Rotation
+            (float)this->get_parameter("odom_convariance.param2").as_double(),     // Translation to Rotation
+            (float)this->get_parameter("odom_convariance.param3").as_double(),     // Translation to Translation
+            (float)this->get_parameter("odom_convariance.param4").as_double(),     // Rotation to Translation
+            (float)this->get_parameter("odom_convariance.param5").as_double(),     // X
+            (float)this->get_parameter("odom_convariance.param6").as_double()      // Y
         };
-        Eigen::Matrix4f tf_laser2robot;
-        tf_laser2robot << 1.0,    0,    0,0.4655, //gazebosim 0.425
-                            0, -1.0,    0,    0,
-                            0,    0,  1.0,    0,
-                            0,    0,    0,  1.0; // TF (laser frame to robot frame)
-        float randomX = -5.5f;
-        float randomY = 0.f;
-        float randomTheta = 0.f;
-        Eigen::Matrix4f initial_pose = tool::xyzrpy2eigen(randomX,randomY,0,0,0,randomTheta);
+        Eigen::Matrix4f tf_laser2robot = tool::xyzrpy2eigen(tf_array[0],tf_array[1],tf_array[2],tf_array[3],tf_array[4],tf_array[5]);
+        Eigen::Matrix4f initial_pose = tool::xyzrpy2eigen(pose_array[0],pose_array[1],0,0,0,pose_array[2]);
         mclocalizer.setup(numOfParticle, odomCovariance, tf_laser2robot, initial_pose);
+
+        // std::cout << tf_laser2robot << std::endl;
+        RCLCPP_INFO(this->get_logger(), "init particle = %d",numOfParticle);
     }
 
 
@@ -76,9 +80,6 @@ namespace mcl_2d{
                 vec_poses_time.erase(vec_poses_time.begin());
             }
         }
-
-        // RCLCPP_INFO(this->get_logger(), "pose size:%lf  laser size:%lf", vec_poses.size(), vec_lasers.size());
-        // RCLCPP_INFO(this->get_logger(), "POSE x:%lf  y:%lf  a:%lf", mclocalizer.x, mclocalizer.y, mclocalizer.angle);
 
         auto self_pose = std::make_shared<geometry_msgs::msg::PointStamped>();
         // self_pose->header.frame_id = "";
@@ -128,13 +129,14 @@ namespace mcl_2d{
         double yaw = (double)bytes_to_float(_candata);
 
         Eigen::Matrix4f eigenPose;
-        // tf2::Quaternion q(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
         tf2::Quaternion q;
         q.setRPY(0.0, 0.0, yaw);
         tf2::Matrix3x3 m(q);
 
-        //テスト補正
-        latest_pose.x += -5.5;
+        //試験補正
+        latest_pose.x += initial_pose.x;
+        latest_pose.y += initial_pose.y;
+        latest_pose.z += initial_pose.z;
         //ここまで
 
         eigenPose<< m[0][0], m[0][1], m[0][2], latest_pose.x,
@@ -145,10 +147,6 @@ namespace mcl_2d{
         tf2::Quaternion q_test;
         q_test.setRPY(M_PI, 0.0, 0.0);
         tf2::Matrix3x3 m_test(q_test);
-        // RCLCPP_INFO(this->get_logger(), "\n%lf  %lf  %lf\n %lf  %lf  %lf\n %lf  %lf  %lf\n"
-        // ,   m_test[0][0],m_test[0][1],m_test[0][2],
-        //     m_test[1][0],m_test[1][1],m_test[1][2],
-        //     m_test[2][0],m_test[2][1],m_test[2][2]);
 
         vec_poses.push_back(eigenPose);
         vec_poses_time.push_back(msg->header.stamp.sec + msg->header.stamp.nanosec*1e-9);
