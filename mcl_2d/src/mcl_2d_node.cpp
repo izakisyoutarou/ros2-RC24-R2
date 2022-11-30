@@ -37,10 +37,6 @@ namespace mcl_2d{
         auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
         auto pose_array = this->get_parameter("initial_pose").as_double_array();
 
-        this->initial_pose.x = pose_array[0];
-        this->initial_pose.y = pose_array[1];
-        this->initial_pose.z = pose_array[2];
-
         float odomCovariance[6] = {
             (float)this->get_parameter("odom_convariance.param1").as_double(),     // Rotation to Rotation
             (float)this->get_parameter("odom_convariance.param2").as_double(),     // Translation to Rotation
@@ -134,9 +130,9 @@ namespace mcl_2d{
         tf2::Matrix3x3 m(q);
 
         //試験補正
-        latest_pose.x += initial_pose.x;
-        latest_pose.y += initial_pose.y;
-        latest_pose.z += initial_pose.z;
+        // latest_pose.x += initial_pose.x;
+        // latest_pose.y += initial_pose.y;
+        // latest_pose.z += initial_pose.z;
         //ここまで
 
         eigenPose<< m[0][0], m[0][1], m[0][2], latest_pose.x,

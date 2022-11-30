@@ -27,6 +27,11 @@ int mcl::setup(const int numOfParticle, const float odomCovariance[6], const Eig
   this->tf_laser2robot = tf_laser2robot;
   this->initial_pose = initial_pose;
 
+  Eigen::VectorXf initial_xyzrpy = tool::eigen2xyzrpy(initial_pose);
+  x = initial_xyzrpy[0];
+  y = initial_xyzrpy[1];
+  angle = initial_xyzrpy[5];
+
   mapCenterX = 0; // [m]
   mapCenterY = 0; // [m]
   isOdomInitialized = false; //Will be true when first data incoming.
