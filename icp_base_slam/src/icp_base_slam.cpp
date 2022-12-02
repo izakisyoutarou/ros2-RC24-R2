@@ -6,13 +6,18 @@ IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", o
 IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions &options)
 :  rclcpp::Node("icp_base_slam", options) {
   RCLCPP_INFO(this->get_logger(), "START");
+  declare_parameter("plot_mode", true);
+  get_parameter("plot_mode", plot_mode_);
+  declare_parameter("use_gazebo_simulator", true);
+  get_parameter("use_gazebo_simulator", use_gazebo_simulator_);
+
   declare_parameter("registration_method", "NDT");
   get_parameter("registration_method", registration_method_);
   declare_parameter("voxel_leaf_size", 1.);
   get_parameter("voxel_leaf_size", voxel_leaf_size_);
   declare_parameter("laser_weight", 1.);
   get_parameter("laser_weight", laser_weight_);
-  declare_parameter("odom_weight", 1.);
+  declare_parameter("odom_weight", 10.);
   get_parameter("odom_weight", odom_weight_);
 
   declare_parameter("transformation_epsilon", 0.05);
@@ -52,10 +57,17 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
     std::bind(&IcpBaseSlam::simulator_odom_callback, this, std::placeholders::_1));
 
   pointcloud2_publisher = create_publisher<sensor_msgs::msg::PointCloud2>(
-    "filtered_cloud",rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
+    "self_localization/filtered_cloud",rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
 
   map_pointcloud2_publisher = create_publisher<sensor_msgs::msg::PointCloud2>(
-    "map_point_cloud",rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
+    "self_localization/map_point_cloud",rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
+
+  path_publisher = create_publisher<nav_msgs::msg::Path>(
+    "self_localization/path",rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
+
+  pose_publisher = create_publisher<geometry_msgs::msg::PoseStamped>(
+    "self_localization/pose",
+    rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
 
   cloud.points.resize(view_ranges/reso);
   input_elephant_cloud.points.resize(50000);
@@ -78,13 +90,7 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
   voxel_grid_filter.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
 
   create_elephant_map();
-  // map_voxel_grid_filter.setLeafSize(map_voxel_leaf_size, map_voxel_leaf_size, map_voxel_leaf_size);
-  // PclCloud::Ptr map_filtered_cloud_ptr(new PclCloud());
-  // PclCloud::Ptr map_cloud_ptr(new PclCloud(input_elephant_cloud));
-
-  // voxel_grid_filter.setInputCloud(map_cloud_ptr);
-  // voxel_grid_filter.filter(*map_filtered_cloud_ptr);
-  if(use_gazebo_simulator){
+  if(use_gazebo_simulator_){
     last_scan_odom.x = init_pose_x;
     last_scan_odom.y = init_pose_y;
   }
@@ -98,12 +104,17 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
-  time_start = chrono::system_clock::now();
+  scan_execution_time_start = chrono::system_clock::now();
+  if(scan_execution_time>25){
+    RCLCPP_WARN(this->get_logger(), "skip");
+    scan_execution_time=0;
+    return;
+  }
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
   if (dt_scan > 0.05 /* [sec] */) {
-    RCLCPP_WARN(this->get_logger(), "scan time interval is too large");
+    RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
   }
 
   Pose current_scan_odom = estimated_odom;
@@ -128,6 +139,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
   PclCloud result;
   Eigen::Matrix4d transformation_matrix;
+  align_time_start = chrono::system_clock::now();
   if(registration_method_ == "NDT"){
     ndt.setInputSource(filtered_cloud_ptr);
     ndt.align(result);
@@ -138,6 +150,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
     ndt2d.align(result);
     transformation_matrix = ndt2d.getFinalTransformation().cast<double>();
   }
+  align_time_end = chrono::system_clock::now();
 
   Pose scan_trans;
   scan_trans.x   = transformation_matrix(0,3);
@@ -145,13 +158,11 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   scan_trans.yaw = transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2);
   ndt_estimated = predict;
   ndt_estimated += scan_trans;
-  if (ndt_estimated.yaw < -M_PI)
-    ndt_estimated.yaw += 2*M_PI;
-  else if (ndt_estimated.yaw >= M_PI)
-    ndt_estimated.yaw -= 2*M_PI;
+  if (ndt_estimated.yaw < -M_PI) ndt_estimated.yaw += 2*M_PI;
+  else if (ndt_estimated.yaw >= M_PI) ndt_estimated.yaw -= 2*M_PI;
   Pose estimated;
-  pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, dt_scan, filtered_cloud_ptr, transformation_matrix, estimated);
-  RCLCPP_INFO(this->get_logger(), "estimated x->%f y->%f yaw->%f", estimated.x, estimated.y, estimated.yaw);
+  pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, dt_scan, filtered_cloud_ptr, transformation_matrix, estimated, laser_weight_, odom_weight_);
+  // RCLCPP_INFO(this->get_logger(), "estimated x->%f y->%f yaw->%f", estimated.x, estimated.y, estimated.yaw);
   diff_estimated = estimated - current_scan_odom;
   if(registration_method_ == "NDT"){
   //   RCLCPP_INFO(this->get_logger(), "trans x->%f y->%f yaw->%f°", transformation_matrix(0,3), transformation_matrix(1,3), radToDeg(transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2)));
@@ -164,9 +175,13 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   }
   last_estimated = estimated;
   last_scan_odom = current_scan_odom;
-  pointcloud2_view(filtered_cloud_ptr, input_elephant_cloud);
-  time_end = chrono::system_clock::now();
-  // RCLCPP_INFO(this->get_logger(), "time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
+  if(plot_mode_) pointcloud2_view(filtered_cloud_ptr, input_elephant_cloud, estimated);
+
+  scan_execution_time_end = chrono::system_clock::now();
+  scan_execution_time = chrono::duration_cast<chrono::milliseconds>(scan_execution_time_start-scan_execution_time_end).count();
+  RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
+  RCLCPP_INFO(this->get_logger(), "align time         ->%d", chrono::duration_cast<chrono::milliseconds>(align_time_end-align_time_start).count());
+  // RCLCPP_INFO(this->get_logger(), "fuse time          ->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
 }
 
 void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg){
@@ -183,6 +198,9 @@ void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedP
   odom += diff_odom;
   last_odom = odom;
   estimated_odom = odom + diff_estimated;
+  // RCLCPP_INFO(this->get_logger(), "odom           x->%f y->%f yaw->%f", odom.x, odom.y, odom.yaw);
+  // RCLCPP_INFO(this->get_logger(), "estimated_odom x->%f y->%f yaw->%f", estimated_odom.x, estimated_odom.y, estimated_odom.yaw);
+  if(plot_mode_) path_view(estimated_odom, msg);
 }
 
 double IcpBaseSlam::quaternionToYaw(double x, double y, double z, double w){
@@ -192,13 +210,35 @@ double IcpBaseSlam::quaternionToYaw(double x, double y, double z, double w){
 }
 
 void IcpBaseSlam::print4x4Matrix (const Eigen::Matrix4d & matrix){
-  RCLCPP_INFO(this->get_logger(), "    | %3.6f %3.6f %3.6f |", matrix(0,0), matrix(0,1), matrix(0,2));
-  RCLCPP_INFO(this->get_logger(), "R = | %3.6f %3.6f %3.6f |", matrix(1,0), matrix(1,1), matrix(1,2));
-  RCLCPP_INFO(this->get_logger(), "    | %3.6f %3.6f %3.6f |", matrix(2,0), matrix(2,1), matrix(2,2));
+  RCLCPP_INFO(this->get_logger(), "    | %3.6f %3.6f %3.6f |",   matrix(0,0), matrix(0,1), matrix(0,2));
+  RCLCPP_INFO(this->get_logger(), "R = | %3.6f %3.6f %3.6f |",   matrix(1,0), matrix(1,1), matrix(1,2));
+  RCLCPP_INFO(this->get_logger(), "    | %3.6f %3.6f %3.6f |",   matrix(2,0), matrix(2,1), matrix(2,2));
   RCLCPP_INFO(this->get_logger(), "t = < %3.6f, %3.6f, %3.6f >", matrix(0,3), matrix(1,3), matrix(2,3));
 }
 
-void IcpBaseSlam::pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud){
+void IcpBaseSlam::path_view(const Pose &estimate_point, const nav_msgs::msg::Odometry::SharedPtr msg){
+  Eigen::Quaterniond quat_eig =
+    Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()) *
+    Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
+    Eigen::AngleAxisd(estimate_point.yaw, Eigen::Vector3d::UnitZ());
+
+  geometry_msgs::msg::Quaternion quat_msg = tf2::toMsg(quat_eig);
+  corrent_pose_stamped.header.stamp = msg->header.stamp;
+  corrent_pose_stamped.header.frame_id = "map";
+  corrent_pose_stamped.pose.position.x = estimate_point.x;
+  corrent_pose_stamped.pose.position.y = estimate_point.y;
+  corrent_pose_stamped.pose.position.z = 0.0;
+  corrent_pose_stamped.pose.orientation = quat_msg;
+
+  path.header.stamp = msg->header.stamp;
+  path.header.frame_id = "map";
+  path.poses.push_back(corrent_pose_stamped);
+  // RCLCPP_INFO(this->get_logger(), "t->%d x->%3.3f y->%3.3f", msg->header.stamp.sec, corrent_pose_stamped.pose.position.x , corrent_pose_stamped.pose.position.y);
+  pose_publisher->publish(corrent_pose_stamped);
+  path_publisher->publish(path);
+}
+
+void IcpBaseSlam::pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud, const Pose estimated){
   sensor_msgs::msg::PointCloud2::SharedPtr msg_ptr(new sensor_msgs::msg::PointCloud2);
   pcl::toROSMsg(*cloud_ptr, *msg_ptr);
   msg_ptr->header.frame_id = "map";
@@ -206,6 +246,7 @@ void IcpBaseSlam::pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud){
   sensor_msgs::msg::PointCloud2::SharedPtr map_msg_ptr(new sensor_msgs::msg::PointCloud2);
   pcl::toROSMsg(map_cloud, *map_msg_ptr);
   map_msg_ptr->header.frame_id = "map";
+
   map_pointcloud2_publisher->publish(*map_msg_ptr);
 }
 

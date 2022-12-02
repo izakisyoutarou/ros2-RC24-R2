@@ -16,6 +16,10 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+
+#include <tf2_eigen/tf2_eigen.h>
 
 #include "config.hpp"
 #include "icp_base_slam/pose_fuser.hpp"
@@ -45,7 +49,8 @@ private:
   double circle_model_y_dec(double point_x, double circle_y);
   void create_elephant_map();
   void print4x4Matrix (const Eigen::Matrix4d & matrix);
-  void pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud);
+  void pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud, const Pose estimated);
+  void path_view(const Pose &estimate_point, const nav_msgs::msg::Odometry::SharedPtr msg);
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
@@ -64,13 +69,17 @@ private:
   pcl::VoxelGrid<PointType> voxel_grid_filter;
   pcl::VoxelGrid<PointType> map_voxel_grid_filter;
 
-
-  chrono::system_clock::time_point time_start, time_end; // 型は auto で可
+  chrono::system_clock::time_point time_start, time_end, scan_execution_time_start, scan_execution_time_end, align_time_start, align_time_end, fuse_time_start, fuse_time_end;
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr simulator_odom_subscriber;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pointcloud2_publisher;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher;
+
+  nav_msgs::msg::Path path;
+  geometry_msgs::msg::PoseStamped corrent_pose_stamped;
 
   int last_num_time=0;
   int last_num_iteration=0;
@@ -78,6 +87,7 @@ private:
   double init_pose_y = 0.0;
   double last_scan_received_time=0.0;
   double last_odom_received_time=0.0;
+  int scan_execution_time=0;
 
   Pose init;
   Pose odom;
@@ -123,8 +133,7 @@ private:
   double laser_weight_;
   double odom_weight_;
 
-  bool use_odom{false};
-  bool use_gazebo_simulator{true};
-  bool init_flag{true};
+  bool plot_mode_{true};
+  bool use_gazebo_simulator_{true};
 };
 }
