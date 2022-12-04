@@ -3,14 +3,14 @@
 vector<const LaserPoint*> current_points;   //対応がとれた現在スキャンの点群
 vector<const LaserPoint*> reference_points;   //対応がとれた参照スキャンの点群
 
-void PoseFuser::fuse_pose(const Pose &ndt_estimated, const Pose &scan_odom_motion, const Pose &predict, const double dt_scan, const PclCloud::Ptr current_cloud, const Eigen::Matrix4d transformation_matrix, Pose &estimated){
+void PoseFuser::fuse_pose(const Pose &ndt_estimated, const Pose &scan_odom_motion, const Pose &predict, const double dt_scan, const PclCloud::Ptr current_cloud, const Eigen::Matrix4d transformation_matrix, Pose &estimated, double laser_weight_, double odom_weight_){
   current_points.clear();
   reference_points.clear();
   NormalVector normal_vector = find_correspondence(current_cloud, transformation_matrix, current_points, reference_points);
   Eigen::Matrix2d ndt_cov;  //ndtの共分散行列
-  double ratio = calculate_ndt_covariance(ndt_estimated, ndt_cov, transformation_matrix, current_points, reference_points, normal_vector);
+  double ratio = calculate_ndt_covariance(ndt_estimated, ndt_cov, transformation_matrix, current_points, reference_points, normal_vector, laser_weight_);
   Eigen::Matrix2d scan_odom_motion_cov;
-  calculate_motion_covariance(scan_odom_motion, dt_scan, scan_odom_motion_cov);  // オドメトリで得た移動量の共分散
+  calculate_motion_covariance(scan_odom_motion, dt_scan, scan_odom_motion_cov, odom_weight_);  // オドメトリで得た移動量の共分散
   Eigen::Matrix2d rotate_scan_odom_motion_cov;
   rotate_covariance(ndt_estimated, scan_odom_motion_cov, rotate_scan_odom_motion_cov);
   Eigen::Vector2d mu1(ndt_estimated.x, ndt_estimated.y);
@@ -106,7 +106,7 @@ LaserPoint* PoseFuser::find_closest_point_in_voxel(PclCloud map_cloud, LaserPoin
   return closest;
 }
 
-double PoseFuser::calculate_ndt_covariance(const Pose &ndt_estimated, Eigen::Matrix2d &ndt_cov, const Eigen::Matrix4d transformation_matrix, vector<const LaserPoint*> &current_points, vector<const LaserPoint*> &reference_points, NormalVector normal_vector){
+double PoseFuser::calculate_ndt_covariance(const Pose &ndt_estimated, Eigen::Matrix2d &ndt_cov, const Eigen::Matrix4d transformation_matrix, vector<const LaserPoint*> &current_points, vector<const LaserPoint*> &reference_points, NormalVector normal_vector, double laser_weight_){
   double dd = 0.00001;  //数値微分の刻み
   double da = 0.00001;  //数値微分の刻み
   vector<double> Jx; //ヤコビ行列のxの列
@@ -118,7 +118,6 @@ double PoseFuser::calculate_ndt_covariance(const Pose &ndt_estimated, Eigen::Mat
     double vertical_distance_y   = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x,    ndt_estimated.y+dd, ndt_estimated.yaw, normal_vector);
     Jx.push_back((vertical_distance_x - vertical_distance) / dd);
     Jy.push_back((vertical_distance_y - vertical_distance) / dd);
-    printf("vertical_distance->%f x->%f y->%f\n", vertical_distance, vertical_distance_x, vertical_distance_y);
   }
   // ヘッセ行列の近似J^TJの計算
   Eigen::Matrix2d hes = Eigen::Matrix2d::Zero(2,2);          // 近似ヘッセ行列。0で初期化
@@ -127,25 +126,16 @@ double PoseFuser::calculate_ndt_covariance(const Pose &ndt_estimated, Eigen::Mat
     hes(0,1) += Jx[i] * Jy[i];
     hes(1,1) += Jy[i] * Jy[i];
   }
-  printf("hessian\n");
-  printf("| %3.3f %3.3f %3.3f %3.3f |\n", hes(0,0) , hes(0,1),hes(1,0), hes(1,1));
   // J^TJが対称行列であることを利用
   hes(1,0) = hes(0,1);
   //逆行列がinfになることを防ぐ
   if(round(hes(0,0)*hes(1,1)) == round(hes(0,1)*hes(1,0))) hes(0,0)+=1;
-  printf("| %3.3f %3.3f %3.3f %3.3f |\n", hes(0,0) , hes(0,1),hes(1,0), hes(1,1));
-
   ndt_cov = svdInverse(hes);
   // ndt_cov = hes.inverse();
-  printf("ndt_cov\n");
-  printf("| %3.6f %3.6f %3.6f |\n", ndt_cov(0,0) , ndt_cov(0,1), ndt_cov(1,1));
   // double vals[2], vec1[2], vec2[2];
   // double ratio = calEigen(ndt_cov, vals, vec1, vec2);            // 固有値計算して、退化具合を調べる
   double ratio=0.0;
-  // // 必要に応じて共分散行列のスケールを調整する
-  // //  double kk = 1;          // 退化で極端にずれる場合
-  double kk = 0.1;       // 通常
-  ndt_cov *= kk;
+  ndt_cov *= laser_weight_;
   return(ratio);
 }
 
@@ -155,7 +145,7 @@ double PoseFuser::calculate_vertical_distance(const LaserPoint* current, const L
   return (x_-reference->x)*normal_vector.normalize_x + (y_-reference->y)*normal_vector.normalize_y;
 }
 
-void PoseFuser::calculate_motion_covariance(const Pose &scan_odom_motion, const double dt_scan, Eigen::Matrix2d &scan_odom_motion_cov){
+void PoseFuser::calculate_motion_covariance(const Pose &scan_odom_motion, const double dt_scan, Eigen::Matrix2d &scan_odom_motion_cov, double odom_weight_){
   double dis = sqrt(scan_odom_motion.x*scan_odom_motion.x + scan_odom_motion.y*scan_odom_motion.y);   // 移動距離
   double vt = dis/dt_scan;                    // 並進速度[m/s]
   double vthre = 0.02;                   // vtの下限値。同期ずれで0になる場合の対処
@@ -168,9 +158,7 @@ void PoseFuser::calculate_motion_covariance(const Pose &scan_odom_motion, const 
   C1(0,0) = 0.001*dx*dx;                 // 並進成分x
   C1(1,1) = 0.005*dy*dy;                 // 並進成分y
   // スケール調整
-//  double kk = 100;                     // オドメトリのずれが大きい場合
-  double kk = 10;                         // 通常
-  scan_odom_motion_cov = kk*C1;
+  scan_odom_motion_cov = odom_weight_*C1;
   // 確認用
   // double vals[2], vec1[2], vec2[2];
   // calEigen(scan_odom_motion_cov, vals, vec1, vec2);
@@ -194,12 +182,6 @@ double PoseFuser::fuse(const Eigen::Vector2d &mu1, const Eigen::Matrix2d &cv1,  
   Eigen::Matrix2d IC2 = svdInverse(cv2);
   Eigen::Matrix2d IC = IC1 + IC2;
   cv = svdInverse(IC);
-  printf("cv1->%f\n", cv1(0,0));
-  printf("cv2->%f\n", cv2(0,0));
-  printf("IC1->%f\n", IC1(0,0));
-  printf("IC2->%f\n", IC2(0,0));
-  printf("IC ->%f\n", IC(0,0));
-  printf("cv ->%f\n", cv(0,0));
 
   // 平均の融合
   Eigen::Vector2d nu1 = IC1*mu1;
@@ -299,4 +281,8 @@ void PoseFuser::calEigen2D( double (*mat)[2], double *vals, double *vec1, double
   double prod = vec1[0]*vec2[0] + vec1[1]*vec2[1];
   printf("prod=%g\n", prod);
 */
+}
+void PoseFuser::print2x2Matrix (const Eigen::Matrix2d & matrix){
+  printf("| %3.3f %3.3f |\n", matrix(0,0), matrix(0,1));
+  printf("| %3.3f %3.3f |\n", matrix(1,0), matrix(1,1));
 }

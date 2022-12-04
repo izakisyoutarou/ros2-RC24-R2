@@ -1,7 +1,11 @@
 icp_base_slam:
   ros__parameters:
-    registration_method: "NDT"
+    plot_mode: true
+    use_gazebo_simulator: true
+    registration_method: "NDT2D"
     voxel_leaf_size: 1.0
+    laser_weight: 1.0 # 退化で極端にずれる場合は=1,通常=0.1
+    odom_weight: 1.0 # オドメトリのずれが大きい場合=100,通常=10
 
     #ndt
     transformation_epsilon: 0.05
