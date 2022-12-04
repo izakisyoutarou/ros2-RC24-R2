@@ -21,6 +21,7 @@ int main(int argc, char * argv[]){
     auto icp_base_slam = std::make_shared<IcpBaseSlam>();
     // exec.add_node(mcl_2d_node);
 
+
     exec.spin();
     rclcpp::shutdown();
     return 0;
