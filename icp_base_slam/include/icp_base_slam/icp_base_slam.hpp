@@ -28,6 +28,7 @@
 
 using PointType = pcl::PointXYZ;
 using PclCloud = pcl::PointCloud<PointType>;
+
 namespace self_localization{
 class IcpBaseSlam : public rclcpp::Node{
 public:
@@ -51,7 +52,6 @@ private:
   void print4x4Matrix (const Eigen::Matrix4d & matrix);
   void pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud, const Pose estimated);
   void path_view(const Pose &estimate_point, const nav_msgs::msg::Odometry::SharedPtr msg);
-
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   double quaternionToYaw(double x, double y, double z, double w);

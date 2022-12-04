@@ -4,6 +4,7 @@
 #include <iostream>
 
 int main(int argc, char * argv[]){
+<<<<<<< HEAD
     rclcpp::init(argc,argv);
     rclcpp::executors::MultiThreadedExecutor exec;
 

@@ -5,7 +5,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -fPIC)
 endif()
 
+
 find_package(icp_base_slam REQUIRED)
+
 
 add_executable(main_executor
         src/main.cpp
@@ -21,7 +23,6 @@ target_include_directories(main_executor
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         )
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

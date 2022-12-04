@@ -192,6 +192,7 @@ void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedP
     RCLCPP_WARN(this->get_logger(), "odom time interval is too large");
   }
   double yaw = quaternionToYaw(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
+<<<<<<< HEAD
   diff_odom.x = msg->pose.pose.position.x - last_odom.x;
   diff_odom.y = msg->pose.pose.position.y - last_odom.y;
   diff_odom.yaw = yaw - last_odom.yaw;
@@ -201,6 +202,34 @@ void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedP
   // RCLCPP_INFO(this->get_logger(), "odom           x->%f y->%f yaw->%f", odom.x, odom.y, odom.yaw);
   // RCLCPP_INFO(this->get_logger(), "estimated_odom x->%f y->%f yaw->%f", estimated_odom.x, estimated_odom.y, estimated_odom.yaw);
   if(plot_mode_) path_view(estimated_odom, msg);
+=======
+  odom.x    = msg->pose.pose.position.x;
+  odom.y    = msg->pose.pose.position.y;
+  odom.yaw  = yaw;
+  // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f°", pose.x, pose.y, radToDeg(pose.yaw));
+}
+
+// void IcpBaseSlam::odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg){
+//   pose.x        += msg->x   - last_odom.x;
+//   pose.y        += msg->y   - last_odom.y;
+//   pose.yaw      += msg->yaw - last_odom.yaw;
+//   last_odom.x   =  msg->x;
+//   last_odom.y   =  msg->y;
+//   last_odom.yaw =  msg->yaw;
+//   // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f", pose.x, pose.y, pose.yaw);
+// }
+
+void IcpBaseSlam::set_odom(double x, double y, double yaw){
+  odom.x=x;
+  odom.y=y;
+  odom.yaw=yaw;
+}
+
+void IcpBaseSlam::update_data(double trans_pose_x, double trans_pose_y, double trans_pose_yaw){
+  pose.x+=trans_pose_x;
+  pose.y+=trans_pose_y;
+  pose.yaw+=trans_pose_yaw;
+>>>>>>> stash@{1}
 }
 
 double IcpBaseSlam::quaternionToYaw(double x, double y, double z, double w){
