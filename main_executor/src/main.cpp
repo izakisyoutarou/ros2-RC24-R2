@@ -4,7 +4,6 @@
 #include <iostream>
 
 int main(int argc, char * argv[]){
-<<<<<<< HEAD
     rclcpp::init(argc,argv);
     rclcpp::executors::MultiThreadedExecutor exec;
 
@@ -13,7 +12,7 @@ int main(int argc, char * argv[]){
     nodes_option.automatically_declare_parameters_from_overrides(true);
 
     // auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
-    auto icp_base_slam = std::make_shared<IcpBaseSlam>();
+    auto icp_base_slam = std::make_shared<self_localization::IcpBaseSlam>(nodes_option);
     // auto mcl_2d_node = std::make_shared<mcl_2d::Mcl2D>(nodes_option);
 
     // exec.add_node(socketcan_node);

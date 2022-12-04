@@ -15,20 +15,20 @@ def generate_launch_description():
         'main_params.yaml'
     )
     # URG起動ファイルのパス設定
-    urg_launch_path = os.path.join(
-        get_package_share_directory('urg_node2'),
-        'launch',
-        'urg_node2.launch.py'
-    )
+    # urg_launch_path = os.path.join(
+    #     get_package_share_directory('urg_node2'),
+    #     'launch',
+    #     'urg_node2.launch.py'
+    # )
 
     # 起動パラメータファイルのロード
     with open(config_file_path, 'r') as file:
         launch_params = yaml.safe_load(file)['launch']['ros__parameters']
 
     # URG起動の作成
-    urg_launch = launch.actions.IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([urg_launch_path])
-    )
+    # urg_launch = launch.actions.IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource([urg_launch_path])
+    # )
 
     # 起動エンティティクラスの作成
     launch_discription = LaunchDescription()
@@ -41,7 +41,7 @@ def generate_launch_description():
     # メイン実行機
     main_exec_node = Node(
         package = 'main_executor',
-        executable = 'main_exec',
+        executable = 'main_executor',
         parameters = [config_file_path],
         output='screen'
     )

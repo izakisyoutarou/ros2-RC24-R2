@@ -36,7 +36,7 @@ public:
   explicit IcpBaseSlam(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   // explicit IcpBaseSlam(const rclcpp::NodeOptions& options);
   ICP_BASE_SLAM_PUBLIC
-  explicit IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+  explicit IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
   double degToRad(double degree){return degree*M_PI/180;}
   double radToDeg(double rad){return rad*180/M_PI;}
@@ -114,21 +114,8 @@ private:
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
   std::string registration_method_;
-  //ndt ndt_resolutionとvoxel_leaf_sizeは密接な関係あり
-  double transformation_epsilon_;//最新の変換とそのひとつ前の変換の差の閾値。
-  double ndt_resolution_;  //ndtボクセルサイズ
-  double ndt_step_size_;  //探索領域を区切るサイズ
   double voxel_leaf_size_; //ダウンサンプリングボクセル
 
-  int maximum_iterations_;
-  double grid_centre_x_;
-  double grid_centre_y_;
-  double grid_extent_x_;
-  double grid_extent_y_;
-  double grid_step_;
-  double optimization_step_size_;
-  double transformation_epsilon_2d_;
-  double map_voxel_leaf_size_;
 
   double laser_weight_;
   double odom_weight_;

@@ -3,49 +3,15 @@
 namespace self_localization{
 IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", options) {}
 
-IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions &options)
-:  rclcpp::Node("icp_base_slam", options) {
+IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions &options)
+:  rclcpp::Node("icp_base_slam", name_space, options) {
   RCLCPP_INFO(this->get_logger(), "START");
-  declare_parameter("plot_mode", true);
-  get_parameter("plot_mode", plot_mode_);
-  declare_parameter("use_gazebo_simulator", true);
-  get_parameter("use_gazebo_simulator", use_gazebo_simulator_);
-
-  declare_parameter("registration_method", "NDT");
-  get_parameter("registration_method", registration_method_);
-  declare_parameter("voxel_leaf_size", 1.);
-  get_parameter("voxel_leaf_size", voxel_leaf_size_);
-  declare_parameter("laser_weight", 1.);
-  get_parameter("laser_weight", laser_weight_);
-  declare_parameter("odom_weight", 10.);
-  get_parameter("odom_weight", odom_weight_);
-
-  declare_parameter("transformation_epsilon", 0.05);
-  get_parameter("transformation_epsilon", transformation_epsilon_);
-  declare_parameter("ndt_resolution", 1.7);
-  get_parameter("ndt_resolution", ndt_resolution_);
-  declare_parameter("ndt_step_size", 0.1);
-  get_parameter("ndt_step_size", ndt_step_size_);
-
-  declare_parameter("maximum_iterations", 1);
-  get_parameter("maximum_iterations", maximum_iterations_);
-  declare_parameter("grid_centre_x", -6.0);
-  get_parameter("grid_centre_x", grid_centre_x_);
-  declare_parameter("grid_centre_y", -6.0);
-  get_parameter("grid_centre_y", grid_centre_y_);
-  declare_parameter("grid_extent_x", 7.0);
-  get_parameter("grid_extent_x", grid_extent_x_);
-  declare_parameter("grid_extent_y", 13.0);
-  get_parameter("grid_extent_y", grid_extent_y_);
-  declare_parameter("grid_step", 1.7);
-  get_parameter("grid_step", grid_step_);
-  declare_parameter("optimization_step_size", 0.3);
-  get_parameter("optimization_step_size", optimization_step_size_);
-  declare_parameter("transformation_epsilon_2d", 0.1);
-  get_parameter("transformation_epsilon_2d", transformation_epsilon_2d_);
-  declare_parameter("map_voxel_leaf_size", 0.3);
-  get_parameter("map_voxel_leaf_size", map_voxel_leaf_size_);
-
+  plot_mode_ = this->get_parameter("plot_mode").as_bool();
+  use_gazebo_simulator_ = this->get_parameter("use_gazebo_simulator").as_bool();
+  registration_method_ = this->get_parameter("registration_method").as_string();
+  voxel_leaf_size_ = this->get_parameter("voxel_leaf_size").as_double();
+  laser_weight_ = this->get_parameter("laser_weight").as_double();
+  odom_weight_ = this->get_parameter("odom_weight").as_double();
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
   "scan", rclcpp::SensorDataQoS(),
@@ -74,18 +40,18 @@ IcpBaseSlam::IcpBaseSlam(const std::string& node_name, const rclcpp::NodeOptions
 
   if(registration_method_ == "NDT"){
     RCLCPP_INFO(this->get_logger(), "method NDT");
-    ndt.setTransformationEpsilon(transformation_epsilon_);
-    ndt.setResolution(ndt_resolution_);
-    ndt.setStepSize (ndt_step_size_);    //ニュートン法のステップサイズ
+    ndt.setTransformationEpsilon(0.05);
+    ndt.setResolution(1.7);
+    ndt.setStepSize (0.1);    //ニュートン法のステップサイズ
   }
   else{
     RCLCPP_INFO(this->get_logger(), "method NDT2D");
-    ndt2d.setMaximumIterations (maximum_iterations_);
-    ndt2d.setGridCentre (Eigen::Vector2f (grid_centre_x_,grid_centre_y_));
-    ndt2d.setGridExtent (Eigen::Vector2f (grid_extent_x_,grid_extent_y_));
-    ndt2d.setGridStep (Eigen::Vector2f (grid_step_,grid_step_));
-    ndt2d.setOptimizationStepSize (Eigen::Vector3d (optimization_step_size_,optimization_step_size_,0.1));
-    ndt2d.setTransformationEpsilon (transformation_epsilon_2d_);
+    ndt2d.setMaximumIterations (1);
+    ndt2d.setGridCentre (Eigen::Vector2f (-6.0,-6.0));
+    ndt2d.setGridExtent (Eigen::Vector2f (7.0,13.0));
+    ndt2d.setGridStep (Eigen::Vector2f (1.7,1.7));
+    ndt2d.setOptimizationStepSize (Eigen::Vector3d (0.3,0.3,0.1));
+    ndt2d.setTransformationEpsilon (0.1);
   }
   voxel_grid_filter.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
 
@@ -192,7 +158,6 @@ void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedP
     RCLCPP_WARN(this->get_logger(), "odom time interval is too large");
   }
   double yaw = quaternionToYaw(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
-<<<<<<< HEAD
   diff_odom.x = msg->pose.pose.position.x - last_odom.x;
   diff_odom.y = msg->pose.pose.position.y - last_odom.y;
   diff_odom.yaw = yaw - last_odom.yaw;
@@ -202,34 +167,6 @@ void IcpBaseSlam::simulator_odom_callback(const nav_msgs::msg::Odometry::SharedP
   // RCLCPP_INFO(this->get_logger(), "odom           x->%f y->%f yaw->%f", odom.x, odom.y, odom.yaw);
   // RCLCPP_INFO(this->get_logger(), "estimated_odom x->%f y->%f yaw->%f", estimated_odom.x, estimated_odom.y, estimated_odom.yaw);
   if(plot_mode_) path_view(estimated_odom, msg);
-=======
-  odom.x    = msg->pose.pose.position.x;
-  odom.y    = msg->pose.pose.position.y;
-  odom.yaw  = yaw;
-  // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f°", pose.x, pose.y, radToDeg(pose.yaw));
-}
-
-// void IcpBaseSlam::odom_delay_callback(const my_messages::msg::OdomDelay::SharedPtr msg){
-//   pose.x        += msg->x   - last_odom.x;
-//   pose.y        += msg->y   - last_odom.y;
-//   pose.yaw      += msg->yaw - last_odom.yaw;
-//   last_odom.x   =  msg->x;
-//   last_odom.y   =  msg->y;
-//   last_odom.yaw =  msg->yaw;
-//   // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f yaw->%f", pose.x, pose.y, pose.yaw);
-// }
-
-void IcpBaseSlam::set_odom(double x, double y, double yaw){
-  odom.x=x;
-  odom.y=y;
-  odom.yaw=yaw;
-}
-
-void IcpBaseSlam::update_data(double trans_pose_x, double trans_pose_y, double trans_pose_yaw){
-  pose.x+=trans_pose_x;
-  pose.y+=trans_pose_y;
-  pose.yaw+=trans_pose_yaw;
->>>>>>> stash@{1}
 }
 
 double IcpBaseSlam::quaternionToYaw(double x, double y, double z, double w){
@@ -357,7 +294,7 @@ void IcpBaseSlam::create_elephant_map(){
     pcl::VoxelGrid<PointType> voxel_grid_filter_map;
     pcl::PointCloud<PointType>::Ptr filtered_elephant_cloud_ptr(new pcl::PointCloud<PointType>());
     pcl::PointCloud<PointType>::Ptr input_elephant_cloud_ptr(new pcl::PointCloud<PointType>(input_elephant_cloud));
-    voxel_grid_filter_map.setLeafSize(map_voxel_leaf_size_, map_voxel_leaf_size_, map_voxel_leaf_size_);
+    voxel_grid_filter_map.setLeafSize(0.3, 0.3, 0.3);
     voxel_grid_filter_map.setInputCloud(input_elephant_cloud_ptr);
     voxel_grid_filter_map.filter(*filtered_elephant_cloud_ptr);
     ndt2d.setInputTarget(filtered_elephant_cloud_ptr);
