@@ -9,12 +9,16 @@ int main(int argc, char * argv[]){
     rclcpp::init(argc,argv);
     rclcpp::executors::MultiThreadedExecutor exec;
 
-    // auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>();
-    // auto mcl_2d_node = std::make_shared<mcl_2d::Mcl2D>();
-    auto icp_base_slam = std::make_shared<IcpBaseSlam>();
-    exec.add_node(icp_base_slam);
+    rclcpp::NodeOptions nodes_option;
+    nodes_option.allow_undeclared_parameters(true);
+    nodes_option.automatically_declare_parameters_from_overrides(true);
 
-    // exec.add_node(socketcan_node);
+    auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
+    auto icp_base_slam = std::make_shared<IcpBaseSlam>();
+    // auto mcl_2d_node = std::make_shared<mcl_2d::Mcl2D>(nodes_option);
+
+    exec.add_node(socketcan_node);
+    auto icp_base_slam = std::make_shared<IcpBaseSlam>();
     // exec.add_node(mcl_2d_node);
 
     exec.spin();

@@ -6,3 +6,6 @@ sudo apt install python3-rosdep2 -y
 sudo rosdep init
 rosdep update
 rosdep install -r -y -i --from-paths .
+
+sudo apt install ros-foxy-xacro
+sudo apt install ros-foxy-gazebo-ros-pkgs
