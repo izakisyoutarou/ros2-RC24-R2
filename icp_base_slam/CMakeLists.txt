@@ -26,6 +26,7 @@ set(dependencies
   sensor_msgs
   nav_msgs
   geometry_msgs
+  tf2_ros
   PCL
   pcl_conversions
 )

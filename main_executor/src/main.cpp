@@ -1,8 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rcl/rcl.h>
-#include "socketcan_interface/socketcan_interface_node.hpp"
 #include "icp_base_slam/icp_base_slam.hpp"
-#include "mcl_2d/mcl_2d_node.hpp"
 #include <iostream>
 
 int main(int argc, char * argv[]){
@@ -13,12 +11,12 @@ int main(int argc, char * argv[]){
     nodes_option.allow_undeclared_parameters(true);
     nodes_option.automatically_declare_parameters_from_overrides(true);
 
-    auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
+    // auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
     auto icp_base_slam = std::make_shared<IcpBaseSlam>();
     // auto mcl_2d_node = std::make_shared<mcl_2d::Mcl2D>(nodes_option);
 
-    exec.add_node(socketcan_node);
-    auto icp_base_slam = std::make_shared<IcpBaseSlam>();
+    // exec.add_node(socketcan_node);
+    exec.add_node(icp_base_slam);
     // exec.add_node(mcl_2d_node);
 
 
