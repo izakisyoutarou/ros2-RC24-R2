@@ -30,6 +30,8 @@ set(dependencies
   tf2_ros
   PCL
   pcl_conversions
+  utilities
+  socketcan_interface_msg
 )
 #add_library(${PROJECT_NAME} ${SRC_FILES})
 include_directories(icp_base_slam

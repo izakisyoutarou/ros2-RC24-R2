@@ -22,6 +22,17 @@ IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOption
     rclcpp::SensorDataQoS(),
     std::bind(&IcpBaseSlam::simulator_odom_callback, this, std::placeholders::_1));
 
+  odom_linear_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+    "can_rx_100",
+    _qos,
+    std::bind(&IcpBaseSlam::callback_odom_linear, this, std::placeholders::_1)
+  );
+  odom_angular_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+    "can_rx_101",
+    _qos,
+    std::bind(&IcpBaseSlam::callback_odom_angular, this, std::placeholders::_1)
+  );
+
   pointcloud2_publisher = create_publisher<sensor_msgs::msg::PointCloud2>(
     "self_localization/filtered_cloud",rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
 
@@ -56,17 +67,42 @@ IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOption
   voxel_grid_filter.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
 
   create_elephant_map();
+  init.x = init_pose_x;
+  init.y = init_pose_y;
   if(use_gazebo_simulator_){
-    last_scan_odom.x = init_pose_x;
-    last_scan_odom.y = init_pose_y;
+    last_scan_odom = init;
   }
   else{
-    odom.x = init_pose_x;
-    odom.y = init_pose_y;
+    odom = init;
+    last_scan_odom = init;
+    estimated_odom = init;
   }
-  // last_estimated.set_init();
-  last_estimated.x = init_pose_x;
-  last_estimated.y = init_pose_y;
+  last_estimated = init;
+}
+
+void IcpBaseSlam::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+  uint8_t _candata[8];
+  for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
+  double x = (double)bytes_to_float(_candata);
+  double y = (double)bytes_to_float(_candata+4);
+  diff_odom.x = x - last_odom.x;
+  diff_odom.y = y - last_odom.y;
+  last_odom.x = x;
+  last_odom.y = y;
+  odom.x += diff_odom.x;
+  odom.y += diff_odom.y;
+  estimated_odom.x = odom.x + diff_estimated.x;
+  estimated_odom.y = odom.y + diff_estimated.y;
+}
+
+void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+  uint8_t _candata[8];
+  for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
+  double yaw = (double)bytes_to_float(_candata);
+  diff_odom.yaw = yaw - last_odom.yaw;
+  odom.yaw += diff_odom.yaw;
+  last_odom.yaw = odom.yaw;
+  estimated_odom.yaw = odom.yaw + diff_estimated.yaw;
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
@@ -79,16 +115,15 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
-  if (dt_scan > 0.05 /* [sec] */) {
+  if (dt_scan > 0.03 /* [sec] */) {
     RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
   }
-
-  Pose current_scan_odom = estimated_odom;
+  current_scan_odom = estimated_odom;
   Pose scan_odom_motion = current_scan_odom - last_scan_odom; //前回scanからのオドメトリ移動量
   Pose predict = last_estimated + scan_odom_motion;  //前回の推定値にscan間オドメトリ移動量を足し、予測位置を計算
 
   //予測位置を基準にndtを実行
-  double odom_to_lidar_length = 0.4;
+  double odom_to_lidar_length = 0.4655;
   double odom_to_lidar_x = odom_to_lidar_length * cos(predict.yaw);
   double odom_to_lidar_y = odom_to_lidar_length * sin(predict.yaw);
 
@@ -128,7 +163,9 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   else if (ndt_estimated.yaw >= M_PI) ndt_estimated.yaw -= 2*M_PI;
   Pose estimated;
   pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, dt_scan, filtered_cloud_ptr, transformation_matrix, estimated, laser_weight_, odom_weight_);
-  // RCLCPP_INFO(this->get_logger(), "estimated x->%f y->%f yaw->%f", estimated.x, estimated.y, estimated.yaw);
+  // RCLCPP_INFO(this->get_logger(), "odom      x->%f y->%f yaw->%f°", odom.x, odom.y, radToDeg(odom.yaw));
+  RCLCPP_INFO(this->get_logger(), "odom      x->%f y->%f yaw->%f°", odom.x, odom.y, radToDeg(odom.yaw));
+  RCLCPP_INFO(this->get_logger(), "estimated x->%f y->%f yaw->%f°", estimated.x, estimated.y, radToDeg(estimated.yaw));
   diff_estimated = estimated - current_scan_odom;
   if(registration_method_ == "NDT"){
   //   RCLCPP_INFO(this->get_logger(), "trans x->%f y->%f yaw->%f°", transformation_matrix(0,3), transformation_matrix(1,3), radToDeg(transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2)));
@@ -145,8 +182,8 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
   scan_execution_time_end = chrono::system_clock::now();
   scan_execution_time = chrono::duration_cast<chrono::milliseconds>(scan_execution_time_start-scan_execution_time_end).count();
-  RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
-  RCLCPP_INFO(this->get_logger(), "align time         ->%d", chrono::duration_cast<chrono::milliseconds>(align_time_end-align_time_start).count());
+  // RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
+  // RCLCPP_INFO(this->get_logger(), "align time         ->%d", chrono::duration_cast<chrono::milliseconds>(align_time_end-align_time_start).count());
   // RCLCPP_INFO(this->get_logger(), "fuse time          ->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
 }
 

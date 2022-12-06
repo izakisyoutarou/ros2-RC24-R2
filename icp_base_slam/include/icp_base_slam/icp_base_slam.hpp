@@ -21,6 +21,9 @@
 
 #include <tf2_eigen/tf2_eigen.h>
 
+#include "socketcan_interface_msg/msg/socketcan_if.hpp"
+#include "utilities/can_utils.hpp"
+
 #include "config.hpp"
 #include "icp_base_slam/pose_fuser.hpp"
 
@@ -44,6 +47,11 @@ public:
 private:
   PoseFuser *pose_fuser;  // センサ融合器
 
+  void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
+  void simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
+  void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+  void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+
   void make_input_circles();
   double circle_model_x(int i, int model_count);
   double circle_model_y_inc(double point_x, double circle_y);
@@ -52,8 +60,7 @@ private:
   void print4x4Matrix (const Eigen::Matrix4d & matrix);
   void pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud, const Pose estimated);
   void path_view(const Pose &estimate_point, const nav_msgs::msg::Odometry::SharedPtr msg);
-  void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
-  void simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
+
   double quaternionToYaw(double x, double y, double z, double w);
   int max_time(int num);
   int max_iteration(int num);
@@ -73,10 +80,13 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr simulator_odom_subscriber;
+  rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
+  rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_angular_subscriber;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pointcloud2_publisher;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher;
+  rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
   nav_msgs::msg::Path path;
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
@@ -91,6 +101,7 @@ private:
 
   Pose init;
   Pose odom;
+  Pose current_scan_odom;
   Pose estimated_odom;
   Pose last_odom;
   Pose diff_odom;
