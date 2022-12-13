@@ -18,7 +18,6 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-
 #include <tf2_eigen/tf2_eigen.h>
 
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
@@ -37,7 +36,6 @@ class IcpBaseSlam : public rclcpp::Node{
 public:
   ICP_BASE_SLAM_PUBLIC
   explicit IcpBaseSlam(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
-  // explicit IcpBaseSlam(const rclcpp::NodeOptions& options);
   ICP_BASE_SLAM_PUBLIC
   explicit IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
@@ -59,7 +57,8 @@ private:
   void create_elephant_map();
   void print4x4Matrix (const Eigen::Matrix4d & matrix);
   void pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud, const Pose estimated);
-  void path_view(const Pose &estimate_point, const nav_msgs::msg::Odometry::SharedPtr msg);
+  void path_view(const Pose &estimate_point, const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+  void path_view_from_simulator(const Pose &estimate_point, const nav_msgs::msg::Odometry::SharedPtr msg);
 
   double quaternionToYaw(double x, double y, double z, double w);
   int max_time(int num);
@@ -93,7 +92,7 @@ private:
 
   int last_num_time=0;
   int last_num_iteration=0;
-  double init_pose_x = -5.5;
+  double init_pose_x = -5.45;
   double init_pose_y = 0.0;
   double last_scan_received_time=0.0;
   double last_odom_received_time=0.0;
