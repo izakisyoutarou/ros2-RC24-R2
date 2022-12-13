@@ -103,8 +103,8 @@ void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::Sock
   diff_odom.yaw = yaw - last_odom.yaw;
   odom.yaw += diff_odom.yaw;
   last_odom.yaw = odom.yaw;
-  estimated_odom.yaw = odom.yaw + diff_estimated.yaw;
-  // RCLCPP_INFO(this->get_logger(), "jy yaw->%f°", radToDeg(odom.yaw));
+  estimated_odom.yaw = normalize_yaw(odom.yaw + diff_estimated.yaw);
+  RCLCPP_INFO(this->get_logger(), "jy yaw->%f°", radToDeg(estimated_odom.yaw));
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
@@ -160,13 +160,12 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   scan_trans.x   = transformation_matrix(0,3);
   scan_trans.y   = transformation_matrix(1,3);
   scan_trans.yaw = transformation_matrix.block<3, 3>(0, 0).eulerAngles(0,1,2)(2);
-  ndt_estimated = predict;
-  ndt_estimated += scan_trans;
-  if (ndt_estimated.yaw < -M_PI) ndt_estimated.yaw += 2*M_PI;
-  else if (ndt_estimated.yaw >= M_PI) ndt_estimated.yaw -= 2*M_PI;
+  ndt_estimated = predict + scan_trans;
+  ndt_estimated.yaw = normalize_yaw(ndt_estimated.yaw);
+
   Pose estimated;
   pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, dt_scan, filtered_cloud_ptr, transformation_matrix, estimated, laser_weight_, odom_weight_);
-  estimated.yaw = current_scan_odom.yaw;
+  if(ndt.getTransformationProbability() < 2.0) estimated.yaw = current_scan_odom.yaw;
   // RCLCPP_INFO(this->get_logger(), "odom      x->%f y->%f yaw->%f°", odom.x, odom.y, radToDeg(odom.yaw));
   // RCLCPP_INFO(this->get_logger(), "odom      x->%f y->%f yaw->%f°", odom.x, odom.y, radToDeg(odom.yaw));
   RCLCPP_INFO(this->get_logger(), "estimated x->%0.3f y->%0.3f yaw->%0.3f°", estimated.x, estimated.y, radToDeg(estimated.yaw));

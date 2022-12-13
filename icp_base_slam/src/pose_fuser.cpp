@@ -113,9 +113,9 @@ double PoseFuser::calculate_ndt_covariance(const Pose &ndt_estimated, Eigen::Mat
   vector<double> Jy; //ヤコビ行列のyの列
 
   for(size_t i=0; i<current_points.size(); i++){
-    double vertical_distance     = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x,    ndt_estimated.y,    ndt_estimated.yaw, normal_vector);
-    double vertical_distance_x   = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x+dd, ndt_estimated.y,    ndt_estimated.yaw, normal_vector);
-    double vertical_distance_y   = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x,    ndt_estimated.y+dd, ndt_estimated.yaw, normal_vector);
+    double vertical_distance   = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x,    ndt_estimated.y,    ndt_estimated.yaw, normal_vector);
+    double vertical_distance_x = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x+dd, ndt_estimated.y,    ndt_estimated.yaw, normal_vector);
+    double vertical_distance_y = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x,    ndt_estimated.y+dd, ndt_estimated.yaw, normal_vector);
     Jx.push_back((vertical_distance_x - vertical_distance) / dd);
     Jy.push_back((vertical_distance_y - vertical_distance) / dd);
   }

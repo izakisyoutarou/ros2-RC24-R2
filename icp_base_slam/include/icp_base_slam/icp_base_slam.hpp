@@ -63,6 +63,11 @@ private:
   double quaternionToYaw(double x, double y, double z, double w);
   int max_time(int num);
   int max_iteration(int num);
+  double normalize_yaw(double yaw){
+    if (yaw < -M_PI) yaw += 2*M_PI;
+    else if (yaw >= M_PI) yaw -= 2*M_PI;
+    return yaw;
+  }
 
   pcl::NormalDistributionsTransform<PointType, PointType> ndt;
   pcl::NormalDistributionsTransform2D<PointType, PointType> ndt2d;
