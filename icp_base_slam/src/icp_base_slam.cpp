@@ -12,6 +12,9 @@ IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOption
   voxel_leaf_size_ = this->get_parameter("voxel_leaf_size").as_double();
   laser_weight_ = this->get_parameter("laser_weight").as_double();
   odom_weight_ = this->get_parameter("odom_weight").as_double();
+  auto transformation_epsilon_ = this->get_parameter("transformation_epsilon").as_double();
+  auto resolution_ = this->get_parameter("resolution").as_double();
+  auto step_size_ = this->get_parameter("step_size").as_double();
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
   "scan", rclcpp::SensorDataQoS(),
@@ -51,9 +54,9 @@ IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOption
 
   if(registration_method_ == "NDT"){
     RCLCPP_INFO(this->get_logger(), "method NDT");
-    ndt.setTransformationEpsilon(0.05);
-    ndt.setResolution(1.7);
-    ndt.setStepSize (0.1);    //ニュートン法のステップサイズ
+    ndt.setTransformationEpsilon(transformation_epsilon_);
+    ndt.setResolution(resolution_);
+    ndt.setStepSize (step_size_);    //ニュートン法のステップサイズ
   }
   else{
     RCLCPP_INFO(this->get_logger(), "method NDT2D");
@@ -104,7 +107,6 @@ void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::Sock
   odom.yaw += diff_odom.yaw;
   last_odom.yaw = odom.yaw;
   estimated_odom.yaw = normalize_yaw(odom.yaw + diff_estimated.yaw);
-  RCLCPP_INFO(this->get_logger(), "jy yaw->%f°", radToDeg(estimated_odom.yaw));
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
@@ -132,7 +134,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   for(size_t i=0; i< msg->ranges.size(); ++i) {
     if(msg->ranges[i] > 30 || msg->ranges[i] < 0){msg->ranges[i] = 0;}
     cloud.points[i].x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i + predict.yaw) + predict.x + odom_to_lidar_x;
-    cloud.points[i].y = msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i + predict.yaw) + predict.y + odom_to_lidar_y;
+    cloud.points[i].y = -msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i + predict.yaw) + predict.y + odom_to_lidar_y;
   }
 
   PclCloud::Ptr filtered_cloud_ptr(new PclCloud());
@@ -165,7 +167,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
   Pose estimated;
   pose_fuser->fuse_pose(ndt_estimated, scan_odom_motion, predict, dt_scan, filtered_cloud_ptr, transformation_matrix, estimated, laser_weight_, odom_weight_);
-  if(ndt.getTransformationProbability() < 2.0) estimated.yaw = current_scan_odom.yaw;
+  if(ndt.getTransformationProbability() < 3.0) estimated.yaw = current_scan_odom.yaw;
   // RCLCPP_INFO(this->get_logger(), "odom      x->%f y->%f yaw->%f°", odom.x, odom.y, radToDeg(odom.yaw));
   // RCLCPP_INFO(this->get_logger(), "odom      x->%f y->%f yaw->%f°", odom.x, odom.y, radToDeg(odom.yaw));
   RCLCPP_INFO(this->get_logger(), "estimated x->%0.3f y->%0.3f yaw->%0.3f°", estimated.x, estimated.y, radToDeg(estimated.yaw));
@@ -175,7 +177,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   if(plot_mode_) pointcloud2_view(filtered_cloud_ptr, input_elephant_cloud, estimated);
 
   scan_execution_time_end = chrono::system_clock::now();
-  scan_execution_time = chrono::duration_cast<chrono::milliseconds>(scan_execution_time_start-scan_execution_time_end).count();
+  scan_execution_time = chrono::duration_cast<chrono::milliseconds>(scan_execution_time_end-scan_execution_time_start).count();
   RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
   // RCLCPP_INFO(this->get_logger(), "align time         ->%d", chrono::duration_cast<chrono::milliseconds>(align_time_end-align_time_start).count());
   // RCLCPP_INFO(this->get_logger(), "fuse time          ->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
