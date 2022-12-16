@@ -1,0 +1,3 @@
+int16 button_num0
+int16 button_num1
+int16 button_num2
