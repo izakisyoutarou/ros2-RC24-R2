@@ -5,17 +5,17 @@ namespace controller_pkg
     ControllerPkg::ControllerPkg(const rclcpp::NodeOptions &options) : ControllerPkg("", options) {}
 
     ControllerPkg::ControllerPkg(const std::string &name_space, const rclcpp::NodeOptions &options)
-        : rclcpp::Node("controller_pkg", name_space, options)
+        : rclcpp::Node("controller_node", name_space, options)
         {
             _sub_button = this->create_subscription<controller_pkg::msg::SubButton>(
                 "sub_button",
                 _qos,
-                std::bind(&PlanarBotConverter::callback_button, this, std::placeholders::_1)
+                std::bind(&ControllerPkg::callback_button, this, std::placeholders::_1)
             );
             _sub_joy = this->create_subscription<controller_pkg::msg::SubJoy>(
                 "sub_joy",
                 _qos,
-                std::bind(&PlanarBotConverter::callback_joy, this, std::placeholders::_1)
+                std::bind(&ControllerPkg::callback_joy, this, std::placeholders::_1)
             );
 
             _pub_button = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
@@ -33,12 +33,12 @@ namespace controller_pkg
         short_to_bytes(_candata, msg->button_num0);
         short_to_bytes(_candata+2, msg->button_num1);
         short_to_bytes(_candata+4, msg->button_num2);
-        for(int i=0; i<msg_button->candlc; i++) msg_linear->candata[i] = _candata[i];
+        for(int i=0; i<msg_button->candlc; i++) msg_button->candata[i] = _candata[i];
 
         _pub_button->publish(*msg_button);
         }
 
-        void ControllerPkgr::callback_joy(const controller_pkg::msg::SubJoy::SharedPtr msg)
+        void ControllerPkg::callback_joy(const controller_pkg::msg::SubJoy::SharedPtr msg)
         {
         auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         msg_linear->canid = 0x110;
@@ -55,8 +55,8 @@ namespace controller_pkg
         float_to_bytes(_candata, roundoff(msg->angular_z,1e-4)*max_angular_z);
         for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
 
-        publisher_odom_linear->publish(*msg_linear);
-        publisher_odom_angular->publish(*msg_angular);
+        _pub_linear->publish(*msg_linear);
+        _pub_angular->publish(*msg_angular);
         }
 
         float ControllerPkg::roundoff(const float &value, const float &epsilon)

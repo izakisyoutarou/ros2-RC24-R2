@@ -17,56 +17,63 @@ find_package(rclcpp REQUIRED)
 find_package(utilities REQUIRED)
 find_package(socketcan_interface_msg REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+
 #独自メッセージ
 set(msg_files
   "msg/SubButton.msg"
   "msg/SubJoy.msg"
 )
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
   DEPENDENCIES builtin_interfaces
 )
+
 ament_export_dependencies(rosidl_default_runtime)
+
 #共有ライブラリ
 add_library(controller_pkg_node
-        src/controller_pkg_node.cpp
-        )
+  src/controller_pkg_node.cpp
+)
+
 target_compile_definitions(controller_pkg_node
-        PRIVATE "CONTROLLER_PKG_LIBRARY"
-        )
+  PRIVATE "CONTROLLER_PKG_LIBRARY"
+)
+
 target_compile_options(controller_pkg_node PUBLIC -Wall)
+
 ament_target_dependencies(controller_pkg_node
-        rclcpp
-        utilities
-        socketcan_interface_msg
-        )
+  rclcpp
+  utilities
+  socketcan_interface_msg
+)
+
 target_include_directories(controller_pkg_node
-        PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-        )
+  PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 if(NOT WIN32)
   ament_environment_hooks(
-          "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
+     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
   )
 endif()
-ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
-ament_export_dependencies(
-        rclcpp
-        utilities
-        socketcan_interface_msg
-)
+
 install(
-        DIRECTORY include/
-        DESTINATION include
+  DIRECTORY include/
+  DESTINATION include
 )
-install(
-        TARGETS controller_pkg_node
-        EXPORT export_${PROJECT_NAME}
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        DESTINATION include/${PROJECT_NAME})
+
+install(TARGETS 
+  controller_pkg_node
+  EXPORT export_${PROJECT_NAME}
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -75,6 +82,16 @@ if(BUILD_TESTING)
   # the following line skips cpplint (only works in a git repo)
   # uncomment the line when this package is not in a git repo
   #set(ament_cmake_cpplint_FOUND TRUE)
+  rosidl_target_interfaces(controller_pkg_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+
+ament_export_dependencies(
+  rclcpp
+  utilities
+  socketcan_interface_msg
+)
+
 ament_package()
