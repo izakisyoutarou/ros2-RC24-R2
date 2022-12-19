@@ -1,54 +1,45 @@
 cmake_minimum_required(VERSION 3.5)
-project(controller_pkg)
+project(controller_interface)
+
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
 endif()
+
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(utilities REQUIRED)
 find_package(socketcan_interface_msg REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
+find_package(controller_interface_msg REQUIRED)
 
-#独自メッセージ
-set(msg_files
-  "msg/SubButton.msg"
-  "msg/SubJoy.msg"
+add_library(controller_interface_node 
+  src/controller_interface_node.cpp
 )
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  ${msg_files}
-  DEPENDENCIES builtin_interfaces
+target_compile_definitions(controller_interface_node
+  PRIVATE "CONTROLLER_INTERFACE_LIBRARY"
 )
 
-ament_export_dependencies(rosidl_default_runtime)
+target_compile_options(controller_interface_node PUBLIC -Wall)
 
-#共有ライブラリ
-add_library(controller_pkg_node
-  src/controller_pkg_node.cpp
-)
-
-target_compile_definitions(controller_pkg_node
-  PRIVATE "CONTROLLER_PKG_LIBRARY"
-)
-
-target_compile_options(controller_pkg_node PUBLIC -Wall)
-
-ament_target_dependencies(controller_pkg_node
+ament_target_dependencies(controller_interface_node
   rclcpp
   utilities
   socketcan_interface_msg
+  controller_interface_msg
 )
 
-target_include_directories(controller_pkg_node
+target_include_directories(controller_interface_node
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -65,8 +56,8 @@ install(
   DESTINATION include
 )
 
-install(TARGETS 
-  controller_pkg_node
+install(
+  TARGETS controller_interface_node
   EXPORT export_${PROJECT_NAME}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
@@ -82,7 +73,6 @@ if(BUILD_TESTING)
   # the following line skips cpplint (only works in a git repo)
   # uncomment the line when this package is not in a git repo
   #set(ament_cmake_cpplint_FOUND TRUE)
-  rosidl_target_interfaces(controller_pkg_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
   ament_lint_auto_find_test_dependencies()
 endif()
 
@@ -92,6 +82,7 @@ ament_export_dependencies(
   rclcpp
   utilities
   socketcan_interface_msg
+  controller_interface_msg
 )
 
 ament_package()
