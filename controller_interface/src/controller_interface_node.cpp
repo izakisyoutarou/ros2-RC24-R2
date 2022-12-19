@@ -12,8 +12,22 @@ namespace controller_interface
                 std::bind(&ControllerInterface::callback_joy, this, std::placeholders::_1)
             );
 
+            _sub_reset = this->create_subscription<std_msgs::msg::Empty>(
+                "reset",
+                _qos,
+                std::bind(&ControllerInterface::callback_reset, this, std::placeholders::_1)
+            );
+
+            _sub_emergency = this->create_subscription<std_msgs::msg::Empty>(
+                "emergency",
+                _qos,
+                std::bind(&ControllerInterface::callback_emergency, this, std::placeholders::_1)
+            );
+
             _pub_linear = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
             _pub_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
+            _pub_reset = this->create_publisher<std_msgs::msg::Empty>("can_tx", _qos);
+            _pub_emergency = this->create_publisher<std_msgs::msg::Empty>("can_tx", _qos);
         }
         
         void ControllerInterface::callback_joy(const controller_interface_msg::msg::SubJoy::SharedPtr msg)
@@ -38,6 +52,26 @@ namespace controller_interface
 
         _pub_linear->publish(*msg_linear);
         _pub_angular->publish(*msg_angular);
+        }
+
+        void ControllerInterface::callback_reset(const std_msgs::msg::Empty::SharedPtr msg)
+        {
+            auto msg_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_reset->canid = 0x002;
+            msg_reset->candlc = 1;
+
+            uint8_t _candata = msg->structure_needs_at_least_one_member;
+            msg_reset->candata[0] = _candata;
+        }
+
+        void ControllerInterface::callback_emergency(const std_msgs::msg::Empty::SharedPtr msg)
+        {
+            auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_emergency->canid = 0x000;
+            msg_emergency->candlc = 1;
+
+            uint8_t _candata = msg->structure_needs_at_least_one_member;
+            msg_emergency->candata[0] = _candata;
         }
 
         float ControllerInterface::roundoff(const float &value, const float &epsilon)
