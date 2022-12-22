@@ -1,15 +1,16 @@
 #include "mcl_2d/mcl.h"
 #include <rclcpp/rclcpp.hpp>
 
-mcl::mcl(){
+mcl::mcl(const std::string map_dir_path){
   m_sync_count =0;
   gen.seed(rd()); //Set random seed for random engine
+
+  gridMap = cv::imread(map_dir_path+"/"+"gridmap.png",cv::IMREAD_GRAYSCALE); //Original gridmap (For show)
+  gridMapCV = cv::imread(map_dir_path+"/"+"erodedGridmap.png",cv::IMREAD_GRAYSCALE); //grdiamp for use.
 }
 
 int mcl::setup(const int numOfParticle, const float odomCovariance[6], const Eigen::Matrix4f tf_laser2robot, const Eigen::Matrix4f initial_pose){
 
-  gridMap = cv::imread("src/mcl_2d/gridmap.png",cv::IMREAD_GRAYSCALE); //Original gridmap (For show)
-  gridMapCV = cv::imread("src/mcl_2d/erodedGridmap.png",cv::IMREAD_GRAYSCALE); //grdiamp for use.
 
   //--YOU CAN CHANGE THIS PARAMETERS BY YOURSELF--//
   this->numOfParticle = numOfParticle;  // Number of Particles.
