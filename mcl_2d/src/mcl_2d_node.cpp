@@ -1,12 +1,14 @@
 #include "mcl_2d/mcl_2d_node.hpp"
 #include "utilities/can_utils.hpp"
 #include "rclcpp/time.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 namespace mcl_2d{
     Mcl2D::Mcl2D(const rclcpp::NodeOptions &options) : Mcl2D("", options) {}
 
     Mcl2D::Mcl2D(const std::string &name_space, const rclcpp::NodeOptions &options)
-    : rclcpp::Node("mcl_2d_node", name_space, options) {
+    : rclcpp::Node("mcl_2d_node", name_space, options),
+    mclocalizer(ament_index_cpp::get_package_share_directory("mcl_2d") +"/"+"config") {
 
         _subscription_laser = this->create_subscription<sensor_msgs::msg::LaserScan>(
                 "scan",
@@ -74,17 +76,17 @@ namespace mcl_2d{
                 vec_lasers_time.erase(vec_lasers_time.begin());
                 vec_poses.erase(vec_poses.begin());
                 vec_poses_time.erase(vec_poses_time.begin());
+
+                auto self_pose = std::make_shared<geometry_msgs::msg::PointStamped>();
+                // self_pose->header.frame_id = "";
+                self_pose->header.stamp = observed_time;
+                self_pose->point.x = mclocalizer.x;
+                self_pose->point.y = mclocalizer.y;
+                self_pose->point.z = mclocalizer.angle;
+
+                publisher_selfpose->publish(*self_pose);
             }
         }
-
-        auto self_pose = std::make_shared<geometry_msgs::msg::PointStamped>();
-        // self_pose->header.frame_id = "";
-        self_pose->header.stamp = observed_time;
-        self_pose->point.x = mclocalizer.x;
-        self_pose->point.y = mclocalizer.y;
-        self_pose->point.z = mclocalizer.angle;
-
-        publisher_selfpose->publish(*self_pose);
     }
 
     void Mcl2D::_subscriber_callback_laser(const sensor_msgs::msg::LaserScan::SharedPtr msg){

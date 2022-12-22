@@ -15,7 +15,7 @@ class mcl
   };
 
 public:
-  mcl();
+  mcl(const std::string map_dir_path);
   ~mcl(){};
   int setup(const int numOfParticle, const float odomCovariance[6],
             const Eigen::Matrix4f tf_laser2robot,
