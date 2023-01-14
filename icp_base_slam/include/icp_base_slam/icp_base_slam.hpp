@@ -25,6 +25,8 @@
 
 #include "config.hpp"
 #include "icp_base_slam/pose_fuser.hpp"
+#include "icp_base_slam/ransac_lines.hpp"
+#include "icp_base_slam/dynamic_voxel_grid_filter.hpp"
 
 #include "visibility.h"
 
@@ -44,21 +46,19 @@ public:
 
 private:
   PoseFuser *pose_fuser;  // センサ融合器
+  RansacLines *ransac_lines;
+  DynamicVoxelGridFilter dynamic_voxel_grid_filter;
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
 
-  void make_input_circles();
-  double circle_model_x(int i, int model_count);
-  double circle_model_y_inc(double point_x, double circle_y);
-  double circle_model_y_dec(double point_x, double circle_y);
   void create_elephant_map();
-  void print4x4Matrix (const Eigen::Matrix4d & matrix);
-  void pointcloud2_view(PclCloud::Ptr cloud_ptr, PclCloud map_cloud, const Pose estimated);
+  void pointcloud2_view(PclCloud &map_cloud, PclCloud &ransac_cloud);
   void path_view(const Pose &estimate_point, const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void path_view_from_simulator(const Pose &estimate_point, const nav_msgs::msg::Odometry::SharedPtr msg);
+  pcl::PointCloud<pcl::PointXYZRGB> cloud_add_collor(PclCloud &cloud, char *rgb);
 
   double quaternionToYaw(double x, double y, double z, double w);
   int max_time(int num);
@@ -77,6 +77,7 @@ private:
   PclCloud input_circle_cloud;
   PclCloud input_elephant_cloud;
   PclCloud global_cloud;
+  PclCloud inlier_cloud;
   pcl::VoxelGrid<PointType> voxel_grid_filter;
   pcl::VoxelGrid<PointType> map_voxel_grid_filter;
 
@@ -88,6 +89,7 @@ private:
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_angular_subscriber;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pointcloud2_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ransac_pointcloud2_publisher;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher;
   rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
@@ -119,21 +121,18 @@ private:
   double view_ranges = 270.0;
 
   //マップモデルのパラメータ
-  double circle_x = 2.8;
-  double circle_right_y = 2.8;
-  double circle_center_y = 6.0;
-  double circle_left_y = 9.2;
-  double R=0.05;
   double rafter_width = 0.05;
-  int model_count=0;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
   std::string registration_method_;
+  std::string filtering_method_;
   double voxel_leaf_size_; //ダウンサンプリングボクセル
-
 
   double laser_weight_;
   double odom_weight_;
+
+  int trial_num_;
+  double inlier_dist_threshold_;
 
   bool plot_mode_{true};
   bool use_gazebo_simulator_{true};
