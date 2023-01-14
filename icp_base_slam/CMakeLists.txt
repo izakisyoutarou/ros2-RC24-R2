@@ -40,6 +40,8 @@ include_directories(icp_base_slam
 add_library(icp_base_slam
   src/icp_base_slam.cpp
   src/pose_fuser.cpp
+  src/ransac_lines.cpp
+  src/dynamic_voxel_grid_filter.cpp
 )
 target_compile_definitions(icp_base_slam
   PRIVATE "ICP_BASE_SLAM_LIBRARY"
