@@ -1,8 +1,15 @@
 #pragma once
 #include <iostream>
 #include <vector>
-// #include "icp_base_slam/icp_base_slam.hpp"
+
 using namespace std;
+
+namespace config{
+struct LaserPoint{
+  double x;
+  double y;
+};
+}
 
 struct Pose{
   double x = 0.0;
@@ -58,3 +65,6 @@ struct Pose{
     yaw += other.yaw;
   }
 };
+
+const double map_point_x[3] = {0.05-6., 2.-6., 5.9875-6.};
+const double map_point_y[4] = {0.05-6., 2.-6, 10.-6., 11.95-6.};

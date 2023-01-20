@@ -1,113 +1,114 @@
 #include "icp_base_slam/ransac_lines.hpp"
-vector<config::LaserPoint> sum_points;
-vector<config::LaserPoint> RansacLines::fuse_inliers(PclCloud::Ptr &src_cloud){
-  sum_points.clear();
-  double distance_threshold=1.0;
-  //右の垂木
-  vector<config::LaserPoint> rafter_right_points;
-  vector<config::LaserPoint> rafter_right_points_;
-  double rafter_right_x_min=0.05-6;
-  double rafter_right_x_max=5.9875-6;
-  double rafter_right_y=0.05-6;
-  //左の垂木
-  vector<config::LaserPoint> rafter_left_points;
-  vector<config::LaserPoint> rafter_left_points_;
-  double rafter_left_x_min = rafter_right_x_min;
-  double rafter_left_x_max = rafter_right_x_max;
-  double rafter_left_y=11.95-6;
-  //後ろの垂木
-  vector<config::LaserPoint> rafter_back_points;
-  vector<config::LaserPoint> rafter_back_points_;
-  double rafter_back_x=0.05-6;
-  double rafter_back_y_min=0.05-6;
-  double rafter_back_y_max=11.95-6;
-  //中心のフェンス
-  vector<config::LaserPoint> fence_centor_points;
-  vector<config::LaserPoint> fence_centor_points_;
-  double fence_centor_x=5.9875-6;
-  double fence_centor_y_min=0.05-6;
-  double fence_centor_y_max=11.95-6;
-  //正面のフェンス
-  vector<config::LaserPoint> fence_front_points;
-  vector<config::LaserPoint> fence_front_points_;
-  double fence_front_x=2.0-6;
-  double fence_front_y_min=2.0-6;
-  double fence_front_y_max=10.0-6;
-  //右のフェンス
-  vector<config::LaserPoint> fence_right_points;
-  vector<config::LaserPoint> fence_right_points_;
-  double fence_right_x_min=2.0-6;
-  double fence_right_x_max=5.9875-6;
-  double fence_right_y=2.0-6;
-  //左のフェンス
-  vector<config::LaserPoint> fence_left_points;
-  vector<config::LaserPoint> fence_left_points_;
-  double fence_left_x_min=fence_right_x_min;
-  double fence_left_x_max=fence_right_x_max;
-  double fence_left_y=10.0-6;
 
-  for(size_t i=0; i<src_cloud->points.size(); i++){
-    if(rafter_right_x_min-distance_threshold < src_cloud->points[i].x &&
-       rafter_right_x_max+distance_threshold > src_cloud->points[i].x &&
-       rafter_right_y-distance_threshold < src_cloud->points[i].y &&
-       rafter_right_y+distance_threshold > src_cloud->points[i].y){
+vector<config::LaserPoint> sum_points;
+vector<config::LaserPoint> rafter_right_points;
+vector<config::LaserPoint> rafter_right_points_;
+vector<config::LaserPoint> rafter_left_points;
+vector<config::LaserPoint> rafter_left_points_;
+vector<config::LaserPoint> rafter_back_points;
+vector<config::LaserPoint> rafter_back_points_;
+vector<config::LaserPoint> fence_centor_points;
+vector<config::LaserPoint> fence_centor_points_;
+vector<config::LaserPoint> fence_front_points;
+vector<config::LaserPoint> fence_front_points_;
+vector<config::LaserPoint> fence_right_points;
+vector<config::LaserPoint> fence_right_points_;
+vector<config::LaserPoint> fence_left_points;
+vector<config::LaserPoint> fence_left_points_;
+vector<config::LaserPoint> inlier_points;
+int trial_num_;
+double inlier_dist_threshold_;
+double best_a = 0.0;
+double best_b = 0.0;
+double best_c = 0.0;
+double est_x=0.0;
+double est_y=0.0;
+
+void RansacLines::fuse_inliers(PclCloud &src_cloud, int trial_num, double inlier_dist_threshold, const Pose &estimated){
+  trial_num_=trial_num;
+  inlier_dist_threshold_=inlier_dist_threshold;
+  est_x = estimated.x;
+  est_y = estimated.y;
+  sum_points.clear();
+  rafter_right_points.clear();
+  rafter_right_points_.clear();
+  rafter_left_points.clear();
+  rafter_left_points_.clear();
+  rafter_back_points.clear();
+  rafter_back_points_.clear();
+  fence_centor_points.clear();
+  fence_centor_points_.clear();
+  fence_front_points.clear();
+  fence_front_points_.clear();
+  fence_right_points.clear();
+  fence_right_points_.clear();
+  fence_left_points.clear();
+  fence_left_points_.clear();
+
+  double distance_threshold=1.0;
+
+  for(size_t i=0; i<src_cloud.points.size(); i++){
+    if(map_point_x[0]-distance_threshold < src_cloud.points[i].x &&
+       map_point_x[2]+distance_threshold > src_cloud.points[i].x &&
+       map_point_y[0]-distance_threshold < src_cloud.points[i].y &&
+       map_point_y[0]+distance_threshold > src_cloud.points[i].y){
       config::LaserPoint point1;
-      point1.x = src_cloud->points[i].x;
-      point1.y = src_cloud->points[i].y;
+      point1.x = src_cloud.points[i].x;
+      point1.y = src_cloud.points[i].y;
       rafter_right_points.push_back(point1);
     }
-    if(rafter_left_x_min-distance_threshold < src_cloud->points[i].x &&
-       rafter_left_x_max+distance_threshold > src_cloud->points[i].x &&
-       rafter_left_y-distance_threshold < src_cloud->points[i].y &&
-       rafter_left_y+distance_threshold > src_cloud->points[i].y){
+    if(map_point_x[0]-distance_threshold < src_cloud.points[i].x &&
+       map_point_x[2]+distance_threshold > src_cloud.points[i].x &&
+       map_point_y[3]-distance_threshold < src_cloud.points[i].y &&
+       map_point_y[3]+distance_threshold > src_cloud.points[i].y){
       config::LaserPoint point2;
-      point2.x = src_cloud->points[i].x;
-      point2.y = src_cloud->points[i].y;
+      point2.x = src_cloud.points[i].x;
+      point2.y = src_cloud.points[i].y;
       rafter_left_points.push_back(point2);
     }
-    if(rafter_back_x-distance_threshold < src_cloud->points[i].x &&
-       rafter_back_x+distance_threshold > src_cloud->points[i].x &&
-       rafter_back_y_min-distance_threshold < src_cloud->points[i].y &&
-       rafter_back_y_max+distance_threshold > src_cloud->points[i].y){
+    if(map_point_x[0]-distance_threshold < src_cloud.points[i].x &&
+       map_point_x[0]+distance_threshold > src_cloud.points[i].x &&
+       map_point_y[0]-distance_threshold < src_cloud.points[i].y &&
+       map_point_y[3]+distance_threshold > src_cloud.points[i].y){
       config::LaserPoint point3;
-      point3.x = src_cloud->points[i].x;
-      point3.y = src_cloud->points[i].y;
+      point3.x = src_cloud.points[i].x;
+      point3.y = src_cloud.points[i].y;
       rafter_back_points.push_back(point3);
     }
-    if(fence_centor_x-distance_threshold < src_cloud->points[i].x &&
-       fence_centor_x+distance_threshold > src_cloud->points[i].x &&
-       fence_centor_y_min-distance_threshold < src_cloud->points[i].y &&
-       fence_centor_y_max+distance_threshold > src_cloud->points[i].y){
+    if(map_point_x[2]-distance_threshold < src_cloud.points[i].x &&
+       map_point_x[2]+distance_threshold > src_cloud.points[i].x &&
+       map_point_y[0]-distance_threshold < src_cloud.points[i].y &&
+       map_point_y[3]+distance_threshold > src_cloud.points[i].y){
       config::LaserPoint point4;
-      point4.x = src_cloud->points[i].x;
-      point4.y = src_cloud->points[i].y;
+      point4.x = src_cloud.points[i].x;
+      point4.y = src_cloud.points[i].y;
       fence_centor_points.push_back(point4);
     }
-    if(fence_front_x-distance_threshold < src_cloud->points[i].x &&
-       fence_front_x+distance_threshold > src_cloud->points[i].x &&
-       fence_front_y_min-distance_threshold < src_cloud->points[i].y &&
-       fence_front_y_max+distance_threshold > src_cloud->points[i].y){
+    if(map_point_x[1]-distance_threshold < src_cloud.points[i].x &&
+       map_point_x[1]+distance_threshold > src_cloud.points[i].x &&
+       map_point_y[1]-distance_threshold < src_cloud.points[i].y &&
+       map_point_y[2]+distance_threshold > src_cloud.points[i].y){
       config::LaserPoint point5;
-      point5.x = src_cloud->points[i].x;
-      point5.y = src_cloud->points[i].y;
+      point5.x = src_cloud.points[i].x;
+      point5.y = src_cloud.points[i].y;
       fence_front_points.push_back(point5);
     }
-    if(fence_right_x_min-distance_threshold < src_cloud->points[i].x &&
-       fence_right_x_max+distance_threshold > src_cloud->points[i].x &&
-       fence_right_y-distance_threshold < src_cloud->points[i].y &&
-       fence_right_y+distance_threshold > src_cloud->points[i].y){
+    if(map_point_x[1]-distance_threshold < src_cloud.points[i].x &&
+       map_point_x[2]+distance_threshold > src_cloud.points[i].x &&
+       map_point_y[1]-distance_threshold < src_cloud.points[i].y &&
+       map_point_y[1]+distance_threshold > src_cloud.points[i].y){
       config::LaserPoint point6;
-      point6.x = src_cloud->points[i].x;
-      point6.y = src_cloud->points[i].y;
+      point6.x = src_cloud.points[i].x;
+      point6.y = src_cloud.points[i].y;
       fence_right_points.push_back(point6);
     }
-    if(fence_left_x_min-distance_threshold < src_cloud->points[i].x &&
-       fence_left_x_max+distance_threshold > src_cloud->points[i].x &&
-       fence_left_y-distance_threshold < src_cloud->points[i].y &&
-       fence_left_y+distance_threshold > src_cloud->points[i].y){
+    if(map_point_x[1]-distance_threshold < src_cloud.points[i].x &&
+       map_point_x[2]+distance_threshold > src_cloud.points[i].x &&
+       map_point_y[2]-distance_threshold < src_cloud.points[i].y &&
+       map_point_y[2]+distance_threshold > src_cloud.points[i].y){
       config::LaserPoint point7;
-      point7.x = src_cloud->points[i].x;
-      point7.y = src_cloud->points[i].y;
+      point7.x = src_cloud.points[i].x;
+      point7.y = src_cloud.points[i].y;
       fence_left_points.push_back(point7);
     }
   }
@@ -140,8 +141,6 @@ vector<config::LaserPoint> RansacLines::fuse_inliers(PclCloud::Ptr &src_cloud){
     fence_left_points_=get_inlier(fence_left_points);
     input_points(fence_left_points_);
   }
-
-  return sum_points;
 }
 
 void RansacLines::input_points(vector<config::LaserPoint> &points){
@@ -155,17 +154,12 @@ void RansacLines::input_points(vector<config::LaserPoint> &points){
 
 
 vector<config::LaserPoint> RansacLines::get_inlier(vector<config::LaserPoint> &divided_points){
+  inlier_points.clear();
   vector<config::LaserPoint> points_ = divided_points;
-  vector<config::LaserPoint> inlier_points;
-  // 試行回数
-  const int TRIAL_NUM = 100;
   // 最尤推定値
-  double best_a = 0.0;
-  double best_b = 0.0;
-  double best_c = 0.0;
   int best_inlier_num = 0;
   // ランダムサンプリング
-  for (int i = 0; i < TRIAL_NUM; i++) {
+  for (int i = 0; i < trial_num_; i++) {
     // ランダムに2点を選択する
     int p1_idx = (int)(rand() / (RAND_MAX + 1.0) * points_.size());
     int p2_idx = (int)(rand() / (RAND_MAX + 1.0) * points_.size());
@@ -193,7 +187,7 @@ vector<config::LaserPoint> RansacLines::get_inlier(vector<config::LaserPoint> &d
   }
   for(size_t i=0; i<best_inlier_num; i++){
     double dist = std::abs(best_a * points_[i].x + best_b * points_[i].y + best_c) / std::sqrt(best_a * best_a + best_b * best_b);
-    if (dist < 0.1) {
+    if (dist < inlier_dist_threshold_) {
       config::LaserPoint temp_point;
       temp_point.x = points_[i].x;
       temp_point.y = points_[i].y;
@@ -202,3 +196,13 @@ vector<config::LaserPoint> RansacLines::get_inlier(vector<config::LaserPoint> &d
   }
   return inlier_points;
 }
+
+
+vector<config::LaserPoint> RansacLines::get_filtered_rafter_right(){return rafter_right_points_;}
+vector<config::LaserPoint> RansacLines::get_filtered_rafter_left(){return rafter_left_points_;}
+vector<config::LaserPoint> RansacLines::get_filtered_rafter_back(){return rafter_back_points_;}
+vector<config::LaserPoint> RansacLines::get_filtered_fence_centor(){return fence_centor_points_;}
+vector<config::LaserPoint> RansacLines::get_filtered_fence_front(){return fence_front_points_;}
+vector<config::LaserPoint> RansacLines::get_filtered_fence_right(){return fence_right_points_;}
+vector<config::LaserPoint> RansacLines::get_filtered_fence_left(){return fence_left_points_;}
+vector<config::LaserPoint> RansacLines::get_sum(){return sum_points;}
