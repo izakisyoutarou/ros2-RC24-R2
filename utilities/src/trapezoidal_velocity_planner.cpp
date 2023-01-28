@@ -1,5 +1,11 @@
 #include "trapezoidal_velocity_planner.hpp"
 
+rclcpp::Clock system_clock(RCL_ROS_TIME);
+
+int64_t micros(){
+    return system_clock.now().nanoseconds()*1e-3;
+}
+
 namespace velocity_planner {
 namespace trapezoidal_velocity_planner {
 
@@ -25,6 +31,8 @@ void VelPlanner::cycle() {
         old_time = micros();
 		current_.pos += current_.acc / 2.0 * dt * dt + current_.vel * dt;
 		current_.vel += current_.acc * dt;
+		// output_int3 = (int)mode;
+		// vel_output = current_.vel;//馬場のデバック
 	}
 	else {
 		current_.vel = 0.0;
@@ -155,16 +163,21 @@ void TrapezoidalVelocityPlanner::pos(double pos, double vel) {
 }
 
 void TrapezoidalVelocityPlanner::vel(double vel) {
+	output_int = (int)mode;//enum classのデバック用
 	if(mode == Mode::pos || mode == Mode::null) {
 		posPlanner.cycle();
 		velPlanner.current(posPlanner.current());
 	}
 	else {
+		
 		velPlanner.cycle();
 	}
 	mode = Mode::vel;
+	output_vel = velPlanner.output_vel();//コントローラからの入力値のデバック用
+	output_int2 = (int)mode;//enum classのデバック用2
 	has_achieved_target = false;
 	velPlanner.vel(vel);
+	output_int3 = velPlanner.mode_output3();//enum classのデバック用3
 }
 
 void TrapezoidalVelocityPlanner::cycle() {

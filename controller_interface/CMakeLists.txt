@@ -88,4 +88,28 @@ ament_export_dependencies(
   controller_interface_msg
 )
 
+add_executable(controller_interface_node2
+  src/controller_interface_node.cpp
+  src/controller_interface_node_main.cpp
+)
+
+ament_target_dependencies(controller_interface_node2 
+  rclcpp
+  utilities
+  std_msgs
+  socketcan_interface_msg
+  controller_interface_msg
+)
+
+install(
+  TARGETS controller_interface_node2 
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+target_include_directories(controller_interface_node2
+  PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 ament_package()

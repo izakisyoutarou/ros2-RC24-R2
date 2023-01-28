@@ -1,57 +1,107 @@
 #include "controller_interface/controller_interface_node.hpp"
 
+const TraVelPlannerLimit tvpl_stea(cfg::robot::move_pos_limit,cfg::robot::move_vel_limit,cfg::robot::move_acc_limit,cfg::robot::move_dec_limit);//stteaのlimitを参考にした
+TraVelPlanner lin_x(tvpl_stea);
+TraVelPlanner lin_y(tvpl_stea);
+
 namespace controller_interface
 {
+    
     ControllerInterface::ControllerInterface(const rclcpp::NodeOptions &options) : ControllerInterface("", options) {}
     ControllerInterface::ControllerInterface(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options)
         {
-            _sub_joy = this->create_subscription<controller_interface_msg::msg::SubJoy>(
-                "sub_joy",
+            _sub_pad = this->create_subscription<controller_interface_msg::msg::SubPad>(
+                "sub_pad",
                 _qos,
-                std::bind(&ControllerInterface::callback_joy, this, std::placeholders::_1)
+                std::bind(&ControllerInterface::callback_pad, this, std::placeholders::_1)
             );
 
-            _sub_reset = this->create_subscription<std_msgs::msg::Empty>(
-                "reset",
-                _qos,
-                std::bind(&ControllerInterface::callback_reset, this, std::placeholders::_1)
-            );
+            // _sub_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
+            //     "sub_scrn",
+            //     _qos,
+            //     std::bind(&ControllerInterface::callback_scrn, this, std::placeholders::_1)
+            // );
 
-            _sub_emergency = this->create_subscription<std_msgs::msg::Empty>(
-                "emergency",
+            _sub_scrn = this->create_subscription<std_msgs::msg::String>(
+                "sub_scrn",
                 _qos,
-                std::bind(&ControllerInterface::callback_emergency, this, std::placeholders::_1)
+                std::bind(&ControllerInterface::callback_scrn, this, std::placeholders::_1)
             );
 
             _pub_linear = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
             _pub_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
             _pub_reset = this->create_publisher<std_msgs::msg::Empty>("can_tx", _qos);
             _pub_emergency = this->create_publisher<std_msgs::msg::Empty>("can_tx", _qos);
+
+            const TraVelPlannerLimit tvpl_stea(cfg::robot::move_pos_limit,cfg::robot::move_vel_limit,cfg::robot::move_acc_limit,cfg::robot::move_dec_limit);//stteaのlimitを参考にした
+            TraVelPlanner x(tvpl_stea);
+            TraVelPlanner y(tvpl_stea);
         }
         
-        void ControllerInterface::callback_joy(const controller_interface_msg::msg::SubJoy::SharedPtr msg)
+        void ControllerInterface::callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg)
         {
-        auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-        msg_linear->canid = 0x110;
-        msg_linear->candlc = 8;
+            
+            //RCLCPP_INFO(this->get_logger(), "%f", msg->anl_lft_x);
+            //RCLCPP_INFO(this->get_logger(), "%d", msg->a);
+            auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_linear->canid = 0x110;
+            msg_linear->candlc = 8;
 
-        auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-        msg_angular->canid = 0x111;
-        msg_angular->candlc = 4;
+            auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_angular->canid = 0x111;
+            msg_angular->candlc = 4;
 
-        uint8_t _candata[8];
+            auto msg_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_reset->canid = 0x002;
+            msg_reset->candlc = 1;
 
-        float_to_bytes(_candata, roundoff(msg->linear_x,1e-4)*max_linear_x);
-        float_to_bytes(_candata+4, roundoff(msg->linear_y,1e-4)*max_linear_y);
-        for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata[i];
-        
-        float_to_bytes(_candata, roundoff(msg->angular_z,1e-4)*max_angular_z);
-        for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
-        RCLCPP_INFO(this->get_logger(), "%u", msg_angular->candata);
+            auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_emergency->canid = 0x000;
+            msg_emergency->candlc = 1;
 
-        _pub_linear->publish(*msg_linear);
-        _pub_angular->publish(*msg_angular);
+            this->anl_lft_x = roundoff(msg->anl_lft_x,1e-4);
+            this->anl_lft_y = roundoff(msg->anl_lft_y,1e-4);
+            this->anl_rgt_x = roundoff(msg->anl_rgt_x,1e-4);
+            this->anl_rgt_y = roundoff(msg->anl_rgt_y,1e-4);
+
+            lin_x.cycle();
+            lin_y.cycle();
+
+            lin_x.vel(msg->anl_lft_x);
+            lin_y.vel(msg->anl_lft_y);
+
+            //RCLCPP_INFO(this->get_logger(), "%f", lin_x.for_output());
+            // RCLCPP_INFO(this->get_logger(), "mode::%d", lin_x.mode_output());
+            // RCLCPP_INFO(this->get_logger(), "mode2::%d", lin_x.mode_output2());
+            //RCLCPP_INFO(this->get_logger(), "mode3::%d", lin_x.mode_output3());
+            //RCLCPP_INFO(this->get_logger(), "%f", lin_x.vel());
+
+            uint8_t _candata[8];
+
+            // float_to_bytes(_candata, roundoff(msg->anl_lft_x,1e-4)*max_linear_x);
+            // float_to_bytes(_candata+4, roundoff(msg->anl_lft_y,1e-4)*max_linear_y);
+            float_to_bytes(_candata, lin_x.vel());
+            float_to_bytes(_candata+4, lin_y.vel());
+            for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata[i];
+            
+            float_to_bytes(_candata, roundoff(msg->anl_rgt_x,1e-4)*max_angular_z);
+            for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
+
+            _pub_linear->publish(*msg_linear);
+            _pub_angular->publish(*msg_angular);
+        }
+
+        // void ControllerInterface::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
+        // {
+
+        // }
+
+        void ControllerInterface::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
+        {
+            //上物インターフェイス
+            RCLCPP_INFO(this->get_logger(), "Hello");
+            //RCLCPP_INFO(this->get_logger(), "%s", msg->scrn);
         }
 
         void ControllerInterface::callback_reset(const std_msgs::msg::Empty::SharedPtr msg)
@@ -81,3 +131,4 @@ namespace controller_interface
             return ans;
         }
 }
+

@@ -24,7 +24,8 @@ find_package(ament_cmake REQUIRED)
 #独自メッセージ
 find_package(rosidl_default_generators REQUIRED)
 set(msg_files
-  "msg/SubJoy.msg"
+  "msg/SubPad.msg"
+  "msg/SubScrn.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}

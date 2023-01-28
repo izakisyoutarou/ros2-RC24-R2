@@ -17,6 +17,7 @@ ament_target_dependencies(main_exec
         socketcan_interface
         mcl_2d
         controller_interface
+        utilities
         )
 
 target_include_directories(main_exec
@@ -24,7 +25,6 @@ target_include_directories(main_exec
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         )
-
 
 # find dependencies
 find_package(ament_cmake REQUIRED)

@@ -13,6 +13,8 @@
 
   <depend>socketcan_interface</depend>
   <depend>mcl_2d</depend>
+  <depend>controller_interface</depend>
+  <depend>utilities</depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

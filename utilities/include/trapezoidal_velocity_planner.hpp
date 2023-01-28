@@ -21,7 +21,10 @@
 #include <stdint.h>
 #include <rclcpp/rclcpp.hpp>
 
-rclcpp::Clock system_clock(RCL_ROS_TIME);
+using namespace std;
+
+//rclcpp::Clock system_clock(RCL_ROS_TIME);
+//rclcpp::Time now = system_clock.now();
 
 template <class T>
     constexpr T constrain(T x, T min, T max) {
@@ -30,9 +33,11 @@ template <class T>
 	else return x;
 }
 
-int64_t micros(){
-    return system_clock.now().nanoseconds()*1e-3;
-}
+// int64_t micros(){
+//     return system_clock.now().nanoseconds()*1e-3;
+// }
+
+int64_t micros();
 
 namespace velocity_planner {
 namespace trapezoidal_velocity_planner {
@@ -68,6 +73,10 @@ public:
 
 	bool hasAchievedTarget() { return has_achieved_target; }
 
+	//馬場のデバック
+	double output_vel(){ return vel_output; }
+	int mode_output3(){ return output_int3; }
+
 private:
 	Limit_t limit_;
 	Physics_t first, target, current_;
@@ -84,6 +93,10 @@ private:
 	} mode = Mode::uniform_acceleration;
 
 	bool has_achieved_target = false;
+
+	//馬場のデバック
+	double vel_output = 0;
+	int output_int3 = 2;
 };
 
 
@@ -141,8 +154,13 @@ public:
 	double vel() override { return current_.vel; }
 	double acc() override { return current_.acc; }
 
-	bool hasAchievedTarget() override { return has_achieved_target; }
+	//馬場のデバック用
+	double for_output(){ return output_vel; } //馬場がcontroller_interfaceの値が、どこまでいってるか確認するための関数
+	int mode_output(){ return output_int; }//馬場がenum classが今、何になっているか確認するための関数output_int = (int)modeで代入
+	int mode_output2(){ return output_int2; }
+	int mode_output3(){ return output_int3; }
 
+	bool hasAchievedTarget() override { return has_achieved_target; }
 private:
 
 	Physics_t current_;
@@ -159,6 +177,10 @@ private:
 
 	bool has_achieved_target = false;
 
+	double output_vel = 0;
+	int output_int = 0;
+	int output_int2 = 0;
+	int output_int3 = 0;
 };
 
 }
