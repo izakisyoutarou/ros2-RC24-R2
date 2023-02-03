@@ -23,13 +23,14 @@
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "utilities/can_utils.hpp"
 
-#include "config.hpp"
+#include "icp_base_slam/config.hpp"
 #include "icp_base_slam/pose_fuser.hpp"
 #include "icp_base_slam/ransac_lines.hpp"
 #include "icp_base_slam/dynamic_voxel_grid_filter.hpp"
 
 #include "visibility.h"
 
+using namespace std;
 using PointType = pcl::PointXYZ;
 using PclCloud = pcl::PointCloud<PointType>;
 
@@ -41,25 +42,17 @@ public:
   ICP_BASE_SLAM_PUBLIC
   explicit IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
-  double degToRad(double degree){return degree*M_PI/180;}
-  double radToDeg(double rad){return rad*180/M_PI;}
-
 private:
   PoseFuser *pose_fuser;  // センサ融合器
   RansacLines *ransac_lines;
   DynamicVoxelGridFilter dynamic_voxel_grid_filter;
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
-  void simulator_odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
-
   void create_elephant_map();
   void pointcloud2_view(PclCloud &map_cloud, PclCloud &ransac_cloud);
-  void path_view(const Pose &estimate_point, const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
-  void path_view_from_simulator(const Pose &estimate_point, const nav_msgs::msg::Odometry::SharedPtr msg);
   pcl::PointCloud<pcl::PointXYZRGB> cloud_add_collor(PclCloud &cloud, char *rgb);
-
   double quaternionToYaw(double x, double y, double z, double w);
   int max_time(int num);
   int max_iteration(int num);
@@ -70,21 +63,15 @@ private:
   }
 
   pcl::NormalDistributionsTransform<PointType, PointType> ndt;
-  pcl::NormalDistributionsTransform2D<PointType, PointType> ndt2d;
-  pcl::Registration<PointType, PointType>::Ptr registration_;
 
   PclCloud cloud;
-  PclCloud input_circle_cloud;
   PclCloud input_elephant_cloud;
-  PclCloud global_cloud;
   PclCloud inlier_cloud;
   pcl::VoxelGrid<PointType> voxel_grid_filter;
-  pcl::VoxelGrid<PointType> map_voxel_grid_filter;
 
   chrono::system_clock::time_point time_start, time_end, scan_execution_time_start, scan_execution_time_end, align_time_start, align_time_end, fuse_time_start, fuse_time_end;
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr simulator_odom_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_angular_subscriber;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
@@ -97,8 +84,6 @@ private:
   nav_msgs::msg::Path path;
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
 
-  int last_num_time=0;
-  int last_num_iteration=0;
   double init_pose_x = -5.45;
   double init_pose_y = 0.0;
   double last_scan_received_time=0.0;
@@ -117,11 +102,9 @@ private:
   Pose last_scan_odom;
   Pose estimated;
   Pose diff_estimated;
+  double odom_to_lidar_length = 0.4655;
   double reso = 0.125;
   double view_ranges = 270.0;
-
-  //マップモデルのパラメータ
-  double rafter_width = 0.05;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
   std::string registration_method_;
@@ -135,6 +118,5 @@ private:
   double inlier_dist_threshold_;
 
   bool plot_mode_{true};
-  bool use_gazebo_simulator_{true};
 };
 }
