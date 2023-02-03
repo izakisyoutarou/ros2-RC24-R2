@@ -31,8 +31,8 @@ namespace controller_interface
 
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_linear;
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_angular;
-            rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_reset;
-            rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_emergency;
+            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_reset;
+            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_emergency;
 
             rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
@@ -48,9 +48,9 @@ namespace controller_interface
             float anl_rgt_x = 0.0f;
             float anl_rgt_y = 0.0f;
 
-            float max_linear_x = 1.0f;
-            float max_linear_y = 1.0f;
-            float max_angular_z = 1.0f;
+            float max_linear_x = 3.0f;
+            float max_linear_y = 3.0f;
+            float max_angular_z = 3.0f;
             
             bool flag = 0;
     };
