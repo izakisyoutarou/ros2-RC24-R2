@@ -31,8 +31,13 @@ mcl_2d_node:
 icp_base_slam:
   ros__parameters:
     plot_mode: true
-    use_gazebo_simulator: true
-    registration_method: "NDT"
-    voxel_leaf_size: 1.0
-    laser_weight: 0.1 # 退化で極端にずれる場合は=1,通常=0.1
-    odom_weight: 10.0 # オドメトリのずれが大きい場合=100,通常=10
+    registration_method: "NDT"     #NDT or ransac
+    filtering_method: "dynamic_voxel_grid_filter"    #voxel_grid_filter or dynamic_voxel_grid_filter
+    voxel_leaf_size: 0.05
+    laser_weight: 10. # 退化で極端にずれる場合は=1,通常=0.1
+    odom_weight: 1. # オドメトリのずれが大きい場合=100,通常=10
+    transformation_epsilon: 0.05
+    resolution: 1.7
+    step_size: 0.1
+    trial_num: 50
+    inlier_dist_threshold: 0.01
