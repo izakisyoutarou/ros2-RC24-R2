@@ -3,10 +3,11 @@
 const TraVelPlannerLimit tvpl_stea(cfg::robot::move_pos_limit,cfg::robot::move_vel_limit,cfg::robot::move_acc_limit,cfg::robot::move_dec_limit);//stteaのlimitを参考にした
 TraVelPlanner lin_x(tvpl_stea);
 TraVelPlanner lin_y(tvpl_stea);
+TraVelPlanner ang_x(tvpl_stea);
 
 namespace controller_interface
 {
-    
+
     ControllerInterface::ControllerInterface(const rclcpp::NodeOptions &options) : ControllerInterface("", options) {}
     ControllerInterface::ControllerInterface(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options)
@@ -38,12 +39,9 @@ namespace controller_interface
             TraVelPlanner x(tvpl_stea);
             TraVelPlanner y(tvpl_stea);
         }
-        
+
         void ControllerInterface::callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg)
         {
-            
-            //RCLCPP_INFO(this->get_logger(), "%f", msg->anl_lft_x);
-            //RCLCPP_INFO(this->get_logger(), "%d", msg->a);
             auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_linear->canid = 0x110;
             msg_linear->candlc = 8;
@@ -52,13 +50,13 @@ namespace controller_interface
             msg_angular->canid = 0x111;
             msg_angular->candlc = 4;
 
-            auto msg_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_reset->canid = 0x002;
-            msg_reset->candlc = 1;
+            // auto msg_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            // msg_reset->canid = 0x002;
+            // msg_reset->candlc = 1;
 
-            auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_emergency->canid = 0x000;
-            msg_emergency->candlc = 1;
+            // auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            // msg_emergency->canid = 0x000;
+            // msg_emergency->candlc = 1;
 
             this->anl_lft_x = roundoff(msg->anl_lft_x,1e-4);
             this->anl_lft_y = roundoff(msg->anl_lft_y,1e-4);
@@ -67,25 +65,20 @@ namespace controller_interface
 
             lin_x.cycle();
             lin_y.cycle();
+            ang_x.cycle();
 
-            lin_x.vel(msg->anl_lft_x);
-            lin_y.vel(msg->anl_lft_y);
-
-            //RCLCPP_INFO(this->get_logger(), "%f", lin_x.for_output());
-            // RCLCPP_INFO(this->get_logger(), "mode::%d", lin_x.mode_output());
-            // RCLCPP_INFO(this->get_logger(), "mode2::%d", lin_x.mode_output2());
-            //RCLCPP_INFO(this->get_logger(), "mode3::%d", lin_x.mode_output3());
-            //RCLCPP_INFO(this->get_logger(), "%f", lin_x.vel());
+            lin_x.vel(msg->anl_lft_y);
+            lin_y.vel(msg->anl_lft_x);
+            ang_x.vel(msg->anl_rgt_x);
 
             uint8_t _candata[8];
 
-            // float_to_bytes(_candata, roundoff(msg->anl_lft_x,1e-4)*max_linear_x);
-            // float_to_bytes(_candata+4, roundoff(msg->anl_lft_y,1e-4)*max_linear_y);
-            float_to_bytes(_candata, lin_x.vel());
-            float_to_bytes(_candata+4, lin_y.vel());
+            float_to_bytes(_candata, (float)lin_x.vel());
+            float_to_bytes(_candata+4, (float)lin_y.vel());
             for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata[i];
-            
-            float_to_bytes(_candata, roundoff(msg->anl_rgt_x,1e-4)*max_angular_z);
+
+            //float_to_bytes(_candata, roundoff(msg->anl_rgt_x,1e-4)*max_angular_z);
+            float_to_bytes(_candata, (float)ang_x.vel());
             for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
 
             _pub_linear->publish(*msg_linear);
@@ -131,4 +124,3 @@ namespace controller_interface
             return ans;
         }
 }
-

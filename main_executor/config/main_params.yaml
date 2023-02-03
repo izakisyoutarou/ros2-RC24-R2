@@ -1,6 +1,6 @@
 launch: #起動パラメータ
   ros__parameters:
-    real: false
+    real: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める)
   ros__parameters:
