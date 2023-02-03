@@ -6,17 +6,11 @@ IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", o
 IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions &options)
 :  rclcpp::Node("icp_base_slam", name_space, options) {
   RCLCPP_INFO(this->get_logger(), "START");
-  plot_mode_ = this->get_parameter("plot_mode").as_bool();
-  registration_method_ = this->get_parameter("registration_method").as_string();
-  filtering_method_ = this->get_parameter("filtering_method").as_string();
   voxel_leaf_size_ = this->get_parameter("voxel_leaf_size").as_double();
   laser_weight_ = this->get_parameter("laser_weight").as_double();
   odom_weight_ = this->get_parameter("odom_weight").as_double();
   trial_num_ = this->get_parameter("trial_num").as_int();
   inlier_dist_threshold_ = this->get_parameter("inlier_dist_threshold").as_double();
-  auto transformation_epsilon_ = this->get_parameter("transformation_epsilon").as_double();
-  auto resolution_ = this->get_parameter("resolution").as_double();
-  auto step_size_ = this->get_parameter("step_size").as_double();
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
   "scan", rclcpp::SensorDataQoS(),
@@ -76,9 +70,6 @@ void IcpBaseSlam::callback_odom_linear(const socketcan_interface_msg::msg::Socke
   odom.y += diff_odom.y;
   estimated_odom.x = odom.x + diff_estimated.x;
   estimated_odom.y = odom.y + diff_estimated.y;
-  // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f", odom.x, odom.y);
-  // RCLCPP_INFO(this->get_logger(), "diff_estimated x->%f y->%f", diff_estimated.x, diff_estimated.y);
-  // RCLCPP_INFO(this->get_logger(), "estimated_odom x->%f y->%f", estimated_odom.x, estimated_odom.y);
 }
 
 void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -116,7 +107,6 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
     src_point.id = i;
     src_points.push_back(src_point);
   }
-
 
   if(registration_method_ == "ransac"){
     ransac_lines->fuse_inliers(src_points, trial_num_, inlier_dist_threshold_, estimated_odom);

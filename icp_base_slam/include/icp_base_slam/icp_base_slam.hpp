@@ -54,8 +54,6 @@ private:
   void pointcloud2_view(PclCloud &map_cloud, PclCloud &ransac_cloud);
   pcl::PointCloud<pcl::PointXYZRGB> cloud_add_collor(PclCloud &cloud, char *rgb);
   double quaternionToYaw(double x, double y, double z, double w);
-  int max_time(int num);
-  int max_iteration(int num);
   double normalize_yaw(double yaw){
     if (yaw < -M_PI) yaw += 2*M_PI;
     else if (yaw >= M_PI) yaw -= 2*M_PI;
@@ -107,16 +105,10 @@ private:
   double view_ranges = 270.0;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
-  std::string registration_method_;
-  std::string filtering_method_;
   double voxel_leaf_size_; //ダウンサンプリングボクセル
-
   double laser_weight_;
   double odom_weight_;
-
   int trial_num_;
   double inlier_dist_threshold_;
-
-  bool plot_mode_{true};
 };
 }
