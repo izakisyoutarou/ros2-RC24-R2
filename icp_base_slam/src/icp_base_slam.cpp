@@ -58,7 +58,7 @@ IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOption
   input_elephant_cloud.points.resize(51655);
   inlier_cloud.points.resize(2161);
 
-  RCLCPP_INFO(this->get_logger(), "method NDT");
+  // RCLCPP_INFO(this->get_logger(), "method NDT");
   ndt.setTransformationEpsilon(transformation_epsilon_);
   ndt.setResolution(resolution_);
   ndt.setStepSize (step_size_);    //ニュートン法のステップサイズ
@@ -92,7 +92,9 @@ void IcpBaseSlam::callback_odom_linear(const socketcan_interface_msg::msg::Socke
   odom.y += diff_odom.y;
   estimated_odom.x = odom.x + diff_estimated.x;
   estimated_odom.y = odom.y + diff_estimated.y;
-  // if(plot_mode_) path_view(estimated_odom, msg);
+  // RCLCPP_INFO(this->get_logger(), "odom x->%f y->%f", odom.x, odom.y);
+  // RCLCPP_INFO(this->get_logger(), "diff_estimated x->%f y->%f", diff_estimated.x, diff_estimated.y);
+  // RCLCPP_INFO(this->get_logger(), "estimated_odom x->%f y->%f", estimated_odom.x, estimated_odom.y);
 }
 
 void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -125,23 +127,24 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
   //予測位置を基準にndtを実行
   double odom_to_lidar_length = 0.4655;
-  double odom_to_lidar_x = odom_to_lidar_length * cos(predict.yaw);
-  double odom_to_lidar_y = odom_to_lidar_length * sin(predict.yaw);
-
+  double odom_to_lidar_x = odom_to_lidar_length * cos(current_scan_odom.yaw);
+  double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom.yaw);
+  vector<config::LaserPoint> src_points;
   for(size_t i=0; i< msg->ranges.size(); ++i) {
+    config::LaserPoint src_point;
     if(msg->ranges[i] > 14 || msg->ranges[i] < 0.5){msg->ranges[i] = 0;}
-    cloud.points[i].x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i - predict.yaw) + predict.x + odom_to_lidar_x;
-    cloud.points[i].y = -msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i - predict.yaw) + predict.y + odom_to_lidar_y;
+    src_point.x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i - current_scan_odom.yaw) + current_scan_odom.x + odom_to_lidar_x;
+    src_point.y = -msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i - current_scan_odom.yaw) + current_scan_odom.y + odom_to_lidar_y;
+    src_point.id = i;
+    src_points.push_back(src_point);
   }
 
 
   if(registration_method_ == "ransac"){
-    estimated = odom;
-    PclCloud voxel_grid_filtered_cloud;
-    voxel_grid_filter.setInputCloud(cloud.makeShared());
-    voxel_grid_filter.filter(voxel_grid_filtered_cloud);
-    ransac_lines->fuse_inliers(cloud, trial_num_, inlier_dist_threshold_, estimated_odom);
+    ransac_lines->fuse_inliers(src_points, trial_num_, inlier_dist_threshold_, estimated_odom);
     vector<config::LaserPoint> line_points = ransac_lines->get_sum();
+    diff_estimated=ransac_lines->get_estimated_diff();
+    RCLCPP_INFO(this->get_logger(), "diff_estimated yaw->%f", radToDeg(ransac_lines->get_estimated_diff().yaw));
     inlier_cloud.points.resize(line_points.size());
     for(size_t i=0; i<line_points.size(); i++){
       inlier_cloud.points[i].x = line_points[i].x;
@@ -199,12 +202,12 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
     RCLCPP_INFO(this->get_logger(), "align time         ->%d", chrono::duration_cast<chrono::milliseconds>(align_time_end-align_time_start).count());
     RCLCPP_INFO(this->get_logger(), "time          ->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
   }
-  diff_estimated = estimated - current_scan_odom;
-  last_estimated = estimated;
-  last_scan_odom = current_scan_odom;
+  // diff_estimated = estimated - current_scan_odom;
+  // last_estimated = estimated;
+  // last_scan_odom = current_scan_odom;
   scan_execution_time_end = chrono::system_clock::now();
   scan_execution_time = chrono::duration_cast<chrono::milliseconds>(scan_execution_time_end-scan_execution_time_start).count();
-  RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
+  // RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
   if(plot_mode_) pointcloud2_view(input_elephant_cloud, inlier_cloud);
 }
 
