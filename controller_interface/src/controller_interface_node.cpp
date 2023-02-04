@@ -18,13 +18,7 @@ namespace controller_interface
                 std::bind(&ControllerInterface::callback_pad, this, std::placeholders::_1)
             );
 
-            // _sub_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
-            //     "sub_scrn",
-            //     _qos,
-            //     std::bind(&ControllerInterface::callback_scrn, this, std::placeholders::_1)
-            // );
-
-            _sub_scrn = this->create_subscription<std_msgs::msg::String>(
+            _sub_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
                 "sub_scrn",
                 _qos,
                 std::bind(&ControllerInterface::callback_scrn, this, std::placeholders::_1)
@@ -67,9 +61,9 @@ namespace controller_interface
             lin_y.cycle();
             ang_x.cycle();
 
-            lin_x.vel(msg->anl_lft_y);//unityとロボットにおける。xとyが違うので逆にしている。
-            lin_y.vel(msg->anl_lft_x);
-            ang_x.vel(msg->anl_rgt_x);
+            lin_x.vel(this->anl_lft_y);//unityとロボットにおける。xとyが違うので逆にしている。
+            lin_y.vel(this->anl_lft_x);
+            ang_x.vel(this->anl_rgt_x);
 
             uint8_t _candata[8];
             uint8_t flag;
@@ -81,12 +75,13 @@ namespace controller_interface
             float_to_bytes(_candata, (float)ang_x.vel() * max_angular_z);
             for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
 
-            flag = (uint8_t)msg->s;
-            for(int i=0; i<msg_reset->candlc; i++) msg_angular->candata[i] = flag;
-            RCLCPP_INFO(this->get_logger(), "%u", msg_angular->candata[0]);
+            //flag = (uint8_t)msg->s;
+            _candata[0] = (uint8_t)msg->s;
+            for(int i=0; i<msg_reset->candlc; i++) msg_angular->candata[i] = _candata[i];
 
-            flag = (uint8_t)msg->g;
-            for(int i=0; i<msg_emergency->candlc; i++) msg_angular->candata[i] = flag;
+            //flag = (uint8_t)msg->g;
+            _candata[0] = (uint8_t)msg->g;
+            for(int i=0; i<msg_emergency->candlc; i++) msg_angular->candata[i] = _candata[i];
 
             _pub_linear->publish(*msg_linear);
             _pub_angular->publish(*msg_angular);
@@ -94,36 +89,11 @@ namespace controller_interface
             _pub_emergency->publish(*msg_emergency);
         }
 
-        // void ControllerInterface::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
-        // {
-
-        // }
-
         void ControllerInterface::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
         {
-            //上物インターフェイス
-            RCLCPP_INFO(this->get_logger(), "Hello");
-            //RCLCPP_INFO(this->get_logger(), "%s", msg->scrn);
-        }
-
-        void ControllerInterface::callback_reset(const std_msgs::msg::Empty::SharedPtr msg)
-        {
-            auto msg_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_reset->canid = 0x002;
-            msg_reset->candlc = 1;
-
-            uint8_t _candata = msg->structure_needs_at_least_one_member;
-            msg_reset->candata[0] = _candata;
-        }
-
-        void ControllerInterface::callback_emergency(const std_msgs::msg::Empty::SharedPtr msg)
-        {
-            auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_emergency->canid = 0x000;
-            msg_emergency->candlc = 1;
-
-            uint8_t _candata = msg->structure_needs_at_least_one_member;
-            msg_emergency->candata[0] = _candata;
+            //上物インターフェイスノードと経路生成・計画ノードへ
+            
+            
         }
 
         float ControllerInterface::roundoff(const float &value, const float &epsilon)
