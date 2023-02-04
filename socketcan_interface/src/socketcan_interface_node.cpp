@@ -97,6 +97,8 @@ namespace socketcan_interface {
     void SocketcanInterface::_subscriber_callback(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg) {
         struct can_frame frame{};
 
+        ci.vel_flag(false);
+
         frame.can_id = msg->canid;
         if ((msg->candlc > 0) and (msg->candlc <= 9)) {
             frame.can_dlc = msg->candlc;
@@ -116,6 +118,7 @@ namespace socketcan_interface {
         if (write(s, &frame, sizeof(struct can_frame)) != sizeof(struct can_frame)) {
             perror("Write frame0");
             RCLCPP_ERROR(this->get_logger(), "Write error");
+            ci.vel_flag(true);
         }
     }
 }

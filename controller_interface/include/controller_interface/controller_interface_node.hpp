@@ -40,6 +40,11 @@ namespace controller_interface
             void callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
             float roundoff(const float &value, const float &epsilon);
+            bool vel_flag(bool flag){return can_error = flag;}
+
+            double vel_lin_x = 0.0f;
+            double vel_lin_y = 0.0f;
+            double vel_ang_z = 0.0f;
 
             float anl_lft_x = 0.0f;
             float anl_lft_y = 0.0f;
@@ -49,7 +54,7 @@ namespace controller_interface
             float max_linear_x = 1.5f;
             float max_linear_y = 1.5f;
             float max_angular_z = 1.5;
-            
-            bool flag = 0;
+
+            bool can_error = 0;
     };
 }

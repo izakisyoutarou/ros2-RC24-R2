@@ -9,6 +9,9 @@
 
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "visibility.h"
+#include "controller_interface/controller_interface_node.hpp"
+
+using ci = controller_interface::ControllerInterface;
 
 namespace socketcan_interface {
 
@@ -26,6 +29,7 @@ namespace socketcan_interface {
 
         void _publisher_callback();
         void _subscriber_callback(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+
     public:
         SOCKETCAN_INTERFACE_PUBLIC
         explicit SocketcanInterface(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
