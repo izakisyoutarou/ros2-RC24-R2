@@ -105,6 +105,7 @@ private:
   double view_ranges = 270.0;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
+  bool plot_mode_;
   double voxel_leaf_size_; //ダウンサンプリングボクセル
   double laser_weight_;
   double odom_weight_;

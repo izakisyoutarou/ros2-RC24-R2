@@ -6,6 +6,7 @@ IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", o
 IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions &options)
 :  rclcpp::Node("icp_base_slam", name_space, options) {
   RCLCPP_INFO(this->get_logger(), "START");
+  plot_mode_ = this->get_parameter("plot_mode").as_bool();
   voxel_leaf_size_ = this->get_parameter("voxel_leaf_size").as_double();
   laser_weight_ = this->get_parameter("laser_weight").as_double();
   odom_weight_ = this->get_parameter("odom_weight").as_double();
@@ -101,23 +102,21 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   vector<config::LaserPoint> src_points;
   for(size_t i=0; i< msg->ranges.size(); ++i) {
     config::LaserPoint src_point;
-    if(msg->ranges[i] > 14 || msg->ranges[i] < 0.5){msg->ranges[i] = 0;}
-    src_point.x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i - current_scan_odom.yaw) + current_scan_odom.x + odom_to_lidar_x;
-    src_point.y = -msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i - current_scan_odom.yaw) + current_scan_odom.y + odom_to_lidar_y;
-    src_point.id = i;
+    if(msg->ranges[i] > 14 || msg->ranges[i] < 0.5) continue;
+    src_point.angle = msg->angle_min + msg->angle_increment * i - current_scan_odom.yaw;
+    src_point.dist = msg->ranges[i];
+    src_point.x = src_point.dist * cos(src_point.angle) + current_scan_odom.x + odom_to_lidar_x;
+    src_point.y = -src_point.dist * sin(src_point.angle) + current_scan_odom.y + odom_to_lidar_y;
     src_points.push_back(src_point);
   }
 
-  if(registration_method_ == "ransac"){
-    ransac_lines->fuse_inliers(src_points, trial_num_, inlier_dist_threshold_, estimated_odom);
-    vector<config::LaserPoint> line_points = ransac_lines->get_sum();
-    diff_estimated=ransac_lines->get_estimated_diff();
-    RCLCPP_INFO(this->get_logger(), "diff_estimated yaw->%f", radToDeg(ransac_lines->get_estimated_diff().yaw));
-    inlier_cloud.points.resize(line_points.size());
-    for(size_t i=0; i<line_points.size(); i++){
-      inlier_cloud.points[i].x = line_points[i].x;
-      inlier_cloud.points[i].y = line_points[i].y;
-    }
+  ransac_lines->fuse_inliers(src_points, trial_num_, inlier_dist_threshold_, estimated_odom, odom_to_lidar_x, odom_to_lidar_y);
+  vector<config::LaserPoint> line_points = ransac_lines->get_sum();
+  diff_estimated=ransac_lines->get_estimated_diff();
+  inlier_cloud.points.resize(line_points.size());
+  for(size_t i=0; i<line_points.size(); i++){
+    inlier_cloud.points[i].x = line_points[i].x;
+    inlier_cloud.points[i].y = line_points[i].y;
   }
 
   scan_execution_time_end = chrono::system_clock::now();
