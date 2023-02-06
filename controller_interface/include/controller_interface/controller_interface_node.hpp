@@ -23,6 +23,8 @@ namespace controller_interface
             explicit ControllerInterface(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
             explicit ControllerInterface(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
+            bool vel_flag(bool flag){return can_error = flag;}
+
         private:
             //controllerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad;
@@ -40,8 +42,7 @@ namespace controller_interface
             void callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
             float roundoff(const float &value, const float &epsilon);
-            bool vel_flag(bool flag){return can_error = flag;}
-
+            
             double vel_lin_x = 0.0f;
             double vel_lin_y = 0.0f;
             double vel_ang_z = 0.0f;

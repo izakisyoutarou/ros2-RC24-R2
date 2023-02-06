@@ -12,6 +12,8 @@
 #include "socketcan_interface/socketcan_interface_node.hpp"
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 
+ControllerInterface ci;
+
 namespace socketcan_interface {
 
     SocketcanInterface::SocketcanInterface(const rclcpp::NodeOptions &options) : SocketcanInterface("", options) {}

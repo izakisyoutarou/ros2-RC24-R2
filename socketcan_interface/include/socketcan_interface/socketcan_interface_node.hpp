@@ -11,7 +11,7 @@
 #include "visibility.h"
 #include "controller_interface/controller_interface_node.hpp"
 
-using ci = controller_interface::ControllerInterface;
+using ControllerInterface = controller_interface::ControllerInterface;
 
 namespace socketcan_interface {
 

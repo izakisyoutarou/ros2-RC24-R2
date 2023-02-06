@@ -65,6 +65,8 @@ namespace controller_interface
             lin_y.vel(this->anl_lft_x);
             ang_x.vel(this->anl_rgt_x);
 
+            RCLCPP_INFO(this->get_logger(), "flag:%d", can_error);
+
             if(can_error)
             {
                 vel_lin_x = 0.0f;
