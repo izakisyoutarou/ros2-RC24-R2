@@ -131,7 +131,7 @@ Visualization Manager:
       Channel Name: intensity
       Class: rviz_default_plugins/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color Transformer: RGB8
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -150,7 +150,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /self_localization/filtered_cloud
+        Value: /self_localization/ransac_point_cloud
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -197,16 +197,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 18.611059188842773
+      Distance: 11.767097473144531
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.2238401174545288
-        Y: -0.13766729831695557
-        Z: -0.46376311779022217
+        X: -3.6768617630004883
+        Y: -0.01970522105693817
+        Z: -0.4662168323993683
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
