@@ -17,7 +17,7 @@ class RansacLines{
 public:
   RansacLines(){}
   ~RansacLines(){}
-  void fuse_inliers(vector<config::LaserPoint> &src_cloud, int trial_num, double inlier_dist_threshold, const Pose &estimated, double odom_to_lidar_x, double odom_to_lidar_y);
+  void fuse_inliers(vector<config::LaserPoint> &src_cloud, int &trial_num, double &inlier_dist_threshold, const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y);
   EstimatedLine get_inlier(vector<config::LaserPoint> &divided_points);
   void set_points(vector<config::LaserPoint> &points, double map_point_x_1, double map_point_x_2, double map_point_y_1, double map_point_y_2, config::LaserPoint &src_point);
   void input_points(EstimatedLine &line);

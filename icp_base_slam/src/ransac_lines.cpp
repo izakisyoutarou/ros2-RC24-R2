@@ -32,13 +32,16 @@ chrono::system_clock::time_point time_start, time_end;
 
 Pose estimated_diff;
 
-void RansacLines::fuse_inliers(vector<config::LaserPoint> &src_points, int trial_num, double inlier_dist_threshold, const Pose &estimated, double odom_to_lidar_x, double odom_to_lidar_y){
+void RansacLines::fuse_inliers(vector<config::LaserPoint> &src_points, int &trial_num, double &inlier_dist_threshold, const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y){
   odom_to_lidar_x_=odom_to_lidar_x;
   odom_to_lidar_y_=odom_to_lidar_y;
   trial_num_=trial_num;
   inlier_dist_threshold_=inlier_dist_threshold;
   est_x = estimated.x;
   est_y = estimated.y;
+  estimated_diff.x=0.0;
+  estimated_diff.y=0.0;
+  estimated_diff.yaw=0.0;
 
   sum.clear();
   for (int i=0; i < lines.size(); ++i){
@@ -72,6 +75,9 @@ void RansacLines::fuse_inliers(vector<config::LaserPoint> &src_points, int trial
 void RansacLines::calc_estimated_diff(){
   estimated_diff.yaw = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
+    if(lines_[i].points.size()==0){
+      continue;
+    }
     double dist=0.0;
     double dist_sum=0.0;
     double diff_dist=0.0;
@@ -80,17 +86,28 @@ void RansacLines::calc_estimated_diff(){
       else dist_sum += lines_[i].points[j].dist * cos(lines_[i].points[j].angle + estimated_diff.yaw);
     }
     dist = dist_sum / lines_[i].points.size();
-    if(i<=4) estimated_diff.y = LPF_y(est_y + odom_to_lidar_y_ - (dist + map_point_y[i]));
-    else estimated_diff.x = LPF_x(est_x + odom_to_lidar_x_ - (-dist + map_point_x[i-4]));
-    if(!isfinite(estimated_diff.y)) estimated_diff.y=0.0;
-    if(!isfinite(estimated_diff.x)) estimated_diff.x=0.0;
-    cout << "estimate yaw> " << radToDeg(estimated_diff.yaw) << endl;
-    cout << "estimate x  > " << estimated_diff.x << endl;
-    cout << "estimate y  > " << estimated_diff.y << endl;
-    cout << "" << endl;
+    if(i<4) estimated_diff.y = -(est_y + odom_to_lidar_y_ - (dist + map_point_y[i]));
+    else estimated_diff.x = -(est_x + odom_to_lidar_x_ - (-dist + map_point_x[i-4]));
   }
 }
 
+double RansacLines::calc_diff_angle(){
+  double diff_angle=0.0;
+  double angle=0.0;
+  int get_angle_count=0;
+  for(size_t i=0; i<lines_.size(); i++){
+    if(lines_[i].points.size()==0) continue;
+    get_angle_count++;
+    if(i<4) angle = lines_[i].angle;
+    else{
+      if(lines_[i].angle<0) angle = lines_[i].angle + M_PI/2;
+      else angle = lines_[i].angle - M_PI/2;
+    }
+    diff_angle += angle;
+  }
+  if(get_angle_count==0) return 0.0;
+  return LPF_yaw(diff_angle/get_angle_count);
+}
 
 void RansacLines::set_points(vector<config::LaserPoint> &points, double map_point_x_1, double map_point_x_2, double map_point_y_1, double map_point_y_2, config::LaserPoint &src_point){
   if(map_point_x_1 - distance_threshold < src_point.x &&
@@ -183,33 +200,15 @@ bool RansacLines::clear_points(EstimatedLine &estimated_line, int size_threshold
   return false;
 }
 
-double RansacLines::calc_diff_angle(){
-  double diff_angle=0.0;
-  double angle=0.0;
-  int get_angle_count=0;
-  for(size_t i=0; i<lines_.size(); i++){
-    if(lines_[i].points.size()==0) continue;
-    get_angle_count++;
-    if(i<4) angle = lines_[i].angle;
-    else{
-      if(lines_[i].angle<0) angle = lines_[i].angle + M_PI/2;
-      else angle = lines_[i].angle - M_PI/2;
-    }
-    diff_angle += angle;
-  }
-  if(get_angle_count==0) return 0.0;
-  return LPF_yaw(diff_angle/get_angle_count);
-}
-
 double RansacLines::LPF_x(double raw){
-  double k=0.3;
+  double k=0.8;
   double est = (1 - k) * last_x + k * raw;
   last_x = est;
   return est;
 }
 
 double RansacLines::LPF_y(double raw){
-  double k=0.3;
+  double k=0.8;
   double est = (1 - k) * last_y + k * raw;
   last_y = est;
   return est;
