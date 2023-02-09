@@ -100,6 +100,7 @@ private:
   Pose last_scan_odom;
   Pose estimated;
   Pose diff_estimated;
+  Pose diff_estimated_sum;
   double odom_to_lidar_length = 0.4655;
   double reso = 0.125;
   double view_ranges = 270.0;

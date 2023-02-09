@@ -69,8 +69,8 @@ void IcpBaseSlam::callback_odom_linear(const socketcan_interface_msg::msg::Socke
   last_odom.y = y;
   odom.x += diff_odom.x;
   odom.y += diff_odom.y;
-  estimated_odom.x = odom.x + diff_estimated.x;
-  estimated_odom.y = odom.y + diff_estimated.y;
+  estimated_odom.x = odom.x + diff_estimated_sum.x;
+  estimated_odom.y = odom.y + diff_estimated_sum.y;
 }
 
 void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -80,7 +80,7 @@ void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::Sock
   diff_odom.yaw = yaw - last_odom.yaw;
   odom.yaw += diff_odom.yaw;
   last_odom.yaw = odom.yaw;
-  estimated_odom.yaw = normalize_yaw(odom.yaw + diff_estimated.yaw);
+  estimated_odom.yaw = normalize_yaw(odom.yaw + diff_estimated_sum.yaw);
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
@@ -91,12 +91,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   if (dt_scan > 0.03 /* [sec] */) {
     // RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
   }
-  Pose estimated;
   current_scan_odom = estimated_odom;
-  Pose scan_odom_motion = current_scan_odom - last_scan_odom; //前回scanからのオドメトリ移動量
-  Pose predict = last_estimated + scan_odom_motion;  //前回の推定値にscan間オドメトリ移動量を足し、予測位置を計算
-
-  //予測位置を基準にndtを実行
   double odom_to_lidar_x = odom_to_lidar_length * cos(current_scan_odom.yaw);
   double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom.yaw);
   vector<config::LaserPoint> src_points;
@@ -112,17 +107,20 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
   ransac_lines->fuse_inliers(src_points, trial_num_, inlier_dist_threshold_, estimated_odom, odom_to_lidar_x, odom_to_lidar_y);
   vector<config::LaserPoint> line_points = ransac_lines->get_sum();
-  diff_estimated=ransac_lines->get_estimated_diff();
+  diff_estimated = ransac_lines->get_estimated_diff();
+  diff_estimated_sum += diff_estimated;
+
   inlier_cloud.points.resize(line_points.size());
   for(size_t i=0; i<line_points.size(); i++){
     inlier_cloud.points[i].x = line_points[i].x;
     inlier_cloud.points[i].y = line_points[i].y;
   }
 
+  if(plot_mode_) pointcloud2_view(input_elephant_cloud, inlier_cloud);
+
   scan_execution_time_end = chrono::system_clock::now();
   scan_execution_time = chrono::duration_cast<chrono::milliseconds>(scan_execution_time_end-scan_execution_time_start).count();
-  // RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
-  if(plot_mode_) pointcloud2_view(input_elephant_cloud, inlier_cloud);
+  RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
 }
 
 double IcpBaseSlam::quaternionToYaw(double x, double y, double z, double w){
