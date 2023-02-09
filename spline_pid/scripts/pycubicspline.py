@@ -138,10 +138,11 @@ class Spline2D:
     2D Cubic Spline class
     """
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, angle):
         self.s = self.__calc_s(x, y)
         self.sx = Spline(self.s, x)
         self.sy = Spline(self.s, y)
+        self.a = angle
 
     def __calc_s(self, x, y):
         dx = np.diff(x)
@@ -160,6 +161,11 @@ class Spline2D:
         y = self.sy.calc(s)
 
         return x, y
+
+    def calc_angle(self, s):
+        for i, s_ in enumerate(self.s):
+            if(s < s_):
+                return self.a[i]
 
     def calc_curvature(self, s):
         """
@@ -182,7 +188,7 @@ class Spline2D:
         return yaw
 
 
-def calc_2d_spline_interpolation(x, y, num=100):
+def calc_2d_spline_interpolation(x, y, a, num=100):
     """
     Calc 2d spline course with interpolation
 
@@ -196,21 +202,22 @@ def calc_2d_spline_interpolation(x, y, num=100):
         - k     : curvature list
         - s     : Path length from start point
     """
-    sp = Spline2D(x, y)
+    sp = Spline2D(x, y, a)
     s = np.linspace(0, sp.s[-1], num+1)[:-1]
 
-    r_x, r_y, r_yaw, r_k = [], [], [], []
+    r_x, r_y, r_a, r_yaw, r_k = [], [], [], [], []
     for i_s in s:
         ix, iy = sp.calc_position(i_s)
         r_x.append(ix)
         r_y.append(iy)
+        r_a.append(sp.calc_angle(i_s))
         r_yaw.append(sp.calc_yaw(i_s))
         r_k.append(sp.calc_curvature(i_s))
 
     travel = np.cumsum([np.hypot(dx, dy) for dx, dy in zip(np.diff(r_x), np.diff(r_y))]).tolist()
     travel = np.concatenate([[0.0], travel])
 
-    return r_x, r_y, r_yaw, r_k, travel
+    return r_x, r_y, r_a, r_yaw, r_k, travel
 
 
 def test_spline2d():

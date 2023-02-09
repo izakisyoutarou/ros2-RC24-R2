@@ -5,7 +5,7 @@ from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
 
 from std_msgs.msg import String
-from spline_pid.msg import Path
+from path_msg.msg import Path
 import math
 import networkx as nx
 from pycubicspline import *
@@ -58,11 +58,13 @@ class SplineTrajectories(Node):
                 input_x.append(float(x))
                 input_y.append(float(y))
                 input_a.append(math.radians(float(a)))
+            print('角度 : ',input_a)
 
-            x, y, yaw, k, travel = calc_2d_spline_interpolation(input_x, input_y, num = int(length)*100)
+            x, y, a ,yaw, k, travel = calc_2d_spline_interpolation(input_x, input_y, input_a, num = int(length)*100)
 
             msg_tx.x = x
             msg_tx.y = y
+            msg_tx.angle = a
             # msg_tx.vel =
             msg_tx.length = [float(s) for s in travel]
             msg_tx.curvature = k

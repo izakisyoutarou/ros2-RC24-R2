@@ -17,19 +17,22 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-#find_package(ament_cmake_ros REQUIRED)
+find_package(ament_cmake_ros REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(path_msg REQUIRED)
+find_package(std_msgs REQUIRED)
 
 add_library(spline_pid_node src/spline_pid_node.cpp)
 target_include_directories(spline_pid_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-ament_target_dependencies(
-  spline_pid_node
-  "rclcpp"
+ament_target_dependencies(spline_pid_node
+  rclcpp
+  path_msg
+  std_msgs
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
@@ -71,17 +74,6 @@ ament_export_libraries(
 ament_export_targets(
   export_${PROJECT_NAME}
 )
-
-#-- for Msg
-set(msg_files
-        "msg/Path.msg"
-        )
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-        ${msg_files}
-        #DEPENDENCIES std_msgs
-        )
-#--- end Msg
 
 #-- for Python
 ament_python_install_package(${PROJECT_NAME})
