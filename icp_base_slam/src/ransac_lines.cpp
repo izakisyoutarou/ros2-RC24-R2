@@ -1,48 +1,14 @@
 #include "icp_base_slam/ransac_lines.hpp"
 
-vector<vector<config::LaserPoint>> lines;
-/* linesの順番
-0:rafter_right
-1:fence_right
-2:fence_left
-3:rafter_left
-4:rafter_back
-5:fence_front
-6:fence_centor_right
-7:fence_centor_left
-*/
-vector<EstimatedLine> lines_;
+void RansacLines::fuse_inliers(vector<config::LaserPoint> &src_points, const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y){
+  init();
+  devide_points(src_points);
+  get_inliers();
+  calc_estimated_diff(estimated, odom_to_lidar_x, odom_to_lidar_y);
+}
 
-vector<config::LaserPoint> sum;
-
-EstimatedLine inlier;
-
-int trial_num_;
-double inlier_dist_threshold_;
-double detect_length = 0.0;
-double est_x=0.0;
-double est_y=0.0;
-double distance_threshold=0.8;
-double last_x=0;
-double last_y=0;
-double last_yaw=0;
-double odom_to_lidar_x_;
-double odom_to_lidar_y_;
-chrono::system_clock::time_point time_start, time_end;
-
-Pose estimated_diff;
-
-void RansacLines::fuse_inliers(vector<config::LaserPoint> &src_points, int &trial_num, double &inlier_dist_threshold, const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y){
-  odom_to_lidar_x_=odom_to_lidar_x;
-  odom_to_lidar_y_=odom_to_lidar_y;
-  trial_num_=trial_num;
-  inlier_dist_threshold_=inlier_dist_threshold;
-  est_x = estimated.x;
-  est_y = estimated.y;
-  estimated_diff.x=0.0;
-  estimated_diff.y=0.0;
-  estimated_diff.yaw=0.0;
-
+void RansacLines::init(){
+  estimated_diff = Pose();
   sum.clear();
   for (int i=0; i < lines.size(); ++i){
     lines[i].clear();
@@ -52,42 +18,24 @@ void RansacLines::fuse_inliers(vector<config::LaserPoint> &src_points, int &tria
   lines_.clear();
   lines.resize(8);
   lines_.resize(8);
-
-  for(size_t i=0; i<src_points.size(); i++){
-    set_points(lines[0], map_point_x[0], map_point_x[2], map_point_y[0], map_point_y[0], src_points[i]);
-    set_points(lines[1], map_point_x[1], map_point_x[2], map_point_y[1], map_point_y[1], src_points[i]);
-    set_points(lines[2], map_point_x[1], map_point_x[2], map_point_y[2], map_point_y[2], src_points[i]);
-    set_points(lines[3], map_point_x[0], map_point_x[2], map_point_y[3], map_point_y[3], src_points[i]);
-    set_points(lines[4], map_point_x[0], map_point_x[0], map_point_y[0], map_point_y[3], src_points[i]);
-    set_points(lines[5], map_point_x[1], map_point_x[1], map_point_y[1], map_point_y[2], src_points[i]);
-    set_points(lines[6], map_point_x[2], map_point_x[2], map_point_y[0], map_point_y[1], src_points[i]);
-    set_points(lines[7], map_point_x[2], map_point_x[2], map_point_y[2], map_point_y[3], src_points[i]);
-  }
-  for(size_t i=0; i<lines.size(); i++){
-    lines_[i]=get_inlier(lines[i]);
-    if(i<4) clear_points(lines_[i], 100, 0, 10);
-    else clear_points(lines_[i], 100, 80, 90);
-    input_points(lines_[i]);
-  }
-  calc_estimated_diff();
 }
 
-void RansacLines::calc_estimated_diff(){
+
+void RansacLines::calc_estimated_diff(const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y){
   estimated_diff.yaw = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0){
       continue;
     }
-    double dist=0.0;
+    double dist;
     double dist_sum=0.0;
-    double diff_dist=0.0;
     for(size_t j=0; j<lines_[i].points.size(); j++){
       if(i<4) dist_sum += lines_[i].points[j].dist * sin(lines_[i].points[j].angle + estimated_diff.yaw);
       else dist_sum += lines_[i].points[j].dist * cos(lines_[i].points[j].angle + estimated_diff.yaw);
     }
     dist = dist_sum / lines_[i].points.size();
-    if(i<4) estimated_diff.y = -(est_y + odom_to_lidar_y_ - (dist + map_point_y[i]));
-    else estimated_diff.x = -(est_x + odom_to_lidar_x_ - (-dist + map_point_x[i-4]));
+    if(i<4) estimated_diff.y = -(estimated.y + odom_to_lidar_y - (dist + map_point_y[i]));
+    else estimated_diff.x = -(estimated.x + odom_to_lidar_x - (-dist + map_point_x[i-4]));
   }
 }
 
@@ -106,7 +54,29 @@ double RansacLines::calc_diff_angle(){
     diff_angle += angle;
   }
   if(get_angle_count==0) return 0.0;
-  return LPF_yaw(diff_angle/get_angle_count);
+  return LPF(diff_angle/get_angle_count);
+}
+
+void RansacLines::devide_points(vector<config::LaserPoint> &src_points){
+  for(size_t i=0; i<src_points.size(); i++){
+    set_points(lines[0], map_point_x[0], map_point_x[2], map_point_y[0], map_point_y[0], src_points[i]);
+    set_points(lines[1], map_point_x[1], map_point_x[2], map_point_y[1], map_point_y[1], src_points[i]);
+    set_points(lines[2], map_point_x[1], map_point_x[2], map_point_y[2], map_point_y[2], src_points[i]);
+    set_points(lines[3], map_point_x[0], map_point_x[2], map_point_y[3], map_point_y[3], src_points[i]);
+    set_points(lines[4], map_point_x[0], map_point_x[0], map_point_y[0], map_point_y[3], src_points[i]);
+    set_points(lines[5], map_point_x[1], map_point_x[1], map_point_y[1], map_point_y[2], src_points[i]);
+    set_points(lines[6], map_point_x[2], map_point_x[2], map_point_y[0], map_point_y[1], src_points[i]);
+    set_points(lines[7], map_point_x[2], map_point_x[2], map_point_y[2], map_point_y[3], src_points[i]);
+  }
+}
+
+void RansacLines::get_inliers(){
+  for(size_t i=0; i<lines.size(); i++){
+    lines_[i]=calc_inliers(lines[i]);
+    if(i<4) clear_points(lines_[i], 100, 0, 10);
+    else clear_points(lines_[i], 100, 80, 90);
+    input_points(lines_[i]);
+  }
 }
 
 void RansacLines::set_points(vector<config::LaserPoint> &points, double map_point_x_1, double map_point_x_2, double map_point_y_1, double map_point_y_2, config::LaserPoint &src_point){
@@ -132,10 +102,8 @@ void RansacLines::input_points(EstimatedLine &line){
 }
 
 
-EstimatedLine RansacLines::get_inlier(vector<config::LaserPoint> &divided_points){
+EstimatedLine RansacLines::calc_inliers(vector<config::LaserPoint> &divided_points){
   inlier.points.clear();
-  inlier.x=0.0;
-  inlier.y=0.0;
   inlier.angle=0.0;
   if(divided_points.size()==0){
     return inlier;
@@ -200,25 +168,11 @@ bool RansacLines::clear_points(EstimatedLine &estimated_line, int size_threshold
   return false;
 }
 
-double RansacLines::LPF_x(double raw){
-  double k=0.8;
-  double est = (1 - k) * last_x + k * raw;
-  last_x = est;
-  return est;
-}
-
-double RansacLines::LPF_y(double raw){
-  double k=0.8;
-  double est = (1 - k) * last_y + k * raw;
-  last_y = est;
-  return est;
-}
-
-double RansacLines::LPF_yaw(double raw){
+double RansacLines::LPF(double raw){
   double k=0.3;
-  double est = (1 - k) * last_yaw + k * raw;
-  last_yaw = est;
-  return est;
+  double lpf = (1 - k) * last_lpf + k * raw;
+  last_lpf = lpf;
+  return lpf;
 }
 
 EstimatedLine RansacLines::get_filtered_rafter_right(){return lines_[0];}

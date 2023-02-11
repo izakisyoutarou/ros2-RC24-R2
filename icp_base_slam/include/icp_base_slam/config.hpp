@@ -14,8 +14,6 @@ struct LaserPoint{
 }
 
 struct EstimatedLine{
-  double x=0.0;
-  double y=0.0;
   double angle=0.0;
   vector<config::LaserPoint> points;
 };

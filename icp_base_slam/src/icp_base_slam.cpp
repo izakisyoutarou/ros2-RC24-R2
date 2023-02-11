@@ -43,6 +43,8 @@ IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOption
   pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
     "self_localization/pose", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
 
+
+  ransac_lines = RansacLines(trial_num_, inlier_dist_threshold_);
   cloud.points.resize(view_ranges/reso);
   input_elephant_cloud.points.resize(51655);
   inlier_cloud.points.resize(2161);
@@ -105,9 +107,9 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
     src_points.push_back(src_point);
   }
 
-  ransac_lines->fuse_inliers(src_points, trial_num_, inlier_dist_threshold_, estimated_odom, odom_to_lidar_x, odom_to_lidar_y);
-  vector<config::LaserPoint> line_points = ransac_lines->get_sum();
-  diff_estimated = ransac_lines->get_estimated_diff();
+  ransac_lines.fuse_inliers(src_points, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
+  vector<config::LaserPoint> line_points = ransac_lines.get_sum();
+  diff_estimated = ransac_lines.get_estimated_diff();
   diff_estimated_sum += diff_estimated;
 
   inlier_cloud.points.resize(line_points.size());
@@ -120,7 +122,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 
   scan_execution_time_end = chrono::system_clock::now();
   scan_execution_time = chrono::duration_cast<chrono::milliseconds>(scan_execution_time_end-scan_execution_time_start).count();
-  RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
+  // RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
 }
 
 double IcpBaseSlam::quaternionToYaw(double x, double y, double z, double w){
