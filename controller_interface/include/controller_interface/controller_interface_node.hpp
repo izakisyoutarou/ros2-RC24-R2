@@ -23,8 +23,6 @@ namespace controller_interface
             explicit ControllerInterface(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
             explicit ControllerInterface(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
-            bool vel_flag(bool flag){return can_error = flag;}
-
         private:
             //controllerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad;
@@ -37,7 +35,7 @@ namespace controller_interface
             //経路生成・計画へ
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_route;
 
-            rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
+            rclcpp::QoS _qos = rclcpp::QoS(20);
 
             void callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
@@ -52,10 +50,8 @@ namespace controller_interface
             float anl_rgt_x = 0.0f;
             float anl_rgt_y = 0.0f;
 
-            float max_linear_x = 1.5f;
-            float max_linear_y = 1.5f;
-            float max_angular_z = 1.5;
-
-            bool can_error = 0;
+            float max_linear_x = 2.0f;
+            float max_linear_y = 2.0f;
+            float max_angular_z = 2.0f;
     };
 }

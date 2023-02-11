@@ -9,7 +9,6 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(socketcan_interface_msg REQUIRED)
-find_package(controller_interface REQUIRED)
 
 include_directories(include)
 
@@ -25,7 +24,6 @@ target_compile_options(socketcan_interface_node PUBLIC -Wall)
 ament_target_dependencies(socketcan_interface_node
         rclcpp
         socketcan_interface_msg
-        controller_interface
         )
 
 target_include_directories(socketcan_interface_node
@@ -44,7 +42,6 @@ ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 ament_export_dependencies(
         rclcpp
         socketcan_interface_msg
-        controller_interface
 )
 
 install(

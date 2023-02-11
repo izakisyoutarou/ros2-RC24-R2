@@ -64,31 +64,17 @@ namespace controller_interface
             lin_x.vel(this->anl_lft_y);//unityとロボットにおける。xとyが違うので逆にしている。
             lin_y.vel(this->anl_lft_x);
             ang_x.vel(this->anl_rgt_x);
-
-            RCLCPP_INFO(this->get_logger(), "flag:%d", can_error);
-
-            if(can_error)
-            {
-                vel_lin_x = 0.0f;
-                vel_lin_y = 0.0f;
-                vel_ang_z = 0.0f;
-            }
-            else
-            {
-                vel_lin_x = (float)lin_x.vel() * max_linear_x;
-                vel_lin_y = (float)lin_y.vel() * max_linear_y;
-                vel_ang_z = (float)ang_x.vel() * max_angular_z;
-            }
-
+            
+            //RCLCPP_INFO(this->get_logger(), "anl_lft_x:%f", msg->anl_lft_x);
 
             uint8_t _candata[8];
             uint8_t flag;
 
-            float_to_bytes(_candata, vel_lin_x);
-            float_to_bytes(_candata+4, vel_lin_y);
+            float_to_bytes(_candata, (float)lin_x.vel() * max_linear_x);
+            float_to_bytes(_candata+4, (float)lin_y.vel() * max_linear_y);
             for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata[i];
 
-            float_to_bytes(_candata, vel_ang_z);
+            float_to_bytes(_candata, (float)ang_x.vel() * max_angular_z);
             for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
 
             //flag = (uint8_t)msg->s;
@@ -101,15 +87,14 @@ namespace controller_interface
 
             _pub_linear->publish(*msg_linear);
             _pub_angular->publish(*msg_angular);
-            _pub_reset->publish(*msg_reset);
-            _pub_emergency->publish(*msg_emergency);
+            // _pub_reset->publish(*msg_reset);
+            // _pub_emergency->publish(*msg_emergency);
         }
 
         void ControllerInterface::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
         {
             //上物インターフェイスノードと経路生成・計画ノードへ
-
-
+            //RCLCPP_INFO(this->get_logger(), "flag:%d", msg->p1);
         }
 
         float ControllerInterface::roundoff(const float &value, const float &epsilon)
