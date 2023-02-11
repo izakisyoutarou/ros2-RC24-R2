@@ -39,8 +39,8 @@ class SplineTrajectories(Node):
 
     def node_callback(self, msg):
         self.target_node = msg.data
-        if True:
-        # try:
+        # if True:
+        try:
             path = nx.dijkstra_path(self.edgelist, self.current_node, msg.data)
             length = nx.dijkstra_path_length(self.edgelist, self.current_node, msg.data)
 
@@ -71,8 +71,8 @@ class SplineTrajectories(Node):
 
             self.publisher_path.publish(msg_tx)
 
-        # except:
-        #     self.get_logger().info('軌道生成の失敗')
+        except:
+            self.get_logger().info('軌道生成の失敗')
 
     def node_name_2_pose(self, node_name):
         with open(self.nodelist_file_path, 'r', encoding='utf-8') as file:

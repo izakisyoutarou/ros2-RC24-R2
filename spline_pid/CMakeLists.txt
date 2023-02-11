@@ -22,8 +22,11 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-find_package(path_msg REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(path_msg REQUIRED)
+find_package(socketcan_interface_msg REQUIRED)
+find_package(utilities REQUIRED)
 
 add_library(spline_pid_node src/spline_pid_node.cpp)
 target_include_directories(spline_pid_node PUBLIC
@@ -31,8 +34,11 @@ target_include_directories(spline_pid_node PUBLIC
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(spline_pid_node
   rclcpp
-  path_msg
   std_msgs
+  geometry_msgs
+  path_msg
+  socketcan_interface_msg
+  utilities
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
