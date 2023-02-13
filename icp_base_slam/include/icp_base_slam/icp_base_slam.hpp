@@ -3,15 +3,6 @@
 
 #include <iostream>
 
-#include <pcl/point_types.h>
-#include <pcl/point_cloud.h>
-#include <pcl/ModelCoefficients.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/registration/ndt.h>
-#include <pcl/registration/ndt_2d.h>
-#include <pcl/filters/voxel_grid.h>
-
-#include <pcl_conversions/pcl_conversions.h>
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include "rclcpp/rclcpp.hpp"
@@ -27,12 +18,11 @@
 #include "icp_base_slam/pose_fuser.hpp"
 #include "icp_base_slam/ransac_lines.hpp"
 #include "icp_base_slam/dynamic_voxel_grid_filter.hpp"
+#include "icp_base_slam/vector_to_PC2.hpp"
 
 #include "visibility.h"
 
 using namespace std;
-using PointType = pcl::PointXYZ;
-using PclCloud = pcl::PointCloud<PointType>;
 
 namespace self_localization{
 class IcpBaseSlam : public rclcpp::Node{
@@ -44,37 +34,32 @@ public:
 
 private:
   PoseFuser *pose_fuser;  // センサ融合器
-  RansacLines *ransac_lines;
+  RansacLines ransac_lines;
   DynamicVoxelGridFilter dynamic_voxel_grid_filter;
+  VectorToPC2 vector_to_PC2;
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void create_elephant_map();
-  void pointcloud2_view(PclCloud &map_cloud, PclCloud &ransac_cloud);
-  pcl::PointCloud<pcl::PointXYZRGB> cloud_add_collor(PclCloud &cloud, char *rgb);
-  double quaternionToYaw(double x, double y, double z, double w);
+  void pointcloud2_view(vector<config::LaserPoint> &points);
+  // pcl::PointCloud<pcl::PointXYZRGB> cloud_add_collor(PclCloud &cloud, char *rgb);
   double normalize_yaw(double yaw){
     if (yaw < -M_PI) yaw += 2*M_PI;
     else if (yaw >= M_PI) yaw -= 2*M_PI;
     return yaw;
   }
 
-  pcl::NormalDistributionsTransform<PointType, PointType> ndt;
-
-  PclCloud cloud;
-  PclCloud input_elephant_cloud;
-  PclCloud inlier_cloud;
-  pcl::VoxelGrid<PointType> voxel_grid_filter;
+  sensor_msgs::msg::PointCloud2 map_cloud;
+  vector<config::LaserPoint> map_points;
 
   chrono::system_clock::time_point time_start, time_end, scan_execution_time_start, scan_execution_time_end, align_time_start, align_time_end, fuse_time_start, fuse_time_end;
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_angular_subscriber;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_pointcloud2_publisher;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ransac_pointcloud2_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_publisher;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ransaced_publisher;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher;
   rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
@@ -104,6 +89,7 @@ private:
   double odom_to_lidar_length = 0.4655;
   double reso = 0.125;
   double view_ranges = 270.0;
+  bool odom_flag=false;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
   bool plot_mode_;

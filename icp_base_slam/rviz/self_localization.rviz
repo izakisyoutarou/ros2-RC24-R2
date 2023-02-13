@@ -117,7 +117,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /self_localization/map_point_cloud
+        Value: /self_localization/map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -131,7 +131,7 @@ Visualization Manager:
       Channel Name: intensity
       Class: rviz_default_plugins/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: RGB8
+      Color Transformer: Intensity
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -150,7 +150,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /self_localization/ransac_point_cloud
+        Value: /self_localization/ransac
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
