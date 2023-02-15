@@ -28,35 +28,26 @@ set(dependencies
   nav_msgs
   geometry_msgs
   tf2_ros
-  PCL
-  pcl_conversions
   utilities
   socketcan_interface_msg
+  Eigen3
 )
-#add_library(${PROJECT_NAME} ${SRC_FILES})
+
 include_directories(icp_base_slam
-  ${PCL_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
 )
 add_library(icp_base_slam
   src/icp_base_slam.cpp
   src/pose_fuser.cpp
   src/ransac_lines.cpp
-  src/dynamic_voxel_grid_filter.cpp
 )
 target_compile_definitions(icp_base_slam
   PRIVATE "ICP_BASE_SLAM_LIBRARY"
 )
 target_compile_options(icp_base_slam PUBLIC -Wall)
 
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-
 ament_target_dependencies(icp_base_slam
   ${dependencies}
-)
-
-target_link_libraries(icp_base_slam
-  ${PCL_LIBRARIES}
 )
 
 target_include_directories(icp_base_slam PUBLIC

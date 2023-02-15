@@ -4,14 +4,10 @@
 #include <vector>
 #include <cmath>
 #include <chrono>
-#include <pcl/point_types.h>
-#include <pcl/point_cloud.h>
 
 #include "config.hpp"
 
 using namespace std;
-using PointType = pcl::PointXYZ;
-using PclCloud = pcl::PointCloud<PointType>;
 
 class RansacLines{
 public:
