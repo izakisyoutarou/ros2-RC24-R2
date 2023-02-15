@@ -28,10 +28,10 @@ public:
   ICP_BASE_SLAM_PUBLIC
   explicit IcpBaseSlam(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   ICP_BASE_SLAM_PUBLIC
-  explicit IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+  explicit IcpBaseSlam(const string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
 private:
-  PoseFuser *pose_fuser;  // センサ融合器
+  PoseFuser pose_fuser;  // センサ融合器
   RansacLines ransac_lines;
   Converter converter;
 

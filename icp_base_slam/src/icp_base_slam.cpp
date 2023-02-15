@@ -3,7 +3,7 @@
 namespace self_localization{
 IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", options) {}
 
-IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions &options)
+IcpBaseSlam::IcpBaseSlam(const string& name_space, const rclcpp::NodeOptions &options)
 :  rclcpp::Node("icp_base_slam", name_space, options) {
   RCLCPP_INFO(this->get_logger(), "START");
   laser_weight_ = this->get_parameter("laser_weight").as_double();
@@ -18,12 +18,12 @@ IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOption
   odom_linear_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
     "can_rx_100",
     _qos,
-    std::bind(&IcpBaseSlam::callback_odom_linear, this, std::placeholders::_1)
+    bind(&IcpBaseSlam::callback_odom_linear, this, placeholders::_1)
   );
   odom_angular_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
     "can_rx_101",
     _qos,
-    std::bind(&IcpBaseSlam::callback_odom_angular, this, std::placeholders::_1)
+    bind(&IcpBaseSlam::callback_odom_angular, this, placeholders::_1)
   );
 
   ransaced_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -102,17 +102,12 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   vector<config::LaserPoint> global_points = transform(line_points, trans);
   // vector<config::LaserPoint> global_points = converter.scan_to_vector(msg, ransac_estimated, odom_to_lidar_x, odom_to_lidar_y);
 
-  Pose estimated = pose_fuser->fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points, laser_weight_, odom_weight_);
+  Pose estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points, laser_weight_, odom_weight_);
   // RCLCPP_INFO(this->get_logger(), "estimated.x>%f", estimated.x);
 
   Pose diff_estimated = estimated - current_scan_odom;
   // RCLCPP_INFO(this->get_logger(), "diff_estimated.x>%f", diff_estimated.x);
   odom += diff_estimated;
-  RCLCPP_INFO(this->get_logger(), "trans.x             >%f", trans.x);
-  RCLCPP_INFO(this->get_logger(), "diff_estimated.x    >%f", diff_estimated.x);
-  RCLCPP_INFO(this->get_logger(), "trans.y             >%f", trans.y);
-  RCLCPP_INFO(this->get_logger(), "diff_estimated.y    >%f", diff_estimated.y);
-  RCLCPP_INFO(this->get_logger(), "");
   last_estimated = estimated;
 
   pointcloud2_view(line_points);
@@ -149,49 +144,49 @@ void IcpBaseSlam::create_elephant_map(){
   config::LaserPoint map_point;
   //右の垂木
   for(int i=0; i<=int((map_point_x[2] - map_point_x[0])*1000); i++){
-    map_point.x = double(i)/1000 + map_point_x[0];
+    map_point.x = static_cast<double>(i)/1000 + map_point_x[0];
     map_point.y = map_point_y[0];
     map_points.push_back(map_point);
   }
   //後ろの垂木
   for(int i=0; i<=int((map_point_y[3] - map_point_y[0])*1000); i++){
     map_point.x = map_point_x[0];
-    map_point.y = double(i)/1000 + map_point_y[0];
+    map_point.y = static_cast<double>(i)/1000 + map_point_y[0];
     map_points.push_back(map_point);
   }
   //左の垂木
   for(int i=0; i<=int((map_point_x[2] - map_point_x[0])*1000); i++){
-    map_point.x = double(i)/1000 + map_point_x[0];
+    map_point.x = static_cast<double>(i)/1000 + map_point_x[0];
     map_point.y = map_point_y[3];
     map_points.push_back(map_point);
   }
   //右奥正面向きのフェンス
   for(int i=0; i<=int((map_point_y[1] - map_point_y[0])*1000); i++){
     map_point.x = map_point_x[2];
-    map_point.y = double(i)/1000 + map_point_y[0];
+    map_point.y = static_cast<double>(i)/1000 + map_point_y[0];
     map_points.push_back(map_point);
   }
   //右縦向きのフェンス
   for(int i=0; i<=int((map_point_x[2] - map_point_x[1])*1000); i++){
-    map_point.x = double(i)/1000 + map_point_x[1];
+    map_point.x = static_cast<double>(i)/1000 + map_point_x[1];
     map_point.y = map_point_y[1];
     map_points.push_back(map_point);
   }
   //正面のフェンス
   for(int i=0; i<=int((map_point_y[2] - map_point_y[1])*1000); i++){
     map_point.x = map_point_x[1];
-    map_point.y = double(i)/1000 + map_point_y[1];
+    map_point.y = static_cast<double>(i)/1000 + map_point_y[1];
     map_points.push_back(map_point);
   }
   //左縦向きのフェンス
   for(int i=0; i<=int((map_point_x[2] - map_point_x[1])*1000); i++){
-    map_point.x = double(i)/1000 + map_point_x[1];
+    map_point.x = static_cast<double>(i)/1000 + map_point_x[1];
     map_point.y = map_point_y[2];
     map_points.push_back(map_point);
   }
   for(int i=0; i<=int((map_point_y[3] - map_point_y[2])*1000); i++){
     map_point.x = map_point_x[2];
-    map_point.y = double(i)/1000 + map_point_y[2];
+    map_point.y = static_cast<double>(i)/1000 + map_point_y[2];
     map_points.push_back(map_point);
   }
   map_cloud = converter.vector_to_PC2(map_points);

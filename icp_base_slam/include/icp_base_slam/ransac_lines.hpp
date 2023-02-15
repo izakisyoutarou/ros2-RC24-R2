@@ -16,6 +16,11 @@ public:
   ~RansacLines(){};
   void fuse_inliers(vector<config::LaserPoint> &src_points, const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y);
   void init();
+
+  vector<config::LaserPoint> get_sum();
+  Pose get_estimated_diff();
+
+private:
   EstimatedLine calc_inliers(vector<config::LaserPoint> &divided_points);
   void get_inliers();
   void devide_points(vector<config::LaserPoint> &src_points);
@@ -25,19 +30,6 @@ public:
   double calc_diff_angle();
   double LPF(double raw);
   void calc_estimated_diff(const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y);
-  EstimatedLine get_filtered_rafter_right();
-  EstimatedLine get_filtered_rafter_left();
-  EstimatedLine get_filtered_rafter_back();
-  EstimatedLine get_filtered_fence_centor_right();
-  EstimatedLine get_filtered_fence_centor_left();
-  EstimatedLine get_filtered_fence_front();
-  EstimatedLine get_filtered_fence_right();
-  EstimatedLine get_filtered_fence_left();
-  vector<config::LaserPoint> get_sum();
-  Pose get_estimated_diff();
-
-private:
-  vector<vector<config::LaserPoint>> lines;
   /* linesの順番
   0:rafter_right
   1:fence_right
@@ -48,17 +40,15 @@ private:
   6:fence_centor_right
   7:fence_centor_left
   */
+  vector<vector<config::LaserPoint>> lines;
   vector<EstimatedLine> lines_;
-
   vector<config::LaserPoint> sum;
-
   EstimatedLine inlier;
-
+  Pose estimated_diff;
   int trial_num_;
   double inlier_dist_threshold_;
   double detect_length = 0.0;
   double distance_threshold=0.8;
   double last_lpf=0;
   chrono::system_clock::time_point time_start, time_end;
-  Pose estimated_diff;
 };

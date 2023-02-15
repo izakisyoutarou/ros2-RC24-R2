@@ -10,7 +10,7 @@ void RansacLines::fuse_inliers(vector<config::LaserPoint> &src_points, const Pos
 void RansacLines::init(){
   estimated_diff = Pose();
   sum.clear();
-  for (int i=0; i < lines.size(); ++i){
+  for (int i=0; i<lines.size(); ++i){
     lines[i].clear();
     lines_[i].points.clear();
   }
@@ -24,9 +24,7 @@ void RansacLines::init(){
 void RansacLines::calc_estimated_diff(const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y){
   estimated_diff.yaw = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
-    if(lines_[i].points.size()==0){
-      continue;
-    }
+    if(lines_[i].points.size()==0) continue;
     double dist;
     double dist_sum=0.0;
     for(size_t j=0; j<lines_[i].points.size(); j++){
@@ -118,18 +116,18 @@ EstimatedLine RansacLines::calc_inliers(vector<config::LaserPoint> &divided_poin
   // ランダムサンプリング
   for (int i = 0; i < trial_num_; i++) {
     // ランダムに2点を選択する
-    int p1_idx = (int)(rand() / (RAND_MAX + 1.0) * divided_points.size());
-    int p2_idx = (int)(rand() / (RAND_MAX + 1.0) * divided_points.size());
+    int p1_idx = static_cast<int>(rand() / (RAND_MAX + 1.0) * divided_points.size());
+    int p2_idx = static_cast<int>(rand() / (RAND_MAX + 1.0) * divided_points.size());
     // 直線の係数を計算する
     double diff_y = divided_points[p2_idx].y - divided_points[p1_idx].y;
     double diff_x = divided_points[p1_idx].x - divided_points[p2_idx].x;
     double diff_xy = divided_points[p1_idx].y * divided_points[p2_idx].x - divided_points[p2_idx].y * divided_points[p1_idx].x;
     detect_length = sqrt(diff_x*diff_x + diff_y*diff_y);
-    if(detect_length < 1.0) continue;
+    if(detect_length < 1.1) continue;
     // インライア数を計算する
     int inlier_num = 0;
     for (const auto& point : divided_points) {
-      double dist = std::abs(diff_y * point.x + diff_x * point.y + diff_xy) / std::sqrt(diff_y * diff_y + diff_x * diff_x);
+      double dist = abs(diff_y * point.x + diff_x * point.y + diff_xy) / sqrt(diff_y * diff_y + diff_x * diff_x);
       if (dist < inlier_dist_threshold_) {
         inlier_num++;
       }
@@ -146,7 +144,7 @@ EstimatedLine RansacLines::calc_inliers(vector<config::LaserPoint> &divided_poin
     }
   }
   for(size_t i=0; i<best_inlier_num; i++){
-    double dist = std::abs(best_diff_y * divided_points[i].x + best_diff_x * divided_points[i].y + best_diff_xy) / std::sqrt(best_diff_y * best_diff_y + best_diff_x * best_diff_x);
+    double dist = abs(best_diff_y * divided_points[i].x + best_diff_x * divided_points[i].y + best_diff_xy) / sqrt(best_diff_y * best_diff_y + best_diff_x * best_diff_x);
     if (dist < inlier_dist_threshold_) {
       config::LaserPoint temp_point;
       temp_point.x = divided_points[i].x;
@@ -175,15 +173,5 @@ double RansacLines::LPF(double raw){
   return lpf;
 }
 
-EstimatedLine RansacLines::get_filtered_rafter_right(){return lines_[0];}
-EstimatedLine RansacLines::get_filtered_rafter_left(){return lines_[1];}
-EstimatedLine RansacLines::get_filtered_fence_right(){return lines_[2];}
-EstimatedLine RansacLines::get_filtered_fence_left(){return lines_[3];}
-EstimatedLine RansacLines::get_filtered_rafter_back(){return lines_[4];}
-EstimatedLine RansacLines::get_filtered_fence_front(){return lines_[5];}
-EstimatedLine RansacLines::get_filtered_fence_centor_right(){return lines_[6];}
-EstimatedLine RansacLines::get_filtered_fence_centor_left(){return lines_[7];}
-
 vector<config::LaserPoint> RansacLines::get_sum(){return sum;}
-
 Pose RansacLines::get_estimated_diff(){return estimated_diff;}
