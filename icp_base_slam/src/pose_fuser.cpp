@@ -1,41 +1,45 @@
 #include "icp_base_slam/pose_fuser.hpp"
 
-vector<const LaserPoint*> current_points;   //対応がとれた現在スキャンの点群
-vector<const LaserPoint*> reference_points;   //対応がとれた参照スキャンの点群
+vector<LaserPoint> current_points;   //対応がとれた現在スキャンの点群
+vector<LaserPoint> reference_points;   //対応がとれた参照スキャンの点群
 
-void PoseFuser::fuse_pose(const Pose &ndt_estimated, const Pose &scan_odom_motion, const Pose &predict, const double dt_scan, const PclCloud::Ptr current_cloud, const Eigen::Matrix4d transformation_matrix, Pose &estimated, double laser_weight_, double odom_weight_){
+Pose PoseFuser::fuse_pose(const Pose &ransac_estimated, const Pose &scan_odom_motion, const Pose &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points, double laser_weight_, double odom_weight_){
+  if(global_points.size()==0) return current_scan_odom;
   current_points.clear();
   reference_points.clear();
-  NormalVector normal_vector = find_correspondence(current_cloud, transformation_matrix, current_points, reference_points);
-  Eigen::Matrix2d ndt_cov;  //ndtの共分散行列
-  double ratio = calculate_ndt_covariance(ndt_estimated, ndt_cov, transformation_matrix, current_points, reference_points, normal_vector, laser_weight_);
+  NormalVector normal_vector = find_correspondence(src_points, global_points, current_points, reference_points);
+  Eigen::Matrix2d ransac_cov;  //ndtの共分散行列
+  double ratio = calculate_ransac_covariance(ransac_estimated, ransac_cov, current_points, reference_points, normal_vector, laser_weight_);
   Eigen::Matrix2d scan_odom_motion_cov;
   calculate_motion_covariance(scan_odom_motion, dt_scan, scan_odom_motion_cov, odom_weight_);  // オドメトリで得た移動量の共分散
   Eigen::Matrix2d rotate_scan_odom_motion_cov;
-  rotate_covariance(ndt_estimated, scan_odom_motion_cov, rotate_scan_odom_motion_cov);
-  Eigen::Vector2d mu1(ndt_estimated.x, ndt_estimated.y);
-  Eigen::Vector2d mu2(predict.x, predict.y);
+  rotate_covariance(ransac_estimated, scan_odom_motion_cov, rotate_scan_odom_motion_cov);
+  Eigen::Vector2d mu1(ransac_estimated.x, ransac_estimated.y);
+  Eigen::Vector2d mu2(current_scan_odom.x, current_scan_odom.y);
   Eigen::Vector2d mu;
   Eigen::Matrix2d fused_cov;               // センサ融合後の共分散
-  fuse(mu1, ndt_cov, mu2, rotate_scan_odom_motion_cov, mu, fused_cov);  // 2つの正規分布の融合
-  estimated.set_val(mu[0], mu[1], ndt_estimated.yaw);
+  fuse(mu1, ransac_cov, mu2, rotate_scan_odom_motion_cov, mu, fused_cov);  // 2つの正規分布の融合
+  Pose estimated;
+  estimated.x=mu[0];
+  estimated.y=mu[1];
+  estimated.yaw=normalize_yaw(ransac_estimated.yaw);
+  return estimated;
 }
 
-NormalVector PoseFuser::find_correspondence(const PclCloud::Ptr current_cloud, const Eigen::Matrix4d transformation_matrix, vector<const LaserPoint*> &current_points, vector<const LaserPoint*> &reference_points){
+NormalVector PoseFuser::find_correspondence(const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points){
   LaserPoint global;
-  LaserPoint* current;
+  LaserPoint current;
   NormalVector normal_vector;
   double sum_x=0.0;
   double sum_y=0.0;
-
-  for(size_t i=0; i<current_cloud->points.size(); i++){
-    current->x = current_cloud->points[i].x;
-    current->y = current_cloud->points[i].y;
-    global.x = transformation_matrix(0,0)*current->x + transformation_matrix(0,1)*current->y + transformation_matrix(0,3);
-    global.y = transformation_matrix(1,0)*current->x + transformation_matrix(1,1)*current->y + transformation_matrix(1,3);
-    LaserPoint* closest_reference = find_closest_vertical_point(global);
-    sum_x+=closest_reference->nx;
-    sum_y+=closest_reference->ny;
+  for(size_t i=0; i<global_points.size(); i++){
+    current.x = src_points[i].x;
+    current.y = src_points[i].y;
+    global.x = global_points[i].x;
+    global.y = global_points[i].y;
+    LaserPoint closest_reference = find_closest_vertical_point(global);
+    sum_x+=closest_reference.nx;
+    sum_y+=closest_reference.ny;
     current_points.push_back(current);
     reference_points.push_back(closest_reference);
   }
@@ -45,77 +49,46 @@ NormalVector PoseFuser::find_correspondence(const PclCloud::Ptr current_cloud, c
   return normal_vector;
 }
 
-LaserPoint* PoseFuser::find_closest_vertical_point(LaserPoint global){
-  LaserPoint* closest;
+LaserPoint PoseFuser::find_closest_vertical_point(LaserPoint global){
+  LaserPoint closest;
   LaserPoint vertical_distance;
   double distance_min = 100.0;
-  double back_rafter_x = 0.05-6.0;
-  double fence_x = 2.0-6.0;
-  double front_rafter_x = 5.9875-6.0;
-  double right_rafter_y = 0.05-6.0;
-  double right_fence_y = 2.0-6.0;
-  double left_fence_y = 10.0-6.0;
-  double left_rafter_y = 11.95-6.0;
-  double x[4] = {back_rafter_x, fence_x, front_rafter_x, 100.0};  //4つ目が最小距離にならないようにしている。
-  double y[4] = {right_rafter_y, right_fence_y, left_fence_y, left_rafter_y};
+  double x[4] = {map_point_x[0], map_point_x[1], map_point_x[2], distance_min};  //4つ目が最小距離にならないようにしている。
   for(int i=0; i<4; i++){
     vertical_distance.x = fabs(x[i] - global.x);
-    vertical_distance.y = fabs(y[i] - global.y);
+    vertical_distance.y = fabs(map_point_y[4] - global.y);
     if(vertical_distance.x < distance_min){
       distance_min = vertical_distance.x;
-      closest->x = x[i];
-      closest->y = global.y;
+      closest.x = x[i];
+      closest.y = global.y;
     }
     if(vertical_distance.y < distance_min){
       distance_min = vertical_distance.y;
-      closest->x = global.x;
-      closest->y = y[i];
+      closest.x = global.x;
+      closest.y = map_point_y[i];
     }
   }
-  if(closest->x==back_rafter_x || closest->x==fence_x || closest->x==front_rafter_x){
-    closest->nx=1.0;
-    closest->ny=0.0;
+  if(closest.x==map_point_x[0] || closest.x==map_point_x[1] || closest.x==map_point_x[2]){
+    closest.nx=1.0;
+    closest.ny=0.0;
   }
   else{
-    closest->nx=0.0;
-    closest->ny=1.0;
+    closest.nx=0.0;
+    closest.ny=1.0;
   }
   return closest;
 }
 
-LaserPoint* PoseFuser::find_closest_point_in_voxel(PclCloud map_cloud, LaserPoint global, LaserPoint current){
-  double distance_min = 12.0;
-  LaserPoint cell_min;
-  LaserPoint cell_max;
-  LaserPoint* closest;
-  double cell_radius = 0.05;
-  cell_min.x = global.x - cell_radius;
-  cell_min.y = global.y - cell_radius;
-  cell_max.x = global.x + cell_radius;
-  cell_max.y = global.y + cell_radius;
-  for(size_t i=0; i<map_cloud.points.size(); i++){
-    if(cell_min.x<map_cloud.points[i].x && cell_max.x>map_cloud.points[i].x && cell_min.y<map_cloud.points[i].y && cell_max.y>map_cloud.points[i].y){
-      double distance = (map_cloud.points[i].x - global.x)*(map_cloud.points[i].x - global.x) + (map_cloud.points[i].y - global.y)*(map_cloud.points[i].y - global.y);
-      if(distance<distance_min){
-        distance_min = distance;
-        closest->x = map_cloud.points[i].x;
-        closest->y = map_cloud.points[i].y;
-      }
-    }
-  }
-  return closest;
-}
-
-double PoseFuser::calculate_ndt_covariance(const Pose &ndt_estimated, Eigen::Matrix2d &ndt_cov, const Eigen::Matrix4d transformation_matrix, vector<const LaserPoint*> &current_points, vector<const LaserPoint*> &reference_points, NormalVector normal_vector, double laser_weight_){
+double PoseFuser::calculate_ransac_covariance(const Pose &ransac_estimated, Eigen::Matrix2d &ransac_cov, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points, NormalVector normal_vector, double laser_weight_){
   double dd = 0.00001;  //数値微分の刻み
   double da = 0.00001;  //数値微分の刻み
   vector<double> Jx; //ヤコビ行列のxの列
   vector<double> Jy; //ヤコビ行列のyの列
 
   for(size_t i=0; i<current_points.size(); i++){
-    double vertical_distance   = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x,    ndt_estimated.y,    ndt_estimated.yaw, normal_vector);
-    double vertical_distance_x = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x+dd, ndt_estimated.y,    ndt_estimated.yaw, normal_vector);
-    double vertical_distance_y = calculate_vertical_distance(current_points[i], reference_points[i], ndt_estimated.x,    ndt_estimated.y+dd, ndt_estimated.yaw, normal_vector);
+    double vertical_distance   = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated.x,    ransac_estimated.y,    ransac_estimated.yaw, normal_vector);
+    double vertical_distance_x = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated.x+dd, ransac_estimated.y,    ransac_estimated.yaw, normal_vector);
+    double vertical_distance_y = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated.x,    ransac_estimated.y+dd, ransac_estimated.yaw, normal_vector);
     Jx.push_back((vertical_distance_x - vertical_distance) / dd);
     Jy.push_back((vertical_distance_y - vertical_distance) / dd);
   }
@@ -128,21 +101,19 @@ double PoseFuser::calculate_ndt_covariance(const Pose &ndt_estimated, Eigen::Mat
   }
   // J^TJが対称行列であることを利用
   hes(1,0) = hes(0,1);
-  //逆行列がinfになることを防ぐ
-  if(round(hes(0,0)*hes(1,1)) == round(hes(0,1)*hes(1,0))) hes(0,0)+=1;
-  ndt_cov = svdInverse(hes);
-  // ndt_cov = hes.inverse();
-  // double vals[2], vec1[2], vec2[2];
-  // double ratio = calEigen(ndt_cov, vals, vec1, vec2);            // 固有値計算して、退化具合を調べる
-  double ratio=0.0;
-  ndt_cov *= laser_weight_;
-  return(ratio);
+  if(round(hes(0,0)*hes(1,1)) == round(hes(0,1)*hes(1,0))){
+    hes(0,0)+=1;
+    hes(1,1)+=1;
+  }
+  ransac_cov = svdInverse(hes);
+  ransac_cov *= laser_weight_;
+  return 0.0;
 }
 
-double PoseFuser::calculate_vertical_distance(const LaserPoint* current, const LaserPoint* reference, double x, double y, double yaw, NormalVector normal_vector){
-  double x_ = cos(yaw)*current->x - sin(yaw)*current->y + x;                     // clpを推定位置で座標変換
-  double y_ = sin(yaw)*current->x + cos(yaw)*current->y + y;
-  return (x_-reference->x)*normal_vector.normalize_x + (y_-reference->y)*normal_vector.normalize_y;
+double PoseFuser::calculate_vertical_distance(const LaserPoint current, const LaserPoint reference, double x, double y, double yaw, NormalVector normal_vector){
+  double x_ = cos(yaw)*current.x - sin(yaw)*current.y + x;                     // clpを推定位置で座標変換
+  double y_ = sin(yaw)*current.x + cos(yaw)*current.y + y;
+  return (x_-reference.x)*normal_vector.normalize_x + (y_-reference.y)*normal_vector.normalize_y;
 }
 
 void PoseFuser::calculate_motion_covariance(const Pose &scan_odom_motion, const double dt_scan, Eigen::Matrix2d &scan_odom_motion_cov, double odom_weight_){
@@ -156,17 +127,14 @@ void PoseFuser::calculate_motion_covariance(const Pose &scan_odom_motion, const 
   Eigen::Matrix2d C1;
   C1.setZero();                          // 対角要素だけ入れる
   C1(0,0) = 0.001*dx*dx;                 // 並進成分x
-  C1(1,1) = 0.005*dy*dy;                 // 並進成分y
+  C1(1,1) = 0.001*dy*dy;                 // 並進成分y
   // スケール調整
   scan_odom_motion_cov = odom_weight_*C1;
-  // 確認用
-  // double vals[2], vec1[2], vec2[2];
-  // calEigen(scan_odom_motion_cov, vals, vec1, vec2);
 }
 
-void PoseFuser::rotate_covariance(const Pose &ndt_estimated, Eigen::Matrix2d &scan_odom_motion_cov, Eigen::Matrix2d &rotate_scan_odom_motion_cov){
-  double cs = cos(ndt_estimated.yaw);            // poseの回転成分thによるcos
-  double sn = sin(ndt_estimated.yaw);
+void PoseFuser::rotate_covariance(const Pose &ransac_estimated, Eigen::Matrix2d &scan_odom_motion_cov, Eigen::Matrix2d &rotate_scan_odom_motion_cov){
+  double cs = cos(ransac_estimated.yaw);            // poseの回転成分thによるcos
+  double sn = sin(ransac_estimated.yaw);
   Eigen::Matrix2d J;                            // 回転のヤコビ行列
   J << cs, -sn,
        sn,  cs;
@@ -176,7 +144,7 @@ void PoseFuser::rotate_covariance(const Pose &ndt_estimated, Eigen::Matrix2d &sc
 
 /////// ガウス分布の融合 ///////
 // 2つの正規分布を融合する。muは平均、cvは共分散。
-double PoseFuser::fuse(const Eigen::Vector2d &mu1, const Eigen::Matrix2d &cv1,  const Eigen::Vector2d &mu2, const Eigen::Matrix2d &cv2, Eigen::Vector2d &mu, Eigen::Matrix2d &cv) {
+double PoseFuser::fuse(const Eigen::Vector2d &mu1, const Eigen::Matrix2d &cv1, const Eigen::Vector2d &mu2, const Eigen::Matrix2d &cv2, Eigen::Vector2d &mu, Eigen::Matrix2d &cv) {
   // 共分散行列の融合
   Eigen::Matrix2d IC1 = svdInverse(cv1);
   Eigen::Matrix2d IC2 = svdInverse(cv2);
@@ -188,24 +156,6 @@ double PoseFuser::fuse(const Eigen::Vector2d &mu1, const Eigen::Matrix2d &cv1,  
   Eigen::Vector2d nu2 = IC2*mu2;
   Eigen::Vector2d nu3 = nu1 + nu2;
   mu = cv*nu3;
-
-  // // 係数部の計算
-  // Eigen::Vector2d W1 = IC1*mu1;
-  // Eigen::Vector2d W2 = IC2*mu2;
-  // Eigen::Vector2d W = IC*mu;
-  // double A1 = mu1.dot(W1);
-  // double A2 = mu2.dot(W2);
-  // double A = mu.dot(W);
-  // double K = A1+A2-A;
-/*
-  //printf("cv1: det=%g\n", cv1.determinant());
-  printMatrix(cv1);
-  //printf("cv2: det=%g\n", cv2.determinant());
-  printMatrix(cv2);
-  //printf("cv: det=%g\n", cv.determinant());
-  printMatrix(cv);
-*/
-
 }
 
 
@@ -235,54 +185,39 @@ Eigen::Matrix2d PoseFuser::svdInverse(const Matrix2d &A) {
   }
   return(IA);
 }
-// 共分散行列covの並進成分だけを固有値分解し、固有値をvalsに、固有ベクトルをvec1とvec2に入れる。
-double PoseFuser::calEigen(const Eigen::Matrix3d &cov, double *vals, double *vec1, double *vec2) {
-  // 並進部分だけ取り出す
-  double cv2[2][2];
-  for (int i=0; i<2; i++)
-    for (int j=0; j<2; j++)
-      cv2[i][j] = cov(i,j);
-  calEigen2D(cv2, vals, vec1, vec2);        // 固有値分解
-  double ratio = vals[0]/vals[1];
-  // 確認用
-  // printf("Eigen: ratio=%g, val1=%g, val2=%g\n", ratio, vals[0], vals[1]);
-  // printf("Eigen: vec1=(%g, %g), ang=%g\n", vec1[0], vec1[1], RAD2DEG(atan2(vec1[1], vec1[0])));
-  return(ratio);
-}
-// 2次正方行列の固有値分解
-void PoseFuser::calEigen2D( double (*mat)[2], double *vals, double *vec1, double *vec2) {
-  double a = mat[0][0];
-  double b = mat[0][1];
-  double c = mat[1][0];
-  double d = mat[1][1];
-  double B = sqrt((a+d)*(a+d) - 4*(a*d-b*c));
-  double x1 = ((a+d) + B)/2;
-  double x2 = ((a+d) - B)/2;
-  vals[0] = x1;                    // 固有値
-  vals[1] = x2;
-  double m00 = a-x1;
-  double m01 = b;
-  double L = sqrt(m00*m00 + m01*m01);
-  vec1[0] = m01/L;                 // 固有ベクトル
-  vec1[1] = -m00/L;
-  m00 = a-x2;
-  m01 = b;
-  L = sqrt(m00*m00 + m01*m01);
-  vec2[0] = m01/L;                 // 固有ベクトル
-  vec2[1] = -m00/L;
-/*
-  // 検算
-  double ax1 = a*vec1[0] + b*vec1[1];
-  double ax2 = x1*vec1[0];
-  double ay1 = c*vec1[0] + d*vec1[1];
-  double ay2 = x1*vec1[1];
-  printf("ax1=%g, ax2=%g\n", ax1, ax2);
-  printf("ay1=%g, ay2=%g\n", ay1, ay2);
-  double prod = vec1[0]*vec2[0] + vec1[1]*vec2[1];
-  printf("prod=%g\n", prod);
-*/
-}
-void PoseFuser::print2x2Matrix (const Eigen::Matrix2d & matrix){
-  printf("| %3.3f %3.3f |\n", matrix(0,0), matrix(0,1));
-  printf("| %3.3f %3.3f |\n", matrix(1,0), matrix(1,1));
-}
+// // 共分散行列covの並進成分だけを固有値分解し、固有値をvalsに、固有ベクトルをvec1とvec2に入れる。
+// double PoseFuser::calEigen(const Eigen::Matrix3d &cov, double *vals, double *vec1, double *vec2) {
+//   // 並進部分だけ取り出す
+//   double cv2[1][1];
+//   for (int i=0; i<1; i++)
+//     for (int j=0; j<1; j++)
+//       cv2[i][j] = cov(i,j);
+//   calEigen2D(cv2, vals, vec1, vec2);        // 固有値分解
+//   double ratio = vals[0]/vals[1];
+//   // 確認用
+//   // printf("Eigen: ratio=%g, val1=%g, val2=%g\n", ratio, vals[0], vals[1]);
+//   // printf("Eigen: vec1=(%g, %g), ang=%g\n", vec1[0], vec1[1], RAD2DEG(atan2(vec1[1], vec1[0])));
+//   return(ratio);
+// }
+// // 2次正方行列の固有値分解
+// void PoseFuser::calEigen2D( double (*mat)[1], double *vals, double *vec1, double *vec2) {
+//   double a = mat[0][0];
+//   double b = mat[0][1];
+//   double c = mat[1][0];
+//   double d = mat[1][1];
+//   double B = sqrt((a+d)*(a+d) - 4*(a*d-b*c));
+//   double x1 = ((a+d) + B)/2;
+//   double x2 = ((a+d) - B)/2;
+//   vals[0] = x1;                    // 固有値
+//   vals[1] = x2;
+//   double m00 = a-x1;
+//   double m01 = b;
+//   double L = sqrt(m00*m00 + m01*m01);
+//   vec1[0] = m01/L;                 // 固有ベクトル
+//   vec1[1] = -m00/L;
+//   m00 = a-x2;
+//   m01 = b;
+//   L = sqrt(m00*m00 + m01*m01);
+//   vec2[0] = m01/L;                 // 固有ベクトル
+//   vec2[1] = -m00/L;
+// }

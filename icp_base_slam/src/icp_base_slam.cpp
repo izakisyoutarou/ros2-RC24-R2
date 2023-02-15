@@ -6,8 +6,6 @@ IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", o
 IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOptions &options)
 :  rclcpp::Node("icp_base_slam", name_space, options) {
   RCLCPP_INFO(this->get_logger(), "START");
-  plot_mode_ = this->get_parameter("plot_mode").as_bool();
-  voxel_leaf_size_ = this->get_parameter("voxel_leaf_size").as_double();
   laser_weight_ = this->get_parameter("laser_weight").as_double();
   odom_weight_ = this->get_parameter("odom_weight").as_double();
   trial_num_ = this->get_parameter("trial_num").as_int();
@@ -45,9 +43,8 @@ IcpBaseSlam::IcpBaseSlam(const std::string& name_space, const rclcpp::NodeOption
   init.x = init_pose_x;
   init.y = init_pose_y;
   odom = init;
-  last_scan_odom = init;
-  estimated_odom = init;
   last_estimated = init;
+  raw = init;
 }
 
 void IcpBaseSlam::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -58,12 +55,12 @@ void IcpBaseSlam::callback_odom_linear(const socketcan_interface_msg::msg::Socke
   double y = (double)bytes_to_float(_candata+4);
   diff_odom.x = x - last_odom.x;
   diff_odom.y = y - last_odom.y;
-  last_odom.x = x;
-  last_odom.y = y;
   odom.x += diff_odom.x;
   odom.y += diff_odom.y;
-  estimated_odom.x = odom.x + diff_estimated_sum.x;
-  estimated_odom.y = odom.y + diff_estimated_sum.y;
+  raw.x += diff_odom.x;
+  raw.y += diff_odom.y;
+  last_odom.x = x;
+  last_odom.y = y;
 }
 
 void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -72,52 +69,69 @@ void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::Sock
   double yaw = (double)bytes_to_float(_candata);
   diff_odom.yaw = yaw - last_odom.yaw;
   odom.yaw += diff_odom.yaw;
+  odom.yaw = normalize_yaw(odom.yaw);
   last_odom.yaw = odom.yaw;
-  estimated_odom.yaw = normalize_yaw(odom.yaw + diff_estimated_sum.yaw);
+
 }
 
 void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
   scan_execution_time_start = chrono::system_clock::now();
+
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
-  if (dt_scan > 0.03 /* [sec] */) {
-    RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
-  }
-  current_scan_odom = estimated_odom;
+  if (dt_scan > 0.03 /* [sec] */) RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
+
+  current_scan_odom = odom;
+  Pose scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
+  // RCLCPP_INFO(this->get_logger(), "current_scan_odom.x    >%f", current_scan_odom.x);
+  // RCLCPP_INFO(this->get_logger(), "last_estimated.x    >%f", last_estimated.x);
+
   double odom_to_lidar_x = odom_to_lidar_length * cos(current_scan_odom.yaw);
   double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom.yaw);
   vector<config::LaserPoint> src_points = converter.scan_to_vector(msg, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
 
   ransac_lines.fuse_inliers(src_points, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
   vector<config::LaserPoint> line_points = ransac_lines.get_sum();
-  diff_estimated = ransac_lines.get_estimated_diff();
-  if(odom_flag){
-    diff_estimated_sum += diff_estimated;
-    odom_flag=false;
-  }
+  Pose trans = ransac_lines.get_estimated_diff();
+  // RCLCPP_INFO(this->get_logger(), "trans.x>%f", trans.x);
+  // if(odom_flag){
+  //   odom_flag=false;
+  // }
+  ransac_estimated = current_scan_odom + trans;
+  vector<config::LaserPoint> global_points = transform(line_points, trans);
+  // vector<config::LaserPoint> global_points = converter.scan_to_vector(msg, ransac_estimated, odom_to_lidar_x, odom_to_lidar_y);
+
+  Pose estimated = pose_fuser->fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points, laser_weight_, odom_weight_);
+  // RCLCPP_INFO(this->get_logger(), "estimated.x>%f", estimated.x);
+
+  Pose diff_estimated = estimated - current_scan_odom;
+  // RCLCPP_INFO(this->get_logger(), "diff_estimated.x>%f", diff_estimated.x);
+  odom += diff_estimated;
+  RCLCPP_INFO(this->get_logger(), "trans.x             >%f", trans.x);
+  RCLCPP_INFO(this->get_logger(), "diff_estimated.x    >%f", diff_estimated.x);
+  RCLCPP_INFO(this->get_logger(), "trans.y             >%f", trans.y);
+  RCLCPP_INFO(this->get_logger(), "diff_estimated.y    >%f", diff_estimated.y);
+  RCLCPP_INFO(this->get_logger(), "");
+  last_estimated = estimated;
 
   pointcloud2_view(line_points);
   scan_execution_time_end = chrono::system_clock::now();
   scan_execution_time = chrono::duration_cast<chrono::milliseconds>(scan_execution_time_end-scan_execution_time_start).count();
   // RCLCPP_INFO(this->get_logger(), "scan execution time->%d", scan_execution_time);
+  // RCLCPP_INFO(this->get_logger(), "estimated.y>%f", estimated.y);
+  // RCLCPP_INFO(this->get_logger(), "estimated.yaw>%f°", radToDeg(estimated.yaw));
 }
 
 void IcpBaseSlam::pointcloud2_view(vector<config::LaserPoint> &points){
   sensor_msgs::msg::PointCloud2 cloud = converter.vector_to_PC2(points);
 
-  // Eigen::Quaterniond quat_eig =
-  //   Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()) *
-  //   Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitY()) *
-  //   Eigen::AngleAxisd(estimated_odom.yaw, Eigen::Vector3d::UnitZ());
-
-  // geometry_msgs::msg::Quaternion quat_msg = tf2::toMsg(quat_eig);
-  // corrent_pose_stamped.header.stamp = this->now();
-  // corrent_pose_stamped.header.frame_id = "map";
-  // corrent_pose_stamped.pose.position.x = estimated_odom.x;
-  // corrent_pose_stamped.pose.position.y = estimated_odom.y;
-  // corrent_pose_stamped.pose.position.z = 0.0;
-  // corrent_pose_stamped.pose.orientation = quat_msg;
+  corrent_pose_stamped.header.stamp = this->now();
+  corrent_pose_stamped.header.frame_id = "map";
+  corrent_pose_stamped.pose.position.x = odom.x;
+  corrent_pose_stamped.pose.position.y = odom.y;
+  corrent_pose_stamped.pose.orientation.z = sin(odom.yaw / 2.0);
+  corrent_pose_stamped.pose.orientation.w = cos(odom.yaw / 2.0);
 
   // path.header.stamp = this->now();
   // path.header.frame_id = "map";
@@ -126,7 +140,7 @@ void IcpBaseSlam::pointcloud2_view(vector<config::LaserPoint> &points){
 
   map_publisher->publish(map_cloud);
   ransaced_publisher->publish(cloud);
-  // pose_publisher->publish(corrent_pose_stamped);
+  pose_publisher->publish(corrent_pose_stamped);
   // path_publisher->publish(path);
 }
 
@@ -182,4 +196,26 @@ void IcpBaseSlam::create_elephant_map(){
   }
   map_cloud = converter.vector_to_PC2(map_points);
 }
+
+// 点群を並進・回転させる
+config::LaserPoint IcpBaseSlam::rotate(config::LaserPoint point, double theta){
+  config::LaserPoint p;
+  p.x = point.x * cos(theta) - point.y * sin(theta);
+  p.y = point.x * sin(theta) + point.y * cos(theta);
+  return p;
+}
+vector<config::LaserPoint> IcpBaseSlam::transform(const vector<config::LaserPoint> &points, const Pose &pose) {
+  vector<config::LaserPoint> transformed_points;
+  for (const auto& point : points) {
+    // 並進
+    config::LaserPoint p = point;
+    p.x += pose.x;
+    p.y += pose.y;
+    // 回転
+    p = rotate(p, pose.yaw);
+    transformed_points.push_back(p);
+  }
+  return transformed_points;
+}
+
 }

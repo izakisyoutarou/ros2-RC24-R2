@@ -3,13 +3,12 @@
 
 #include <iostream>
 
-#include "sensor_msgs/msg/laser_scan.hpp"
+#include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include "rclcpp/rclcpp.hpp"
-#include "nav_msgs/msg/odometry.hpp"
-#include "nav_msgs/msg/path.hpp"
-#include "geometry_msgs/msg/pose_stamped.hpp"
-#include <tf2_eigen/tf2_eigen.h>
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "utilities/can_utils.hpp"
@@ -17,8 +16,7 @@
 #include "icp_base_slam/config.hpp"
 #include "icp_base_slam/pose_fuser.hpp"
 #include "icp_base_slam/ransac_lines.hpp"
-#include "icp_base_slam/dynamic_voxel_grid_filter.hpp"
-#include "icp_base_slam/vector_to_PC2.hpp"
+#include "icp_base_slam/converter.hpp"
 
 #include "visibility.h"
 
@@ -35,20 +33,16 @@ public:
 private:
   PoseFuser *pose_fuser;  // センサ融合器
   RansacLines ransac_lines;
-  DynamicVoxelGridFilter dynamic_voxel_grid_filter;
-  VectorToPC2 vector_to_PC2;
+  Converter converter;
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void create_elephant_map();
   void pointcloud2_view(vector<config::LaserPoint> &points);
+  config::LaserPoint rotate(config::LaserPoint point, double theta);
+  vector<config::LaserPoint> transform(const vector<config::LaserPoint> &points, const Pose &pose);
   // pcl::PointCloud<pcl::PointXYZRGB> cloud_add_collor(PclCloud &cloud, char *rgb);
-  double normalize_yaw(double yaw){
-    if (yaw < -M_PI) yaw += 2*M_PI;
-    else if (yaw >= M_PI) yaw -= 2*M_PI;
-    return yaw;
-  }
 
   sensor_msgs::msg::PointCloud2 map_cloud;
   vector<config::LaserPoint> map_points;
@@ -75,25 +69,18 @@ private:
 
   Pose init;
   Pose odom;
+  Pose raw;
   Pose current_scan_odom;
-  Pose estimated_odom;
   Pose last_odom;
   Pose diff_odom;
-  Pose pose;
   Pose last_estimated;
-  Pose ndt_estimated;
-  Pose last_scan_odom;
-  Pose estimated;
-  Pose diff_estimated;
-  Pose diff_estimated_sum;
+  Pose ransac_estimated;
   double odom_to_lidar_length = 0.4655;
   double reso = 0.125;
   double view_ranges = 270.0;
   bool odom_flag=false;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
-  bool plot_mode_;
-  double voxel_leaf_size_; //ダウンサンプリングボクセル
   double laser_weight_;
   double odom_weight_;
   int trial_num_;
