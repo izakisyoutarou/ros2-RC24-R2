@@ -87,16 +87,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   current_scan_odom = estimated_odom;
   double odom_to_lidar_x = odom_to_lidar_length * cos(current_scan_odom.yaw);
   double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom.yaw);
-  vector<config::LaserPoint> src_points;
-  for(size_t i=0; i< msg->ranges.size(); ++i) {
-    config::LaserPoint src_point;
-    if(msg->ranges[i] > 14 || msg->ranges[i] < 0.5) continue;
-    src_point.angle = msg->angle_min + msg->angle_increment * i - current_scan_odom.yaw;
-    src_point.dist = msg->ranges[i];
-    src_point.x = src_point.dist * cos(src_point.angle) + current_scan_odom.x + odom_to_lidar_x;
-    src_point.y = -src_point.dist * sin(src_point.angle) + current_scan_odom.y + odom_to_lidar_y;
-    src_points.push_back(src_point);
-  }
+  vector<config::LaserPoint> src_points = converter.scan_to_vector(msg, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
 
   ransac_lines.fuse_inliers(src_points, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
   vector<config::LaserPoint> line_points = ransac_lines.get_sum();
@@ -113,7 +104,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
 }
 
 void IcpBaseSlam::pointcloud2_view(vector<config::LaserPoint> &points){
-  sensor_msgs::msg::PointCloud2 cloud = vector_to_PC2.change(points);
+  sensor_msgs::msg::PointCloud2 cloud = converter.vector_to_PC2(points);
 
   // Eigen::Quaterniond quat_eig =
   //   Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()) *
@@ -189,6 +180,6 @@ void IcpBaseSlam::create_elephant_map(){
     map_point.y = double(i)/1000 + map_point_y[2];
     map_points.push_back(map_point);
   }
-  map_cloud = vector_to_PC2.change(map_points);
+  map_cloud = converter.vector_to_PC2(map_points);
 }
 }
