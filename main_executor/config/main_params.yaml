@@ -30,9 +30,7 @@ mcl_2d_node:
 
 icp_base_slam:
   ros__parameters:
-    plot_mode: true
-    voxel_leaf_size: 0.05
-    laser_weight: 10. # 退化で極端にずれる場合は=1,通常=0.1
-    odom_weight: 1. # オドメトリのずれが大きい場合=100,通常=10
+    laser_weight: 0.1 # 退化で極端にずれる場合は=1,通常=0.1
+    odom_weight: 10.0 # オドメトリのずれが大きい場合=100,通常=10
     trial_num: 50
-    inlier_dist_threshold: 0.01
+    inlier_dist_threshold: 0.015
