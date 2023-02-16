@@ -1,9 +1,19 @@
 #include "icp_base_slam/pose_fuser.hpp"
 
-Pose PoseFuser::fuse_pose(const Pose &ransac_estimated, const Pose &scan_odom_motion, const Pose &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points, const double laser_weight_, const double odom_weight_){
-  if(global_points.size()==0) return current_scan_odom;
+
+void PoseFuser::setup(const double laser_weight, const double odom_weight){
+  laser_weight_ = laser_weight;
+  odom_weight_ = odom_weight;
+}
+
+void PoseFuser::init(){
   current_points.clear();
   reference_points.clear();
+}
+
+Pose PoseFuser::fuse_pose(const Pose &ransac_estimated, const Pose &scan_odom_motion, const Pose &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points){
+  if(global_points.size()==0) return current_scan_odom;
+  init();
   NormalVector normal_vector = find_correspondence(src_points, global_points, current_points, reference_points);
   Eigen::Matrix2d ransac_cov = calculate_ransac_covariance(ransac_estimated, current_points, reference_points, normal_vector, laser_weight_);
   Eigen::Matrix2d scan_odom_motion_cov = calculate_motion_covariance(scan_odom_motion, dt_scan, odom_weight_);  // オドメトリで得た移動量の共分散

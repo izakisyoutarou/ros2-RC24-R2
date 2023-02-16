@@ -38,7 +38,9 @@ IcpBaseSlam::IcpBaseSlam(const string& name_space, const rclcpp::NodeOptions &op
   map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>("self_localization/map", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
 
 
-  ransac_lines = RansacLines(trial_num_, inlier_dist_threshold_);
+  ransac_lines.setup(trial_num_, inlier_dist_threshold_);
+  pose_fuser.setup(laser_weight_, odom_weight_);
+
   create_elephant_map();
   init.x = init_pose_x;
   init.y = init_pose_y;
@@ -102,7 +104,7 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   vector<config::LaserPoint> global_points = transform(line_points, trans);
   // vector<config::LaserPoint> global_points = converter.scan_to_vector(msg, ransac_estimated, odom_to_lidar_x, odom_to_lidar_y);
 
-  Pose estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points, laser_weight_, odom_weight_);
+  Pose estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points);
   // RCLCPP_INFO(this->get_logger(), "estimated.x>%f", estimated.x);
 
   Pose diff_estimated = estimated - current_scan_odom;

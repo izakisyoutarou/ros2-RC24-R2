@@ -1,10 +1,8 @@
 #include "icp_base_slam/ransac_lines.hpp"
 
-void RansacLines::fuse_inliers(vector<config::LaserPoint> &src_points, const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y){
-  init();
-  devide_points(src_points);
-  get_inliers();
-  calc_estimated_diff(estimated, odom_to_lidar_x, odom_to_lidar_y);
+void RansacLines::setup(const int &trial_num, const double &inlier_dist_threshold){
+  trial_num_ = trial_num;
+  inlier_dist_threshold_ = inlier_dist_threshold;
 }
 
 void RansacLines::init(){
@@ -20,8 +18,15 @@ void RansacLines::init(){
   lines_.resize(8);
 }
 
+void RansacLines::fuse_inliers(const vector<config::LaserPoint> &src_points, const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
+  init();
+  devide_points(src_points);
+  get_inliers();
+  calc_estimated_diff(estimated, odom_to_lidar_x, odom_to_lidar_y);
+}
 
-void RansacLines::calc_estimated_diff(const Pose &estimated, double &odom_to_lidar_x, double &odom_to_lidar_y){
+
+void RansacLines::calc_estimated_diff(const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
   estimated_diff.yaw = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
@@ -55,7 +60,7 @@ double RansacLines::calc_diff_angle(){
   return LPF(diff_angle/get_angle_count);
 }
 
-void RansacLines::devide_points(vector<config::LaserPoint> &src_points){
+void RansacLines::devide_points(const vector<config::LaserPoint> &src_points){
   for(size_t i=0; i<src_points.size(); i++){
     set_points(lines[0], map_point_x[0], map_point_x[2], map_point_y[0], map_point_y[0], src_points[i]);
     set_points(lines[1], map_point_x[1], map_point_x[2], map_point_y[1], map_point_y[1], src_points[i]);
@@ -77,7 +82,7 @@ void RansacLines::get_inliers(){
   }
 }
 
-void RansacLines::set_points(vector<config::LaserPoint> &points, double map_point_x_1, double map_point_x_2, double map_point_y_1, double map_point_y_2, config::LaserPoint &src_point){
+void RansacLines::set_points(vector<config::LaserPoint> &points, const double map_point_x_1, const double map_point_x_2, const double map_point_y_1, const double map_point_y_2, const config::LaserPoint &src_point){
   if(map_point_x_1 - distance_threshold < src_point.x &&
      map_point_x_2 + distance_threshold > src_point.x &&
      map_point_y_1 - distance_threshold < src_point.y &&
@@ -90,7 +95,7 @@ void RansacLines::set_points(vector<config::LaserPoint> &points, double map_poin
 }
 
 
-void RansacLines::input_points(EstimatedLine &line){
+void RansacLines::input_points(const EstimatedLine &line){
   config::LaserPoint sum_point;
   for(size_t i=0; i<line.points.size(); i++){
     sum_point.x = line.points[i].x;
@@ -166,7 +171,7 @@ bool RansacLines::clear_points(EstimatedLine &estimated_line, int size_threshold
   return false;
 }
 
-double RansacLines::LPF(double raw){
+double RansacLines::LPF(const double &raw){
   double k=0.3;
   double lpf = (1 - k) * last_lpf + k * raw;
   last_lpf = lpf;

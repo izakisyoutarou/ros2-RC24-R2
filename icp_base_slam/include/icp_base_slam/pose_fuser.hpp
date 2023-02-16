@@ -22,7 +22,9 @@ class PoseFuser{
 public:
   PoseFuser(){}
   ~PoseFuser(){}
-  Pose fuse_pose(const Pose &ransac_estimated, const Pose &scan_odom_motion, const Pose &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points, const double laser_weight_, const double odom_weight_);
+  void setup(const double laser_weight, const double odom_weight);
+  void init();
+  Pose fuse_pose(const Pose &ransac_estimated, const Pose &scan_odom_motion, const Pose &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points);
 
 private:
   NormalVector find_correspondence(const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points);
@@ -32,10 +34,11 @@ private:
   Eigen::Matrix2d calculate_motion_covariance(const Pose &scan_odom_motion, const double dt, const double odom_weight_);
   Eigen::Matrix2d svdInverse(const Matrix2d &A);
   Eigen::Matrix2d rotate_covariance(const Pose &ransac_estimated, Eigen::Matrix2d &scan_odom_motion_cov);
-  double calEigen(const Eigen::Matrix3d &cov, double *vals, double *vec1, double *vec2);
-  void calEigen2D( double (*mat)[2], double *vals, double *vec1, double *vec2);
-  double fuse(const Eigen::Vector2d &mu1, const Eigen::Matrix2d &cv1,  const Eigen::Vector2d &mu2, const Eigen::Matrix2d &cv2, Eigen::Vector2d &mu, Eigen::Matrix2d &cv);
+  double fuse(const Eigen::Vector2d &mu1, const Eigen::Matrix2d &cv1, const Eigen::Vector2d &mu2, const Eigen::Matrix2d &cv2, Eigen::Vector2d &mu, Eigen::Matrix2d &cv);
 
   vector<LaserPoint> current_points;   //対応がとれた現在スキャンの点群
   vector<LaserPoint> reference_points;   //対応がとれた参照スキャンの点群
+
+  double laser_weight_;
+  double odom_weight_;
 };
