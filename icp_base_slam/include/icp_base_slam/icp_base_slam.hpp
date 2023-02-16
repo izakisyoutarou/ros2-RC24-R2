@@ -9,6 +9,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "utilities/can_utils.hpp"
@@ -39,15 +40,9 @@ private:
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void create_elephant_map();
-  void pointcloud2_view(vector<config::LaserPoint> &points);
+  void publishers(vector<config::LaserPoint> &points);
   config::LaserPoint rotate(config::LaserPoint point, double theta);
   vector<config::LaserPoint> transform(const vector<config::LaserPoint> &points, const Pose &pose);
-  // pcl::PointCloud<pcl::PointXYZRGB> cloud_add_collor(PclCloud &cloud, char *rgb);
-
-  sensor_msgs::msg::PointCloud2 map_cloud;
-  vector<config::LaserPoint> map_points;
-
-  chrono::system_clock::time_point time_start, time_end, scan_execution_time_start, scan_execution_time_end, align_time_start, align_time_end, fuse_time_start, fuse_time_end;
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
@@ -56,29 +51,31 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ransaced_publisher;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher;
-  rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
-
+  rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr self_pose_publisher;
+  geometry_msgs::msg::Vector3 vector_msg;
+  sensor_msgs::msg::PointCloud2 map_cloud;
   nav_msgs::msg::Path path;
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
+  rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
-  double init_pose_x = -5.45;
-  double init_pose_y = 0.0;
-  double last_scan_received_time=0.0;
-  double last_odom_received_time=0.0;
-  int scan_execution_time=0;
-
+  vector<config::LaserPoint> map_points;
   Pose init;
   Pose odom;
-  Pose raw;
   Pose current_scan_odom;
   Pose last_odom;
   Pose diff_odom;
   Pose last_estimated;
   Pose ransac_estimated;
+  Pose diff_estimated_sum;
   double odom_to_lidar_length = 0.4655;
   double reso = 0.125;
   double view_ranges = 270.0;
   bool odom_flag=false;
+  double init_pose_x = -5.45;
+  double init_pose_y = 0.0;
+  double last_scan_received_time=0.0;
+  double last_odom_received_time=0.0;
+  int scan_execution_time=0;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
   double laser_weight_;
