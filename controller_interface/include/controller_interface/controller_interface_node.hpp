@@ -13,7 +13,9 @@ namespace controller_interface
     class ControllerInterface : public rclcpp::Node
     {
         public:
+            CONTROLLER_INTERFACE_PUBLIC
             explicit ControllerInterface(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+            CONTROLLER_INTERFACE_PUBLIC
             explicit ControllerInterface(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
         private:
             rclcpp::Subscription<controller_interface_msg::msg::SubJoy>::SharedPtr _sub_joy;
