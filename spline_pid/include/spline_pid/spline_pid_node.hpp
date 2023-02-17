@@ -45,24 +45,24 @@ private:
 
     //計画機
     VelPlanner velPlanner_linear;
-    VelPlannerLimit limit_linear;
+    const VelPlannerLimit limit_linear;
     VelPlanner velPlanner_angular;
-    VelPlannerLimit limit_angular;
+    const VelPlannerLimit limit_angular;
 
     //ゲイン
-    double curvature_attenuation_rate = 0.0;
-    double linear_planner_vel_limit_gain = 0.0;
-    double linear_planner_gain = 0.0;
-    double linear_pos_gain = 0.0;
-    double linear_pos_integral_gain = 0.0;
+    const double curvature_attenuation_rate;
+    const double linear_planner_vel_limit_gain;
+    const double linear_planner_gain;
+    const double linear_pos_gain;
+    const double linear_pos_integral_gain;
 
-    double angular_planner_gain = 0.0;
-    double angular_pos_gain = 0.0;
-    double angular_pos_integral_gain = 0.0;
+    const double angular_planner_gain;
+    const double angular_pos_gain;
+    const double angular_pos_integral_gain;
 
     //許容値
-    double linear_pos_tolerance = 0.0;
-    double angular_pos_tolerance = 0.0;
+    const double linear_pos_tolerance;
+    const double angular_pos_tolerance;
 
     //フィールド
     int current_count = 0;

@@ -4,40 +4,41 @@
 #include <float.h>
 #include <cmath>
 
-#define deg2rad(deg) (((deg)/360.0)*2.0*M_PI)
+using namespace utils;
 
 namespace spline_pid{
 
 SplinePid::SplinePid(const rclcpp::NodeOptions &options) : SplinePid("", options) {}
 
 SplinePid::SplinePid(const std::string &name_space, const rclcpp::NodeOptions &options)
-: rclcpp::Node("spline_pid_node", name_space, options), limit_linear(DBL_MAX,0.0,0.0,0.0), limit_angular(DBL_MAX,0.0,0.0,0.0){
+: rclcpp::Node("spline_pid_node", name_space, options),
+limit_linear(DBL_MAX,
+get_parameter("linear_max_vel").as_double(),
+get_parameter("linear_max_acc").as_double(),
+get_parameter("linear_max_dec").as_double() ),
+limit_angular(DBL_MAX,
+dtor(get_parameter("angular_max_vel").as_double()),
+dtor(get_parameter("angular_max_acc").as_double()),
+dtor(get_parameter("angular_max_dec").as_double()) ),
 
-    // declare_parameter("interval_ms", 1);
+curvature_attenuation_rate(get_parameter("curvature_attenuation_rate").as_double()),
+linear_planner_vel_limit_gain(get_parameter("linear_planner_vel_limit_gain").as_double()),
+
+linear_planner_gain(get_parameter("linear_planner_gain").as_double()),
+linear_pos_gain(get_parameter("linear_pos_gain").as_double()),
+linear_pos_integral_gain(get_parameter("linear_pos_integral_gain").as_double()),
+
+angular_planner_gain(get_parameter("angular_planner_gain").as_double()),
+angular_pos_gain(get_parameter("angular_pos_gain").as_double()),
+angular_pos_integral_gain(get_parameter("angular_pos_integral_gain").as_double()),
+
+linear_pos_tolerance(get_parameter("linear_pos_tolerance").as_double()),
+angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
+{
     auto interval_ms = this->get_parameter("interval_ms").as_int();
     sampling_time = interval_ms / 1000.0;
     auto initial_pose = this->get_parameter("initial_pose").as_double_array();
-    curvature_attenuation_rate = this->get_parameter("curvature_attenuation_rate").as_double();
 
-    linear_planner_gain = this->get_parameter("linear_planner_gain").as_double();
-    linear_pos_gain = this->get_parameter("linear_pos_gain").as_double();
-    linear_pos_integral_gain = this->get_parameter("linear_pos_integral_gain").as_double();
-
-    angular_planner_gain = this->get_parameter("angular_planner_gain").as_double();
-    angular_pos_gain = this->get_parameter("angular_pos_gain").as_double();
-    angular_pos_integral_gain = this->get_parameter("angular_pos_integral_gain").as_double();
-
-    linear_planner_vel_limit_gain = this->get_parameter("linear_planner_vel_limit_gain").as_double();
-
-    linear_pos_tolerance = this->get_parameter("linear_pos_tolerance").as_double();
-    angular_pos_tolerance = deg2rad(this->get_parameter("angular_pos_tolerance").as_double());
-
-    limit_linear.vel = this->get_parameter("linear_max_vel").as_double();
-    limit_linear.acc = this->get_parameter("linear_max_acc").as_double();
-    limit_linear.dec = this->get_parameter("linear_max_dec").as_double();
-    limit_angular.vel = deg2rad(this->get_parameter("angular_max_vel").as_double());
-    limit_angular.acc = deg2rad(this->get_parameter("angular_max_acc").as_double());
-    limit_angular.dec = deg2rad(this->get_parameter("angular_max_dec").as_double());
 
     _subscription_path = this->create_subscription<path_msg::msg::Path>(
         "spline_path",
@@ -131,7 +132,7 @@ void SplinePid::_publisher_callback(){
     //回転速度処理
     cmd_velocity->angular.z = velPlanner_angular.vel()*angular_planner_gain + error_a*angular_pos_gain + error_a_integral*angular_pos_integral_gain;
     // RCLCPP_INFO(this->get_logger(), "angle vel %lf",velPlanner_angular.vel());
-    cmd_velocity->angular.z = utils::constrain(cmd_velocity->angular.z, -limit_angular.vel, limit_angular.vel);
+    cmd_velocity->angular.z = constrain(cmd_velocity->angular.z, -limit_angular.vel, limit_angular.vel);
 
     // RCLCPP_INFO(this->get_logger(), "vel:%lf  vel_x:%lf  cmd_x:%lf", velPlanner_linear.vel(),velPlanner_linear.vel()*(x_diff/(std::abs(x_diff)+std::abs(y_diff))),cmd_velocity->linear.x);
 
