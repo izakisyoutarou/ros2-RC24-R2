@@ -32,7 +32,7 @@ namespace mcl_2d{
                 std::bind(&Mcl2D::_subscriber_callback_initialize, this, std::placeholders::_1)
         );
 
-        publisher_selfpose = this->create_publisher<geometry_msgs::msg::PointStamped>("self_pose", _qos);
+        publisher_selfpose = this->create_publisher<geometry_msgs::msg::Vector3>("self_pose", _qos);
 
         /*パラメータ設定*/
         auto numOfParticle = this->get_parameter("num_of_particle").as_int();
@@ -77,12 +77,12 @@ namespace mcl_2d{
                 vec_poses.erase(vec_poses.begin());
                 vec_poses_time.erase(vec_poses_time.begin());
 
-                auto self_pose = std::make_shared<geometry_msgs::msg::PointStamped>();
+                auto self_pose = std::make_shared<geometry_msgs::msg::Vector3>();
                 // self_pose->header.frame_id = "";
-                self_pose->header.stamp = observed_time;
-                self_pose->point.x = mclocalizer.x;
-                self_pose->point.y = mclocalizer.y;
-                self_pose->point.z = mclocalizer.angle;
+                // self_pose->header.stamp = observed_time;
+                self_pose->x = mclocalizer.x;
+                self_pose->y = mclocalizer.y;
+                self_pose->z = mclocalizer.angle;
 
                 publisher_selfpose->publish(*self_pose);
             }

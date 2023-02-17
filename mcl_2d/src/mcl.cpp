@@ -68,7 +68,7 @@ void mcl::initializeParticles()
 
 void mcl::prediction(Eigen::Matrix4f diffPose)
 {
-  std::cout<<"Predicting..."<<m_sync_count<<std::endl;
+//   std::cout<<"Predicting..."<<m_sync_count<<std::endl;
   Eigen::VectorXf diff_xyzrpy = tool::eigen2xyzrpy(diffPose); // {x,y,z,roll,pitch,yaw} (z,roll,pitch assume to 0)
 
   //------------  FROM HERE   ------------------//
@@ -180,7 +180,7 @@ void mcl::weightning(Eigen::Matrix4Xf laser)
 
 void mcl::resampling()
 {
-  std::cout<<"Resampling..."<<m_sync_count<<std::endl;
+//   std::cout<<"Resampling..."<<m_sync_count<<std::endl;
 
   //Make score line (roullette)
   std::vector<double> particleScores;
