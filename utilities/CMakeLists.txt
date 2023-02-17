@@ -16,7 +16,7 @@ find_package(rclcpp REQUIRED)
 include_directories(include)
 
 add_library(utilities
-  src/can_utils.cpp
+  src/utils.cpp
   src/trapezoidal_velocity_planner.cpp
 )
 target_compile_features(utilities PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
