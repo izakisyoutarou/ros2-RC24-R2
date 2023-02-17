@@ -80,6 +80,10 @@ ament_export_libraries(
 ament_export_targets(
   export_${PROJECT_NAME}
 )
+ament_export_dependencies(
+    rclcpp
+    path_msg
+)
 
 #-- for Python
 ament_python_install_package(${PROJECT_NAME})
