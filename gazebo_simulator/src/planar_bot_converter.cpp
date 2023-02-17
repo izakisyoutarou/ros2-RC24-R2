@@ -34,7 +34,7 @@ void PlanarBotConverter::callback_velocity(const geometry_msgs::msg::Twist::Shar
     const double s0 = sin(this->yaw);
     msg_velocity->linear.x = c0*msg->linear.x + s0*msg->linear.y;
     msg_velocity->linear.y = -s0*msg->linear.x + c0*msg->linear.y;
-    msg_velocity->angular.z = msg->angular.z;
+    msg_velocity->angular.z = msg->angular.z*10.0;  //水平移動プラグインのバグを10倍して一時的に補正
 
     publisher_velocity->publish(*msg_velocity);
 

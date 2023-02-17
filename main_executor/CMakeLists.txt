@@ -8,6 +8,7 @@ find_package(rclcpp REQUIRED)
 find_package(socketcan_interface REQUIRED)
 find_package(mcl_2d REQUIRED)
 find_package(controller_interface REQUIRED)
+find_package(spline_pid REQUIRED)
 add_executable(main_exec
         src/main.cpp
         )
@@ -17,6 +18,7 @@ ament_target_dependencies(main_exec
         socketcan_interface
         mcl_2d
         controller_interface
+        spline_pid
         )
 
 target_include_directories(main_exec

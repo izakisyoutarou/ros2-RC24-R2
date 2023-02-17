@@ -5,7 +5,7 @@
 // #include <nav_msgs/msg/odometry.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <geometry_msgs/msg/point.hpp>
-#include <geometry_msgs/msg/point_stamped.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
@@ -29,7 +29,7 @@ class Mcl2D : public rclcpp::Node {
         rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _subscription_odom_angular;
         rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr _subscription_initialize;
 
-        rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr publisher_selfpose;
+        rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr publisher_selfpose;
 
         rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
