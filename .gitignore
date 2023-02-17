@@ -1,3 +1,4 @@
+#拡張子で指定
 *.log
 *.urdf
 *.pyc
@@ -12,9 +13,11 @@ logs/
 build/
 install/
 log/
+config/
 
 
 #ファイル名で指定
 
 
 #例外ファイルを指定
+!dummy.txt
