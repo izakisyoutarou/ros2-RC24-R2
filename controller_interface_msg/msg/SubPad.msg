@@ -14,7 +14,3 @@ bool up
 bool left
 bool down
 bool right
-float32 anl_lft_x
-float32 anl_lft_y
-float32 anl_rgt_x
-float32 anl_rgt_y

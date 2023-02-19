@@ -13,13 +13,15 @@ int main(int argc, char * argv[]){
     nodes_option.allow_undeclared_parameters(true);
     nodes_option.automatically_declare_parameters_from_overrides(true);
 
-    auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
+    //auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
     //auto mcl_2d_node = std::make_shared<mcl_2d::Mcl2D>(nodes_option);
-    auto controller_node = std::make_shared<controller_interface::ControllerInterface>(nodes_option);
+    auto gamesir_node = std::make_shared<controller_interface::SmartphoneGamepad>(nodes_option);
+    //auto dualsense_node = std::make_shared<controller_interface::DualSense>(nodes_option);
 
-    exec.add_node(socketcan_node);
+    //exec.add_node(socketcan_node);
     //exec.add_node(mcl_2d_node);
-    exec.add_node(controller_node);
+    exec.add_node(gamesir_node);
+    //exec.add_node(dualsense_node);
 
     exec.spin();
     rclcpp::shutdown();
