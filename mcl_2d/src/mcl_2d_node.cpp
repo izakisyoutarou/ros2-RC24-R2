@@ -8,7 +8,7 @@ namespace mcl_2d{
 
     Mcl2D::Mcl2D(const std::string &name_space, const rclcpp::NodeOptions &options)
     : rclcpp::Node("mcl_2d_node", name_space, options),
-    mclocalizer(ament_index_cpp::get_package_share_directory("mcl_2d") +"/"+"config") {
+    mclocalizer(ament_index_cpp::get_package_share_directory("main_executor") +"/"+"config"+"/"+"mcl_2d") {
 
         _subscription_laser = this->create_subscription<sensor_msgs::msg::LaserScan>(
                 "scan",
@@ -35,20 +35,20 @@ namespace mcl_2d{
         publisher_selfpose = this->create_publisher<geometry_msgs::msg::Vector3>("self_pose", _qos);
 
         /*パラメータ設定*/
-        auto numOfParticle = this->get_parameter("num_of_particle").as_int();
-        auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
-        auto pose_array = this->get_parameter("initial_pose").as_double_array();
+        const auto numOfParticle = this->get_parameter("num_of_particle").as_int();
+        const auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
+        const auto pose_array = this->get_parameter("initial_pose").as_double_array();
 
-        float odomCovariance[6] = {
-            (float)this->get_parameter("odom_convariance.param1").as_double(),     // Rotation to Rotation
-            (float)this->get_parameter("odom_convariance.param2").as_double(),     // Translation to Rotation
-            (float)this->get_parameter("odom_convariance.param3").as_double(),     // Translation to Translation
-            (float)this->get_parameter("odom_convariance.param4").as_double(),     // Rotation to Translation
-            (float)this->get_parameter("odom_convariance.param5").as_double(),     // X
-            (float)this->get_parameter("odom_convariance.param6").as_double()      // Y
+        const float odomCovariance[6] = {
+            static_cast<float>(this->get_parameter("odom_convariance.param1").as_double()),     // Rotation to Rotation
+            static_cast<float>(this->get_parameter("odom_convariance.param2").as_double()),     // Translation to Rotation
+            static_cast<float>(this->get_parameter("odom_convariance.param3").as_double()),     // Translation to Translation
+            static_cast<float>(this->get_parameter("odom_convariance.param4").as_double()),     // Rotation to Translation
+            static_cast<float>(this->get_parameter("odom_convariance.param5").as_double()),     // X
+            static_cast<float>(this->get_parameter("odom_convariance.param6").as_double())      // Y
         };
-        Eigen::Matrix4f tf_laser2robot = tool::xyzrpy2eigen(tf_array[0],tf_array[1],tf_array[2],tf_array[3],tf_array[4],tf_array[5]);
-        Eigen::Matrix4f initial_pose = tool::xyzrpy2eigen(pose_array[0],pose_array[1],0,0,0,pose_array[2]);
+        const Eigen::Matrix4f tf_laser2robot = tool::xyzrpy2eigen(tf_array[0],tf_array[1],tf_array[2],tf_array[3],tf_array[4],tf_array[5]);
+        const Eigen::Matrix4f initial_pose = tool::xyzrpy2eigen(pose_array[0],pose_array[1],0,0,0,pose_array[2]);
         mclocalizer.setup(numOfParticle, odomCovariance, tf_laser2robot, initial_pose);
 
         // std::cout << tf_laser2robot << std::endl;
