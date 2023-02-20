@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import yaml
 import rclpy
 from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
@@ -14,7 +15,7 @@ from pycubicspline import *
 class SplineTrajectories(Node):
 
     def __init__(self):
-        super().__init__('spline_trajectories')
+        super().__init__('spline_trajectories_node')
         self.subscription_node = self.create_subscription(
             String,
             'move_node',
@@ -31,15 +32,20 @@ class SplineTrajectories(Node):
         self.publisher_path = self.create_publisher(Path, 'spline_path', 1)
 
         edgelist_file_path = os.path.join(
-        get_package_share_directory('spline_pid'),
+        get_package_share_directory('main_executor'),
         'config',
+        'spline_pid',
         'edgelist.txt')
         self.edgelist = nx.read_weighted_edgelist(edgelist_file_path)
 
         self.nodelist_file_path = os.path.join(
-        get_package_share_directory('spline_pid'),
+        get_package_share_directory('main_executor'),
         'config',
+        'spline_pid',
         'nodelist.txt')
+
+        # パラメータの宣言
+        self.declare_parameter('resolution', 0.01)
 
         self.current_node = 'O'
         self.target_node = 'O'
@@ -69,7 +75,9 @@ class SplineTrajectories(Node):
                     input_a.append(math.radians(float(a)))
                 print('角度 : ',input_a)
 
-                x, y, a ,yaw, k, travel = calc_2d_spline_interpolation(input_x, input_y, input_a, num = int(float(length)*100))
+                trajectories_resolution = self.get_parameter('resolution').get_parameter_value().double_value
+                amount = 1.0/ trajectories_resolution
+                x, y, a ,yaw, k, travel = calc_2d_spline_interpolation(input_x, input_y, input_a, num = int(float(length)*amount))
 
                 msg_tx.x = x
                 msg_tx.y = y

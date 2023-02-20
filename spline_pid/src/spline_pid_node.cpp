@@ -35,9 +35,9 @@ angular_pos_integral_gain(get_parameter("angular_pos_integral_gain").as_double()
 linear_pos_tolerance(get_parameter("linear_pos_tolerance").as_double()),
 angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
 {
-    auto interval_ms = this->get_parameter("interval_ms").as_int();
+    const auto interval_ms = this->get_parameter("interval_ms").as_int();
     sampling_time = interval_ms / 1000.0;
-    auto initial_pose = this->get_parameter("initial_pose").as_double_array();
+    const auto initial_pose = this->get_parameter("initial_pose").as_double_array();
 
 
     _subscription_path = this->create_subscription<path_msg::msg::Path>(
@@ -63,6 +63,8 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
     velPlanner_linear.limit(limit_linear);
     velPlanner_angular.limit(limit_angular);
 
+    self_pose.x = initial_pose[0];
+    self_pose.y = initial_pose[1];
     self_pose.z = initial_pose[2];
 }
 
@@ -77,21 +79,24 @@ void SplinePid::_publisher_callback(){
     msg_angular->canid = 0x111;
     msg_angular->candlc = 4;
 
-    VelPlannerLimit current_limit_linear = limit_linear;
-    current_limit_linear.vel = current_limit_linear.vel - (current_limit_linear.vel * std::abs(path->curvature.at(current_count)) * curvature_attenuation_rate);
-    current_limit_linear.vel *= linear_planner_vel_limit_gain;
-    velPlanner_linear.limit(current_limit_linear);
+    // 曲率考慮
+    // VelPlannerLimit current_limit_linear = limit_linear;
+    // current_limit_linear.vel = current_limit_linear.vel - (current_limit_linear.vel * std::abs(path->curvature.at(current_count)) * curvature_attenuation_rate);
+    // current_limit_linear.vel *= linear_planner_vel_limit_gain;
+    // velPlanner_linear.limit(current_limit_linear);
+
+    // velPlanner_linear.pos(path->length.back(), velPlanner_linear.vel());
 
     velPlanner_linear.cycle();
+    velPlanner_angular.cycle();
 
-    // RCLCPP_INFO(this->get_logger(), "target:%lf  pos:%lf", path->length.back(), velPlanner_linear.pos());
+    // RCLCPP_INFO(this->get_logger(), "target:%lf  vel:%lf", path->length.back(), velPlanner_linear.vel());
 
     bool is_target_changed = false;
     if(!is_target_arrived){
     while(path->length.at(current_count) < velPlanner_linear.pos()){
         current_count++;
         is_target_changed = true;
-        // RCLCPP_INFO(this->get_logger(), "x:%lf  y:%lf  a:%lf",path->x.at(current_count),path->y.at(current_count),path->angle.at(current_count));
         if(!(current_count+1 < max_trajectories)){
             RCLCPP_INFO(this->get_logger(), "目標が終点に到達しました");
             is_target_arrived = true;
@@ -105,21 +110,12 @@ void SplinePid::_publisher_callback(){
         // RCLCPP_INFO(this->get_logger(), "x diff:%lf  y diff:%lf",x_diff, y_diff);
     }
 
-    if(path->angle.at(current_count) != last_target_position.z){
-        velPlanner_angular.pos(path->angle.at(current_count),velPlanner_angular.vel());
-        RCLCPP_INFO(this->get_logger(), "目標角度の変更");
-    }
-    velPlanner_angular.cycle();
-
     const double error_x = path->x.at(current_count) - self_pose.x;
     error_x_integral += error_x * sampling_time;
     const double error_y = path->y.at(current_count) - self_pose.y;
     error_y_integral += error_y * sampling_time;
-    const double error_a = path->angle.at(current_count) - self_pose.z;
+    const double error_a = velPlanner_angular.pos() - self_pose.z;
     error_a_integral += error_a * sampling_time;
-
-    // RCLCPP_INFO(this->get_logger(), "x:%lf  y:%lf  a:%lf",error_x,error_y,error_a);
-    // RCLCPP_INFO(this->get_logger(), "count: %d",current_count);
 
     //並進速度処理
     cmd_velocity->linear.x = velPlanner_linear.vel() * (x_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_x*linear_pos_gain + error_x_integral*linear_pos_integral_gain;
@@ -132,10 +128,10 @@ void SplinePid::_publisher_callback(){
     //回転速度処理
     cmd_velocity->angular.z = velPlanner_angular.vel()*angular_planner_gain + error_a*angular_pos_gain + error_a_integral*angular_pos_integral_gain;
     // RCLCPP_INFO(this->get_logger(), "angle vel %lf",velPlanner_angular.vel());
+    // RCLCPP_INFO(this->get_logger(), "angle pos %lf",velPlanner_angular.pos());
     cmd_velocity->angular.z = constrain(cmd_velocity->angular.z, -limit_angular.vel, limit_angular.vel);
 
-    // RCLCPP_INFO(this->get_logger(), "vel:%lf  vel_x:%lf  cmd_x:%lf", velPlanner_linear.vel(),velPlanner_linear.vel()*(x_diff/(std::abs(x_diff)+std::abs(y_diff))),cmd_velocity->linear.x);
-
+    //収束判断
     const double linear_error_length = std::sqrt(error_x*error_x + error_y*error_y);
     const double angular_error_length = std::abs(error_a);
     bool is_linear_arrived = false;
@@ -158,6 +154,7 @@ void SplinePid::_publisher_callback(){
         RCLCPP_INFO(this->get_logger(), "状態が終点に到達しました");
     }
 
+    //送信
     uint8_t _candata[8];
     float_to_bytes(_candata, static_cast<float>(cmd_velocity->linear.x));
     float_to_bytes(_candata+4, static_cast<float>(cmd_velocity->linear.y));
@@ -171,6 +168,7 @@ void SplinePid::_publisher_callback(){
     publisher_linear->publish(*msg_linear);
     publisher_angular->publish(*msg_angular);
 
+    //前回値の更新
     last_target_position.x = path->x.at(current_count);
     last_target_position.y = path->y.at(current_count);
     last_target_position.z = path->angle.at(current_count);
@@ -180,18 +178,25 @@ void SplinePid::_publisher_callback(){
 
 void SplinePid::_subscriber_callback_path(const path_msg::msg::Path::SharedPtr msg){
     const int size = msg->length.size();
-    RCLCPP_INFO(this->get_logger(),"x:%d y:%d a:%d len:%d cur:%d\n",msg->x.size(),msg->y.size(),msg->angle.size(),msg->length.size(),msg->curvature.size());
+    // RCLCPP_INFO(this->get_logger(),"x:%d y:%d a:%d len:%d cur:%d\n",msg->x.size(),msg->y.size(),msg->angle.size(),msg->length.size(),msg->curvature.size());
     if(size==msg->x.size() && size==msg->y.size() && size==msg->angle.size() && size==msg->curvature.size()){
         path = msg;
-        // path.reset(msg);
         // 等加速度モードから抜け出すために最初に現在状態更新を行う
         velPlanner_linear.current(0.0, velPlanner_linear.vel(), velPlanner_linear.acc());
         velPlanner_angular.current(self_pose.z, velPlanner_angular.vel(), velPlanner_angular.acc());
 
+        //速度計画の指令
+        VelPlannerLimit current_limit_linear = limit_linear;
+        current_limit_linear.vel *= linear_planner_vel_limit_gain;
+        velPlanner_linear.limit(current_limit_linear);
+
         velPlanner_linear.pos(path->length.back(), velPlanner_linear.vel());
+        velPlanner_angular.pos(path->angle.back(),velPlanner_angular.vel());
+
         current_count = 0;
         last_target_position.x = path->x.front();
         last_target_position.y = path->y.front();
+        last_target_position.z = self_pose.z;
         is_arrived = false;
         is_target_arrived = false;
         max_trajectories = size;

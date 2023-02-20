@@ -49,9 +49,6 @@ install(
   DIRECTORY include/
   DESTINATION include
 )
-install(DIRECTORY config
- DESTINATION share/${PROJECT_NAME}
-)
 install(
   TARGETS spline_pid_node
   EXPORT export_${PROJECT_NAME}
