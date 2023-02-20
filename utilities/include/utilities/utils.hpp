@@ -3,13 +3,13 @@ namespace utils{
 
 // math defines
 static constexpr double d_pi = 3.1415926535897932384626433832795;
-static constexpr float f_pi = (float)d_pi;
+static constexpr float f_pi = static_cast<float>(d_pi);
 
 // Pi
 template <class T>
 constexpr T pi() { return d_pi; }
 template <>
-inline constexpr float pi() { return f_pi; }
+inline constexpr double pi() { return d_pi; }
 
 template <class T>
 constexpr T constrain(T x, T min, T max) {
