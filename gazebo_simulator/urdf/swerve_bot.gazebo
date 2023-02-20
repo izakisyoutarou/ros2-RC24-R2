@@ -69,16 +69,15 @@
         <scan>
           <horizontal>
             <samples>2161</samples>
-            <resolution>1/0.125</resolution>
-            <min_angle>-1.57079</min_angle>
-            <max_angle>1.57079</max_angle>
+            <resolution>1/0.000218166156</resolution>
+            <min_angle>-2.35619</min_angle>
+            <max_angle>2.35619</max_angle>
           </horizontal>
         </scan>
         <range>
-          <min>0.5</min>
+          <min>0.40</min>
           <max>20.0</max>
-          <resolution>0.01</resolution>
->>>>>>> origin/mcl_2d
+          <resolution>0.015</resolution>
         </range>
         <noise>
           <type>gaussian</type>

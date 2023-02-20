@@ -18,6 +18,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -36,6 +37,7 @@ target_include_directories(mcl_2d_node PUBLIC
   $<INSTALL_INTERFACE:include>
   )
 ament_target_dependencies(mcl_2d_node
+  ament_index_cpp
   rclcpp
   std_msgs
   geometry_msgs
@@ -99,7 +101,7 @@ ament_export_targets(
   export_${PROJECT_NAME}
 )
 ament_export_dependencies(
-    rclcpp
+    ament_index_cpp
     rclcpp
     geometry_msgs
     sensor_msgs
