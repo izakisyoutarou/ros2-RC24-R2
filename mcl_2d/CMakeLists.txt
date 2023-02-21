@@ -68,9 +68,6 @@ install(
   DIRECTORY include/
   DESTINATION include
 )
-install(DIRECTORY config
- DESTINATION share/${PROJECT_NAME}
-)
 install(TARGETS
   mcl_2d_node
   EXPORT export_${PROJECT_NAME}

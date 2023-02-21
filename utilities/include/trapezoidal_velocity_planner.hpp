@@ -21,10 +21,16 @@
 #include <stdint.h>
 #include <rclcpp/rclcpp.hpp>
 
+namespace velocity_planner {
+namespace trapezoidal_velocity_planner {
+
 using namespace std;
 
 //rclcpp::Clock system_clock(RCL_ROS_TIME);
-//rclcpp::Time now = system_clock.now();
+
+// int64_t micros(){
+//     return system_clock.now().nanoseconds()*1e-3;
+// }
 
 template <class T>
     constexpr T constrain(T x, T min, T max) {
@@ -32,15 +38,6 @@ template <class T>
 	else if(max<x) return max;
 	else return x;
 }
-
-// int64_t micros(){
-//     return system_clock.now().nanoseconds()*1e-3;
-// }
-
-int64_t micros();
-
-namespace velocity_planner {
-namespace trapezoidal_velocity_planner {
 
 struct Physics_t {
 	Physics_t(){}

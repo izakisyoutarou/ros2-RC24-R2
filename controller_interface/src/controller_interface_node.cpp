@@ -5,6 +5,8 @@
 // VelPlanner lin_y(tvpl_stea);
 // VelPlanner ang_z(tvpl_stea);
 
+using namespace utils;
+
 namespace controller_interface
 {
     SmartphoneGamepad::SmartphoneGamepad(const rclcpp::NodeOptions &options) : SmartphoneGamepad("", options) {}
@@ -17,7 +19,7 @@ namespace controller_interface
         limit_angular(DBL_MAX,
         dtor(get_parameter("angular_max_vel").as_double()),
         dtor(get_parameter("angular_max_acc").as_double()),
-        dtor(get_parameter("angular_max_dec").as_double()) ),
+        dtor(get_parameter("angular_max_dec").as_double()) )
         {
             _sub_pad = this->create_subscription<controller_interface_msg::msg::SubPad>(
                 "sub_pad",

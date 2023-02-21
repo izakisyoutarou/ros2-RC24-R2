@@ -1,13 +1,15 @@
 #include "trapezoidal_velocity_planner.hpp"
 
+
+
+namespace velocity_planner {
+namespace trapezoidal_velocity_planner {
+
 rclcpp::Clock system_clock(RCL_ROS_TIME);
 
 int64_t micros(){
     return system_clock.now().nanoseconds()*1e-3;
 }
-
-namespace velocity_planner {
-namespace trapezoidal_velocity_planner {
 
 //VelPlanner
 void VelPlanner::cycle() {
