@@ -1,0 +1,2 @@
+bool emergency
+bool manyual_swith
