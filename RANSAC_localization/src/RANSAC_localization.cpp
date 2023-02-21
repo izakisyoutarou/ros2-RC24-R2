@@ -1,10 +1,10 @@
-#include "icp_base_slam/icp_base_slam.hpp"
+#include "RANSAC_localization/RANSAC_localization.hpp"
 
 namespace self_localization{
-IcpBaseSlam::IcpBaseSlam(const rclcpp::NodeOptions &options) : IcpBaseSlam("", options) {}
+RANSACLocalization::RANSACLocalization(const rclcpp::NodeOptions &options) : RANSACLocalization("", options) {}
 
-IcpBaseSlam::IcpBaseSlam(const string& name_space, const rclcpp::NodeOptions &options)
-:  rclcpp::Node("icp_base_slam", name_space, options) {
+RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::NodeOptions &options)
+:  rclcpp::Node("RANSAC_localization", name_space, options) {
   RCLCPP_INFO(this->get_logger(), "START");
   laser_weight_ = this->get_parameter("laser_weight").as_double();
   odom_weight_ = this->get_parameter("odom_weight").as_double();
@@ -13,17 +13,17 @@ IcpBaseSlam::IcpBaseSlam(const string& name_space, const rclcpp::NodeOptions &op
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
   "scan", rclcpp::SensorDataQoS(),
-  bind(&IcpBaseSlam::scan_callback, this, placeholders::_1));
+  bind(&RANSACLocalization::scan_callback, this, placeholders::_1));
 
   odom_linear_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
     "can_rx_100",
     _qos,
-    bind(&IcpBaseSlam::callback_odom_linear, this, placeholders::_1)
+    bind(&RANSACLocalization::callback_odom_linear, this, placeholders::_1)
   );
   odom_angular_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
     "can_rx_101",
     _qos,
-    bind(&IcpBaseSlam::callback_odom_angular, this, placeholders::_1)
+    bind(&RANSACLocalization::callback_odom_angular, this, placeholders::_1)
   );
 
   ransaced_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -39,7 +39,7 @@ IcpBaseSlam::IcpBaseSlam(const string& name_space, const rclcpp::NodeOptions &op
 
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>("self_localization/self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
 
-  ransac_lines.setup(trial_num_, inlier_dist_threshold_);
+  detect_lines.setup(trial_num_, inlier_dist_threshold_);
   pose_fuser.setup(laser_weight_, odom_weight_);
 
   create_elephant_map();
@@ -49,7 +49,7 @@ IcpBaseSlam::IcpBaseSlam(const string& name_space, const rclcpp::NodeOptions &op
   last_estimated = init;
 }
 
-void IcpBaseSlam::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
   odom_flag=true;
   uint8_t _candata[8];
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
@@ -68,7 +68,7 @@ void IcpBaseSlam::callback_odom_linear(const socketcan_interface_msg::msg::Socke
 
 }
 
-void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
   uint8_t _candata[8];
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   double yaw = (double)bytes_to_float(_candata);
@@ -79,7 +79,7 @@ void IcpBaseSlam::callback_odom_angular(const socketcan_interface_msg::msg::Sock
   vector_msg.z = odom.yaw;
 }
 
-void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
+void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
@@ -92,9 +92,9 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom.yaw);
   vector<config::LaserPoint> src_points = converter.scan_to_vector(msg, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
 
-  ransac_lines.fuse_inliers(src_points, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
-  vector<config::LaserPoint> line_points = ransac_lines.get_sum();
-  Pose trans = ransac_lines.get_estimated_diff();
+  detect_lines.fuse_inliers(src_points, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
+  vector<config::LaserPoint> line_points = detect_lines.get_sum();
+  Pose trans = detect_lines.get_estimated_diff();
   ransac_estimated = current_scan_odom + trans;
   vector<config::LaserPoint> global_points = transform(line_points, trans);
 
@@ -106,28 +106,28 @@ void IcpBaseSlam::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg
   publishers(line_points);
 }
 
-void IcpBaseSlam::publishers(vector<config::LaserPoint> &points){
-  // sensor_msgs::msg::PointCloud2 cloud = converter.vector_to_PC2(points);
+void RANSACLocalization::publishers(vector<config::LaserPoint> &points){
+  sensor_msgs::msg::PointCloud2 cloud = converter.vector_to_PC2(points);
 
-  // corrent_pose_stamped.header.stamp = this->now();
-  // corrent_pose_stamped.header.frame_id = "map";
-  // corrent_pose_stamped.pose.position.x = odom.x;
-  // corrent_pose_stamped.pose.position.y = odom.y;
-  // corrent_pose_stamped.pose.orientation.z = sin(odom.yaw / 2.0);
-  // corrent_pose_stamped.pose.orientation.w = cos(odom.yaw / 2.0);
+  corrent_pose_stamped.header.stamp = this->now();
+  corrent_pose_stamped.header.frame_id = "map";
+  corrent_pose_stamped.pose.position.x = odom.x;
+  corrent_pose_stamped.pose.position.y = odom.y;
+  corrent_pose_stamped.pose.orientation.z = sin(odom.yaw / 2.0);
+  corrent_pose_stamped.pose.orientation.w = cos(odom.yaw / 2.0);
 
   // path.header.stamp = this->now();
   // path.header.frame_id = "map";
   // path.poses.push_back(corrent_pose_stamped);
 
-  // map_publisher->publish(map_cloud);
-  // ransaced_publisher->publish(cloud);
-  // pose_publisher->publish(corrent_pose_stamped);
+  map_publisher->publish(map_cloud);
+  ransaced_publisher->publish(cloud);
+  pose_publisher->publish(corrent_pose_stamped);
   // path_publisher->publish(path);
 }
 
 
-void IcpBaseSlam::create_elephant_map(){
+void RANSACLocalization::create_elephant_map(){
   config::LaserPoint map_point;
   //右の垂木
   for(int i=0; i<=int((map_point_x[2] - map_point_x[0])*1000); i++){
@@ -180,13 +180,13 @@ void IcpBaseSlam::create_elephant_map(){
 }
 
 // 点群を並進・回転させる
-config::LaserPoint IcpBaseSlam::rotate(config::LaserPoint point, double theta){
+config::LaserPoint RANSACLocalization::rotate(config::LaserPoint point, double theta){
   config::LaserPoint p;
   p.x = point.x * cos(theta) - point.y * sin(theta);
   p.y = point.x * sin(theta) + point.y * cos(theta);
   return p;
 }
-vector<config::LaserPoint> IcpBaseSlam::transform(const vector<config::LaserPoint> &points, const Pose &pose) {
+vector<config::LaserPoint> RANSACLocalization::transform(const vector<config::LaserPoint> &points, const Pose &pose) {
   vector<config::LaserPoint> transformed_points;
   for (const auto& point : points) {
     // 並進

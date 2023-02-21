@@ -1,4 +1,4 @@
-#include "icp_base_slam/pose_fuser.hpp"
+#include "RANSAC_localization/pose_fuser.hpp"
 
 
 void PoseFuser::setup(const double laser_weight, const double odom_weight){

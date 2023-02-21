@@ -1,11 +1,11 @@
-#include "icp_base_slam/ransac_lines.hpp"
+#include "RANSAC_localization/detect_lines.hpp"
 
-void RansacLines::setup(const int &trial_num, const double &inlier_dist_threshold){
+void DtectLines::setup(const int &trial_num, const double &inlier_dist_threshold){
   trial_num_ = trial_num;
   inlier_dist_threshold_ = inlier_dist_threshold;
 }
 
-void RansacLines::init(){
+void DtectLines::init(){
   estimated_diff = Pose();
   sum.clear();
   for (int i=0; i<lines.size(); ++i){
@@ -18,7 +18,7 @@ void RansacLines::init(){
   lines_.resize(8);
 }
 
-void RansacLines::fuse_inliers(const vector<config::LaserPoint> &src_points, const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
+void DtectLines::fuse_inliers(const vector<config::LaserPoint> &src_points, const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
   init();
   devide_points(src_points);
   get_inliers();
@@ -26,7 +26,7 @@ void RansacLines::fuse_inliers(const vector<config::LaserPoint> &src_points, con
 }
 
 
-void RansacLines::calc_estimated_diff(const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
+void DtectLines::calc_estimated_diff(const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
   estimated_diff.yaw = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
@@ -42,7 +42,7 @@ void RansacLines::calc_estimated_diff(const Pose &estimated, const double &odom_
   }
 }
 
-double RansacLines::calc_diff_angle(){
+double DtectLines::calc_diff_angle(){
   double diff_angle=0.0;
   double angle=0.0;
   int get_angle_count=0;
@@ -60,7 +60,7 @@ double RansacLines::calc_diff_angle(){
   return LPF(diff_angle/get_angle_count);
 }
 
-void RansacLines::devide_points(const vector<config::LaserPoint> &src_points){
+void DtectLines::devide_points(const vector<config::LaserPoint> &src_points){
   for(size_t i=0; i<src_points.size(); i++){
     set_points(lines[0], map_point_x[0], map_point_x[2], map_point_y[0], map_point_y[0], src_points[i]);
     set_points(lines[1], map_point_x[1], map_point_x[2], map_point_y[1], map_point_y[1], src_points[i]);
@@ -73,7 +73,7 @@ void RansacLines::devide_points(const vector<config::LaserPoint> &src_points){
   }
 }
 
-void RansacLines::get_inliers(){
+void DtectLines::get_inliers(){
   for(size_t i=0; i<lines.size(); i++){
     lines_[i]=calc_inliers(lines[i]);
     if(i<4) clear_points(lines_[i], 100, 0, 10);
@@ -82,7 +82,7 @@ void RansacLines::get_inliers(){
   }
 }
 
-void RansacLines::set_points(vector<config::LaserPoint> &points, const double map_point_x_1, const double map_point_x_2, const double map_point_y_1, const double map_point_y_2, const config::LaserPoint &src_point){
+void DtectLines::set_points(vector<config::LaserPoint> &points, const double map_point_x_1, const double map_point_x_2, const double map_point_y_1, const double map_point_y_2, const config::LaserPoint &src_point){
   if(map_point_x_1 - distance_threshold < src_point.x &&
      map_point_x_2 + distance_threshold > src_point.x &&
      map_point_y_1 - distance_threshold < src_point.y &&
@@ -95,7 +95,7 @@ void RansacLines::set_points(vector<config::LaserPoint> &points, const double ma
 }
 
 
-void RansacLines::input_points(const EstimatedLine &line){
+void DtectLines::input_points(const EstimatedLine &line){
   config::LaserPoint sum_point;
   for(size_t i=0; i<line.points.size(); i++){
     sum_point.x = line.points[i].x;
@@ -105,7 +105,7 @@ void RansacLines::input_points(const EstimatedLine &line){
 }
 
 
-EstimatedLine RansacLines::calc_inliers(vector<config::LaserPoint> &divided_points){
+EstimatedLine DtectLines::calc_inliers(vector<config::LaserPoint> &divided_points){
   inlier.points.clear();
   inlier.angle=0.0;
   if(divided_points.size()==0){
@@ -163,7 +163,7 @@ EstimatedLine RansacLines::calc_inliers(vector<config::LaserPoint> &divided_poin
   return inlier;
 }
 
-bool RansacLines::clear_points(EstimatedLine &estimated_line, int size_threshold, int angle_threshold_min, int angle_threshold_max){
+bool DtectLines::clear_points(EstimatedLine &estimated_line, int size_threshold, int angle_threshold_min, int angle_threshold_max){
   if(estimated_line.points.size()<size_threshold || abs(radToDeg(estimated_line.angle)) > angle_threshold_max || abs(radToDeg(estimated_line.angle)) < angle_threshold_min){
     estimated_line.points.clear();
     return true;
@@ -171,12 +171,12 @@ bool RansacLines::clear_points(EstimatedLine &estimated_line, int size_threshold
   return false;
 }
 
-double RansacLines::LPF(const double &raw){
+double DtectLines::LPF(const double &raw){
   double k=0.3;
   double lpf = (1 - k) * last_lpf + k * raw;
   last_lpf = lpf;
   return lpf;
 }
 
-vector<config::LaserPoint> RansacLines::get_sum(){return sum;}
-Pose RansacLines::get_estimated_diff(){return estimated_diff;}
+vector<config::LaserPoint> DtectLines::get_sum(){return sum;}
+Pose DtectLines::get_estimated_diff(){return estimated_diff;}

@@ -14,26 +14,26 @@
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "utilities/can_utils.hpp"
 
-#include "icp_base_slam/config.hpp"
-#include "icp_base_slam/pose_fuser.hpp"
-#include "icp_base_slam/ransac_lines.hpp"
-#include "icp_base_slam/converter.hpp"
+#include "RANSAC_localization/config.hpp"
+#include "RANSAC_localization/pose_fuser.hpp"
+#include "RANSAC_localization/detect_lines.hpp"
+#include "RANSAC_localization/converter.hpp"
 
 #include "visibility.h"
 
 using namespace std;
 
 namespace self_localization{
-class IcpBaseSlam : public rclcpp::Node{
+class RANSACLocalization : public rclcpp::Node{
 public:
-  ICP_BASE_SLAM_PUBLIC
-  explicit IcpBaseSlam(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
-  ICP_BASE_SLAM_PUBLIC
-  explicit IcpBaseSlam(const string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+  RANSAC_LOCALIZATION_PUBLIC
+  explicit RANSACLocalization(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+  RANSAC_LOCALIZATION_PUBLIC
+  explicit RANSACLocalization(const string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
 private:
   PoseFuser pose_fuser;  // センサ融合器
-  RansacLines ransac_lines;
+  DtectLines detect_lines;
   Converter converter;
 
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);

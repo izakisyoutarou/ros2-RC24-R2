@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.5)
-project(icp_base_slam)
+project(RANSAC_localization)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -33,24 +33,24 @@ set(dependencies
   Eigen3
 )
 
-include_directories(icp_base_slam
+include_directories(RANSAC_localization
   ${EIGEN3_INCLUDE_DIR}
 )
-add_library(icp_base_slam
-  src/icp_base_slam.cpp
+add_library(RANSAC_localization
+  src/RANSAC_localization.cpp
   src/pose_fuser.cpp
-  src/ransac_lines.cpp
+  src/detect_lines.cpp
 )
-target_compile_definitions(icp_base_slam
-  PRIVATE "ICP_BASE_SLAM_LIBRARY"
+target_compile_definitions(RANSAC_localization
+  PRIVATE "RANSAC_LOCALIZATION_LIBRARY"
 )
-target_compile_options(icp_base_slam PUBLIC -Wall)
+target_compile_options(RANSAC_localization PUBLIC -Wall)
 
-ament_target_dependencies(icp_base_slam
+ament_target_dependencies(RANSAC_localization
   ${dependencies}
 )
 
-target_include_directories(icp_base_slam PUBLIC
+target_include_directories(RANSAC_localization PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
@@ -66,7 +66,7 @@ install(
   DESTINATION include
 )
 
-install(TARGETS icp_base_slam
+install(TARGETS RANSAC_localization
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

@@ -9,10 +9,10 @@
 
 using namespace std;
 
-class RansacLines{
+class DtectLines{
 public:
-  RansacLines(){};
-  ~RansacLines(){};
+  DtectLines(){};
+  ~DtectLines(){};
 
   void setup(const int &trial_num, const double &inlier_dist_threshold);
   void init();
