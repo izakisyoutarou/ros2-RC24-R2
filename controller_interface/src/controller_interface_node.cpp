@@ -1,15 +1,23 @@
 #include "controller_interface/controller_interface_node.hpp"
 
-const VelPlannerLimit tvpl_stea(cfg::robot::move_pos_limit,cfg::robot::move_vel_limit,cfg::robot::move_acc_limit,cfg::robot::move_dec_limit);//stteaのlimitを参考にした
-VelPlanner lin_x(tvpl_stea);
-VelPlanner lin_y(tvpl_stea);
-VelPlanner ang_z(tvpl_stea);
+// const VelPlannerLimit tvpl_stea(cfg::robot::move_pos_limit,cfg::robot::move_vel_limit,cfg::robot::move_acc_limit,cfg::robot::move_dec_limit);//stteaのlimitを参考にした
+// VelPlanner lin_x(tvpl_stea);
+// VelPlanner lin_y(tvpl_stea);
+// VelPlanner ang_z(tvpl_stea);
 
 namespace controller_interface
 {
     SmartphoneGamepad::SmartphoneGamepad(const rclcpp::NodeOptions &options) : SmartphoneGamepad("", options) {}
     SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options)
-        : rclcpp::Node("controller_interface_node", name_space, options)
+        : rclcpp::Node("controller_interface_node", name_space, options),
+        limit_linear(DBL_MAX,
+        get_parameter("linear_max_vel").as_double(),
+        get_parameter("linear_max_acc").as_double(),
+        get_parameter("linear_max_dec").as_double() ),
+        limit_angular(DBL_MAX,
+        dtor(get_parameter("angular_max_vel").as_double()),
+        dtor(get_parameter("angular_max_acc").as_double()),
+        dtor(get_parameter("angular_max_dec").as_double()) ),
         {
             _sub_pad = this->create_subscription<controller_interface_msg::msg::SubPad>(
                 "sub_pad",
@@ -27,6 +35,11 @@ namespace controller_interface
             _pub_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
             _pub_reset = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
             _pub_emergency = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
+
+            //計画機
+            velPlanner_linear_x.limit(limit_linear);
+            velPlanner_linear_y.limit(limit_linear);
+            velPlanner_angular.limit(limit_angular);
 
             //UDP
             // struct in_addr local_addr;
@@ -106,21 +119,21 @@ namespace controller_interface
                 analog_r_x = roundoff(analog_r_x,1e-4);
                 analog_r_y = roundoff(analog_r_y,1e-4);
 
-                lin_x.vel(analog_l_y);//unityとロボットにおける。xとyが違うので逆にしている。
-                lin_y.vel(analog_l_x);
-                ang_z.vel(analog_r_x);
+                velPlanner_linear_x.vel(analog_l_y);//unityとロボットにおける。xとyが違うので逆にしている。
+                velPlanner_linear_y.vel(analog_l_x);
+                velPlanner_angular.vel(analog_r_x);
 
-                lin_x.cycle();
-                lin_y.cycle();
-                ang_z.cycle();
+                velPlanner_linear_x.cycle();
+                velPlanner_linear_y.cycle();
+                velPlanner_angular.cycle();
 
-                RCLCPP_INFO(this->get_logger(), "vel_x:%f", lin_x.vel());
+                RCLCPP_INFO(this->get_logger(), "vel_x:%f", velPlanner_linear_x.vel());
 
-                float_to_bytes(_candata, (float)lin_x.vel() * max_linear_x);
-                float_to_bytes(_candata+4, (float)lin_y.vel() * max_linear_y);
+                float_to_bytes(_candata, (float)velPlanner_linear_x.vel() * max_linear_x);
+                float_to_bytes(_candata+4, (float)velPlanner_linear_y.vel() * max_linear_y);
                 for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata[i];
 
-                float_to_bytes(_candata, (float)ang_z.vel() * max_angular_z);
+                float_to_bytes(_candata, (float)velPlanner_angular.vel() * max_angular_z);
                 for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
 
                 _pub_linear->publish(*msg_linear);

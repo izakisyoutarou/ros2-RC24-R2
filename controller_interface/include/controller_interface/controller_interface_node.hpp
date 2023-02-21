@@ -1,7 +1,10 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
+#include <cmath>
+#include <float.h>
 //使うmsg
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
+#include "controller_interface_msg/msg/robot_controll.hpp"
 #include "controller_interface_msg/msg/sub_pad.hpp"
 #include "controller_interface_msg/msg/sub_scrn.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -32,6 +35,7 @@ namespace controller_interface
         public:
             CONTROLLER_INTERFACE_PUBLIC
             explicit SmartphoneGamepad(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+
             CONTROLLER_INTERFACE_PUBLIC
             explicit SmartphoneGamepad(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
@@ -76,6 +80,13 @@ namespace controller_interface
             char* buffer = new char[16];
             struct sockaddr_in servaddr, cliaddr;
             std::thread udp_thread_;
+
+            //計画機
+            VelPlanner velPlanner_linear_x;
+            VelPlanner velPlanner_linear_y;
+            const VelPlannerLimit limit_linear;
+            VelPlanner velPlanner_angular;
+            const VelPlannerLimit limit_angular;
             
 
     };
