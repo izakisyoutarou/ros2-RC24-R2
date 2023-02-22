@@ -50,6 +50,11 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
         _qos,
         std::bind(&SplinePid::_subscriber_callback_self_pose, this, std::placeholders::_1)
     );
+    _subscription_target_angle = this->create_subscription<geometry_msgs::msg::Vector3>(
+        "move_target_angle",
+        _qos,
+        std::bind(&SplinePid::_subscriber_callback_target_angle, this, std::placeholders::_1)
+    );
     _pub_timer = this->create_wall_timer(
         std::chrono::milliseconds(interval_ms),
         [this] { _publisher_callback(); }
@@ -57,6 +62,7 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
 
     publisher_velocity = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
     publisher_is_tracking = this->create_publisher<std_msgs::msg::Bool>("is_move_tracking", _qos);
+    publisher_target_pose = this->create_publisher<geometry_msgs::msg::Vector3>("move_target_pose", _qos);
     publisher_linear = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
     publisher_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
 
@@ -147,11 +153,14 @@ void SplinePid::_publisher_callback(){
     }
     if(is_linear_arrived && is_angular_arrived && !is_arrived){
         is_arrived = true;
+        RCLCPP_INFO(this->get_logger(), "状態が目標に到達しました");
         // 追従終了の出版
-        auto msg_is_tracking = std::make_shared<std_msgs::msg::Bool>();
-        msg_is_tracking->data = false;
-        publisher_is_tracking->publish(*msg_is_tracking);
-        RCLCPP_INFO(this->get_logger(), "状態が終点に到達しました");
+        publish_is_tracking(false);
+    }
+    else if((!is_linear_arrived || !is_angular_arrived) &&is_arrived){
+        is_arrived = false;
+        RCLCPP_INFO(this->get_logger(), "状態が目標から外れました");
+        publish_is_tracking(true);
     }
 
     //送信
@@ -202,9 +211,14 @@ void SplinePid::_subscriber_callback_path(const path_msg::msg::Path::SharedPtr m
         max_trajectories = size;
 
         // 追従開始の出版
-        auto msg_is_tracking = std::make_shared<std_msgs::msg::Bool>();
-        msg_is_tracking->data = true;
-        publisher_is_tracking->publish(*msg_is_tracking);
+        publish_is_tracking(true);
+
+        //目標姿勢の出版
+        auto msg_target_pose =  std::make_shared<geometry_msgs::msg::Vector3>();
+        msg_target_pose->x = path->x.back();
+        msg_target_pose->y = path->y.back();
+        msg_target_pose->z = path->angle.back();
+        publisher_target_pose->publish(*msg_target_pose);
     }
     else {
         RCLCPP_INFO(this->get_logger(), "軌道点のサイズが等しくありません");
@@ -216,6 +230,17 @@ void SplinePid::_subscriber_callback_self_pose(const geometry_msgs::msg::Vector3
     this->self_pose.y = msg->y;
     this->self_pose.z = msg->z;
     // RCLCPP_INFO(this->get_logger(), "x:%lf  y:%lf  a:%lf",msg->x, msg->y, msg->z);
+}
+void SplinePid::_subscriber_callback_target_angle(const geometry_msgs::msg::Vector3::SharedPtr msg){
+    if(max_trajectories>0){
+    velPlanner_angular.pos(msg->z,velPlanner_angular.vel());
+    }
+}
+
+void SplinePid::publish_is_tracking(const bool is_tracking){
+    auto msg_is_tracking = std::make_shared<std_msgs::msg::Bool>();
+    msg_is_tracking->data = is_tracking;
+    publisher_is_tracking->publish(*msg_is_tracking);
 }
 
 }  // namespace spline_pid

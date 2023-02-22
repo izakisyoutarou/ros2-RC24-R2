@@ -26,19 +26,24 @@ public:
 private:
     rclcpp::Subscription<path_msg::msg::Path>::SharedPtr _subscription_path;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_self_pose;
+    rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_target_angle;
 
     void _subscriber_callback_path(const path_msg::msg::Path::SharedPtr msg);
     void _subscriber_callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
+    void _subscriber_callback_target_angle(const geometry_msgs::msg::Vector3::SharedPtr msg);
 
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_velocity;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr publisher_is_tracking;
+    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr publisher_target_pose;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr publisher_linear;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr publisher_angular;
 
     rclcpp::TimerBase::SharedPtr _pub_timer;
     void _publisher_callback();
 
-    rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
+    void publish_is_tracking(const bool is_tracking);
+
+    rclcpp::QoS _qos = rclcpp::QoS(10);
 
     // path_msg::msg::Path path;  //経路
     std::shared_ptr<path_msg::msg::Path> path;
