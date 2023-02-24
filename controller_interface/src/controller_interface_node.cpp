@@ -1,10 +1,5 @@
 #include "controller_interface/controller_interface_node.hpp"
 
-// const VelPlannerLimit tvpl_stea(cfg::robot::move_pos_limit,cfg::robot::move_vel_limit,cfg::robot::move_acc_limit,cfg::robot::move_dec_limit);//stteaのlimitを参考にした
-// VelPlanner lin_x(tvpl_stea);
-// VelPlanner lin_y(tvpl_stea);
-// VelPlanner ang_z(tvpl_stea);
-
 using namespace utils;
 
 namespace controller_interface
@@ -21,6 +16,7 @@ namespace controller_interface
         dtor(get_parameter("angular_max_acc").as_double()),
         dtor(get_parameter("angular_max_dec").as_double()) )
         {
+            //controllerからsub
             _sub_pad = this->create_subscription<controller_interface_msg::msg::SubPad>(
                 "sub_pad",
                 _qos,
@@ -33,10 +29,17 @@ namespace controller_interface
                 std::bind(&SmartphoneGamepad::callback_scrn, this, std::placeholders::_1)
             );
             
+            //canusbへpub
             _pub_linear = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
             _pub_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
-            _pub_reset = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
+            _pub_restart = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
             _pub_emergency = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
+
+            //経路計画へpub
+            _pub_route = this->create_publisher<controller_interface_msg::msg::RobotControll>("route",_qos);
+
+            //上モノへpub
+            _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("tool",_qos);
 
             //計画機
             velPlanner_linear_x.limit(limit_linear);
@@ -68,23 +71,34 @@ namespace controller_interface
             msg_emergency->canid = 0x000;
             msg_emergency->candlc = 1;
 
+            auto msg_root = std::make_shared<controller_interface_msg::msg::RobotControll>();
+            msg_root->emergency = msg->g;
+            msg_root->manyual_swith = msg->r3;
+
+            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
+            msg_tool->emergency = msg->g;
+            msg_tool->manyual_swith = msg->r3;
+
             //RCLCPP_INFO(this->get_logger(), "flag:%d", msg->a);
 
-            uint8_t _candata;
-
-            _candata = (uint8_t)msg->s;
-            for(int i=0; i<msg_reset->candlc; i++) msg_reset->candata[i] = _candata;
-
-            _candata = (uint8_t)msg->g;
-            for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata;
-
-            _pub_reset->publish(*msg_reset);
+            if(msg->s)
+            {
+                _candata_btn = 1;
+                for(int i=0; i<msg_reset->candlc; i++) msg_reset->candata[i] = _candata_btn;
+                _pub_restart->publish(*msg_reset);
+            }
+                
+            _candata_btn = (uint8_t)msg->g;
+            for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn;
+            
             _pub_emergency->publish(*msg_emergency);
+            _pub_route->publish(*msg_root);
+            _pub_tool->publish(*msg_tool);
         }
 
         void SmartphoneGamepad::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
         {
-            //上物インターフェイスノードと経路生成・計画ノードへ
+            //スマホのスクリーンボタンの押されたボタンを受信するcall_back
             //RCLCPP_INFO(this->get_logger(), "flag:%d", msg->p1);
         }
 
@@ -121,22 +135,22 @@ namespace controller_interface
                 analog_r_x = roundoff(analog_r_x,1e-4);
                 analog_r_y = roundoff(analog_r_y,1e-4);
 
-                velPlanner_linear_x.vel(analog_l_y);//unityとロボットにおける。xとyが違うので逆にしている。
-                velPlanner_linear_y.vel(analog_l_x);
-                velPlanner_angular.vel(analog_r_x);
+                velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
+                velPlanner_linear_y.vel(upcast(analog_l_x));
+                velPlanner_angular.vel(upcast(analog_r_x));
 
                 velPlanner_linear_x.cycle();
                 velPlanner_linear_y.cycle();
                 velPlanner_angular.cycle();
 
-                RCLCPP_INFO(this->get_logger(), "vel_x:%f", velPlanner_linear_x.vel());
+                //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
 
-                float_to_bytes(_candata, (float)velPlanner_linear_x.vel() * max_linear_x);
-                float_to_bytes(_candata+4, (float)velPlanner_linear_y.vel() * max_linear_y);
-                for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata[i];
+                float_to_bytes(_candata_joy, (float)velPlanner_linear_x.vel() * max_linear_x);
+                float_to_bytes(_candata_joy+4, (float)velPlanner_linear_y.vel() * max_linear_y);
+                for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                float_to_bytes(_candata, (float)velPlanner_angular.vel() * max_angular_z);
-                for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
+                float_to_bytes(_candata_joy, (float)velPlanner_angular.vel() * max_angular_z);
+                for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
                 _pub_linear->publish(*msg_linear);
                 _pub_angular->publish(*msg_angular);
@@ -146,6 +160,14 @@ namespace controller_interface
                 // RCLCPP_INFO(this->get_logger(), "Elapsed time: %f", elapsed_time.count());
             }
             
+        }
+
+        double SmartphoneGamepad::upcast(float value2)
+        {
+            //floatからdoubleにupcastするときに計算誤差を表示させないようにする。
+            string a = std::to_string(value2);//floatをstringに変換
+            double b = std::stod(a);//stringをsoubeに変換
+            return b;
         }
 
         float SmartphoneGamepad::roundoff(const float &value, const float &epsilon)

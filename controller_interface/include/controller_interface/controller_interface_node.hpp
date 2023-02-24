@@ -1,19 +1,19 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
-#include <cmath>
 #include <float.h>
+#include <string>
 //使うmsg
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "controller_interface_msg/msg/robot_controll.hpp"
 #include "controller_interface_msg/msg/sub_pad.hpp"
 #include "controller_interface_msg/msg/sub_scrn.hpp"
+#include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/string.hpp"
 //他のpkg
 #include "utilities/can_utils.hpp"
 #include "utilities/utils.hpp"
 #include "trapezoidal_velocity_planner.hpp"
 #include "my_visibility.h"
-#include "config.hpp"
 //UDP
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -28,6 +28,8 @@
 
 using VelPlanner = velocity_planner::trapezoidal_velocity_planner::TrapezoidalVelocityPlanner;
 using VelPlannerLimit = velocity_planner::trapezoidal_velocity_planner::Limit_t;
+
+using std::string;
 
 namespace controller_interface
 {
@@ -45,18 +47,22 @@ namespace controller_interface
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad;
             rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_scrn;
             //CanUsbへ
-            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_reset;
+            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_restart;
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_emergency;
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_linear;
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_angular;
             //経路生成・計画へ
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_route;
+            rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_route;
+            //上モノインターフェイスへ
+            rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_tool;
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
             void callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
             void callback_udp();
+
+            double upcast(float value2);
             float roundoff(const float &value, const float &epsilon);
 
             double vel_lin_x = 0.0f;
@@ -73,7 +79,11 @@ namespace controller_interface
             float max_angular_z = 2.0f;
 
             //utility用
-            uint8_t _candata[8];
+            uint8_t _candata_joy[8];
+            uint8_t _candata_btn;
+
+            //empty
+            std_msgs::msg::Empty empty;
 
             //UDP用
             int sockfd, n;
