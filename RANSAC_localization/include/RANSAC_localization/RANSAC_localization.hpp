@@ -22,6 +22,7 @@
 #include "visibility.h"
 
 using namespace std;
+using namespace Eigen;
 
 namespace self_localization{
 class RANSACLocalization : public rclcpp::Node{
@@ -42,7 +43,7 @@ private:
   void create_elephant_map();
   void publishers(vector<config::LaserPoint> &points);
   config::LaserPoint rotate(config::LaserPoint point, double theta);
-  vector<config::LaserPoint> transform(const vector<config::LaserPoint> &points, const Pose &pose);
+  vector<config::LaserPoint> transform(const vector<config::LaserPoint> &points, const Vector3d &pose);
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
@@ -59,23 +60,20 @@ private:
   rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
   vector<config::LaserPoint> map_points;
-  Pose init;
-  Pose odom;
-  Pose current_scan_odom;
-  Pose last_odom;
-  Pose diff_odom;
-  Pose last_estimated;
-  Pose ransac_estimated;
-  Pose diff_estimated_sum;
+  Vector3d init = Eigen::Vector3d::Zero();
+  Vector3d odom = Eigen::Vector3d::Zero();
+  Vector3d last_odom = Eigen::Vector3d::Zero();
+  Vector3d diff_odom = Eigen::Vector3d::Zero();
+  Vector3d est_diff_sum = Eigen::Vector3d::Zero();
+  Vector3d last_estimated = Eigen::Vector3d::Zero();
   double odom_to_lidar_length = 0.4655;
   double reso = 0.125;
   double view_ranges = 270.0;
-  bool odom_flag=false;
-  double init_pose_x = -5.45;
-  double init_pose_y = 0.0;
   double last_scan_received_time=0.0;
   double last_odom_received_time=0.0;
   int scan_execution_time=0;
+
+  chrono::system_clock::time_point time_start, time_end;
 
   ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
   double laser_weight_;

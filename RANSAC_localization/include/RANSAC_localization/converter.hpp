@@ -1,20 +1,23 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+
 #include "config.hpp"
+
+using namespace Eigen;
 
 class Converter{
 public:
   Converter(){};
 
-  vector<config::LaserPoint> scan_to_vector(const sensor_msgs::msg::LaserScan::SharedPtr msg, const Pose &pose, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
+  vector<config::LaserPoint> scan_to_vector(const sensor_msgs::msg::LaserScan::SharedPtr msg, const Vector3d &pose, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
     vector<config::LaserPoint> src_points;
     for(size_t i=0; i< msg->ranges.size(); ++i) {
       config::LaserPoint src_point;
       if(msg->ranges[i] > 14 || msg->ranges[i] < 0.5) continue;
-      src_point.angle = msg->angle_min + msg->angle_increment * i - pose.yaw;
+      src_point.angle = msg->angle_min + msg->angle_increment * i - pose[2];
       src_point.dist = msg->ranges[i];
-      src_point.x = src_point.dist * cos(src_point.angle) + pose.x + odom_to_lidar_x;
-      src_point.y = -src_point.dist * sin(src_point.angle) + pose.y + odom_to_lidar_y;
+      src_point.x = src_point.dist * cos(src_point.angle) + pose[0] + odom_to_lidar_x;
+      src_point.y = -src_point.dist * sin(src_point.angle) + pose[1] + odom_to_lidar_y;
       src_points.push_back(src_point);
     }
     return src_points;

@@ -11,22 +11,22 @@ void PoseFuser::init(){
   reference_points.clear();
 }
 
-Pose PoseFuser::fuse_pose(const Pose &ransac_estimated, const Pose &scan_odom_motion, const Pose &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points){
+Vector3d PoseFuser::fuse_pose(const Vector3d &ransac_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points){
   if(global_points.size()==0) return current_scan_odom;
   init();
   NormalVector normal_vector = find_correspondence(src_points, global_points, current_points, reference_points);
   Eigen::Matrix2d ransac_cov = calculate_ransac_covariance(ransac_estimated, current_points, reference_points, normal_vector, laser_weight_);
   Eigen::Matrix2d scan_odom_motion_cov = calculate_motion_covariance(scan_odom_motion, dt_scan, odom_weight_);  // オドメトリで得た移動量の共分散
   Eigen::Matrix2d rotate_scan_odom_motion_cov = rotate_covariance(ransac_estimated, scan_odom_motion_cov);
-  Eigen::Vector2d mu1(ransac_estimated.x, ransac_estimated.y);
-  Eigen::Vector2d mu2(current_scan_odom.x, current_scan_odom.y);
+  Eigen::Vector2d mu1(ransac_estimated[0], ransac_estimated[1]);
+  Eigen::Vector2d mu2(current_scan_odom[0], current_scan_odom[1]);
   Eigen::Vector2d mu;
   Eigen::Matrix2d fused_cov;               // センサ融合後の共分散
   fuse(mu1, ransac_cov, mu2, rotate_scan_odom_motion_cov, mu, fused_cov);  // 2つの正規分布の融合
-  Pose estimated;
-  estimated.x=mu[0];
-  estimated.y=mu[1];
-  estimated.yaw=normalize_yaw(ransac_estimated.yaw);
+  Vector3d estimated;
+  estimated[0]=mu[0];
+  estimated[1]=mu[1];
+  estimated[2]=normalize_yaw(ransac_estimated[2]);
   return estimated;
 }
 
@@ -83,16 +83,16 @@ LaserPoint PoseFuser::find_closest_vertical_point(LaserPoint global){
   return closest;
 }
 
-Eigen::Matrix2d PoseFuser::calculate_ransac_covariance(const Pose &ransac_estimated, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points, NormalVector normal_vector, const double laser_weight_){
+Eigen::Matrix2d PoseFuser::calculate_ransac_covariance(const Vector3d &ransac_estimated, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points, NormalVector normal_vector, const double laser_weight_){
   double dd = 0.00001;  //数値微分の刻み
   double da = 0.00001;  //数値微分の刻み
   vector<double> Jx; //ヤコビ行列のxの列
   vector<double> Jy; //ヤコビ行列のyの列
 
   for(size_t i=0; i<current_points.size(); i++){
-    double vertical_distance   = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated.x,    ransac_estimated.y,    ransac_estimated.yaw, normal_vector);
-    double vertical_distance_x = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated.x+dd, ransac_estimated.y,    ransac_estimated.yaw, normal_vector);
-    double vertical_distance_y = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated.x,    ransac_estimated.y+dd, ransac_estimated.yaw, normal_vector);
+    double vertical_distance   = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated[0],    ransac_estimated[1],    ransac_estimated[2], normal_vector);
+    double vertical_distance_x = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated[0]+dd, ransac_estimated[1],    ransac_estimated[2], normal_vector);
+    double vertical_distance_y = calculate_vertical_distance(current_points[i], reference_points[i], ransac_estimated[0],    ransac_estimated[1]+dd, ransac_estimated[2], normal_vector);
     Jx.push_back((vertical_distance_x - vertical_distance) / dd);
     Jy.push_back((vertical_distance_y - vertical_distance) / dd);
   }
@@ -118,8 +118,8 @@ double PoseFuser::calculate_vertical_distance(const LaserPoint current, const La
   return (x_-reference.x)*normal_vector.normalize_x + (y_-reference.y)*normal_vector.normalize_y;
 }
 
-Eigen::Matrix2d PoseFuser::calculate_motion_covariance(const Pose &scan_odom_motion, const double dt_scan, const double odom_weight_){
-  double dis = sqrt(scan_odom_motion.x*scan_odom_motion.x + scan_odom_motion.y*scan_odom_motion.y);   // 移動距離
+Eigen::Matrix2d PoseFuser::calculate_motion_covariance(const Vector3d &scan_odom_motion, const double dt_scan, const double odom_weight_){
+  double dis = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]);   // 移動距離
   double vt = dis/dt_scan;                    // 並進速度[m/s]
   double vthre = 0.02;                   // vtの下限値。同期ずれで0になる場合の対処
   if (vt < vthre)
@@ -134,9 +134,9 @@ Eigen::Matrix2d PoseFuser::calculate_motion_covariance(const Pose &scan_odom_mot
   return odom_weight_*C1;
 }
 
-Eigen::Matrix2d PoseFuser::rotate_covariance(const Pose &ransac_estimated, Eigen::Matrix2d &scan_odom_motion_cov){
-  double cs = cos(ransac_estimated.yaw);            // poseの回転成分thによるcos
-  double sn = sin(ransac_estimated.yaw);
+Eigen::Matrix2d PoseFuser::rotate_covariance(const Vector3d &ransac_estimated, Eigen::Matrix2d &scan_odom_motion_cov){
+  double cs = cos(ransac_estimated[2]);            // poseの回転成分thによるcos
+  double sn = sin(ransac_estimated[2]);
   Eigen::Matrix2d J;                            // 回転のヤコビ行列
   J << cs, -sn,
        sn,  cs;

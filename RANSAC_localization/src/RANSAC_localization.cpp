@@ -6,6 +6,8 @@ RANSACLocalization::RANSACLocalization(const rclcpp::NodeOptions &options) : RAN
 RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::NodeOptions &options)
 :  rclcpp::Node("RANSAC_localization", name_space, options) {
   RCLCPP_INFO(this->get_logger(), "START");
+  const auto pose_array = this->get_parameter("initial_pose").as_double_array();
+  const auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
   laser_weight_ = this->get_parameter("laser_weight").as_double();
   odom_weight_ = this->get_parameter("odom_weight").as_double();
   trial_num_ = this->get_parameter("trial_num").as_int();
@@ -43,67 +45,60 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   pose_fuser.setup(laser_weight_, odom_weight_);
 
   create_elephant_map();
-  init.x = init_pose_x;
-  init.y = init_pose_y;
+  init[0]   = pose_array[0];
+  init[1]   = pose_array[1];
+  init[2] = pose_array[2];
   odom = init;
   last_estimated = init;
 }
 
 void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
-  odom_flag=true;
   uint8_t _candata[8];
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   double x = (double)bytes_to_float(_candata);
   double y = (double)bytes_to_float(_candata+4);
-  diff_odom.x = x - last_odom.x;
-  diff_odom.y = y - last_odom.y;
-  odom.x += diff_odom.x;
-  odom.y += diff_odom.y;
-  last_odom.x = x;
-  last_odom.y = y;
-
-  vector_msg.x = odom.x;
-  vector_msg.y = odom.y;
+  odom[0] = x + init[0];
+  odom[1] = y + init[1];
+  vector_msg.x = odom[0] + est_diff_sum[0];
+  vector_msg.y = odom[1] + est_diff_sum[1];
   self_pose_publisher->publish(vector_msg);
-
 }
 
 void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
   uint8_t _candata[8];
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   double yaw = (double)bytes_to_float(_candata);
-  diff_odom.yaw = yaw - last_odom.yaw;
-  odom.yaw += diff_odom.yaw;
-  odom.yaw = normalize_yaw(odom.yaw);
-  last_odom.yaw = odom.yaw;
-  vector_msg.z = odom.yaw;
+  odom[2] = yaw + init[2];
+  vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
 }
 
 void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
+  time_start = std::chrono::system_clock::now();
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
   if (dt_scan > 0.03 /* [sec] */) RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
 
-  current_scan_odom = odom;
-  Pose scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
+  Vector3d current_scan_odom = odom + est_diff_sum;
+  Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
 
-  double odom_to_lidar_x = odom_to_lidar_length * cos(current_scan_odom.yaw);
-  double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom.yaw);
+  double odom_to_lidar_x = odom_to_lidar_length * cos(current_scan_odom[2]);
+  double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom[2]);
   vector<config::LaserPoint> src_points = converter.scan_to_vector(msg, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
 
   detect_lines.fuse_inliers(src_points, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
   vector<config::LaserPoint> line_points = detect_lines.get_sum();
-  Pose trans = detect_lines.get_estimated_diff();
-  ransac_estimated = current_scan_odom + trans;
+  Vector3d trans = detect_lines.get_estimated_diff();
+  Vector3d ransac_estimated = current_scan_odom + trans;
   vector<config::LaserPoint> global_points = transform(line_points, trans);
 
-  Pose estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points);
-
-  Pose diff_estimated = estimated - current_scan_odom;
-  odom += diff_estimated;
+  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points);
+  est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
   publishers(line_points);
+  time_end = std::chrono::system_clock::now();
+  int msec = std::chrono::duration_cast<std::chrono::milliseconds>(time_end-time_start).count();
+  // RCLCPP_INFO(this->get_logger(), "scan time->%d", msec);
 }
 
 void RANSACLocalization::publishers(vector<config::LaserPoint> &points){
@@ -111,10 +106,10 @@ void RANSACLocalization::publishers(vector<config::LaserPoint> &points){
 
   corrent_pose_stamped.header.stamp = this->now();
   corrent_pose_stamped.header.frame_id = "map";
-  corrent_pose_stamped.pose.position.x = odom.x;
-  corrent_pose_stamped.pose.position.y = odom.y;
-  corrent_pose_stamped.pose.orientation.z = sin(odom.yaw / 2.0);
-  corrent_pose_stamped.pose.orientation.w = cos(odom.yaw / 2.0);
+  corrent_pose_stamped.pose.position.x = odom[0] + est_diff_sum[0];
+  corrent_pose_stamped.pose.position.y = odom[1] + est_diff_sum[1];
+  corrent_pose_stamped.pose.orientation.z = sin((odom[2]+est_diff_sum[2]) / 2.0);
+  corrent_pose_stamped.pose.orientation.w = cos((odom[2]+est_diff_sum[2]) / 2.0);
 
   // path.header.stamp = this->now();
   // path.header.frame_id = "map";
@@ -186,15 +181,15 @@ config::LaserPoint RANSACLocalization::rotate(config::LaserPoint point, double t
   p.y = point.x * sin(theta) + point.y * cos(theta);
   return p;
 }
-vector<config::LaserPoint> RANSACLocalization::transform(const vector<config::LaserPoint> &points, const Pose &pose) {
+vector<config::LaserPoint> RANSACLocalization::transform(const vector<config::LaserPoint> &points, const Vector3d &pose) {
   vector<config::LaserPoint> transformed_points;
   for (const auto& point : points) {
     // 並進
     config::LaserPoint p = point;
-    p.x += pose.x;
-    p.y += pose.y;
+    p.x += pose[0];
+    p.y += pose[1];
     // 回転
-    p = rotate(p, pose.yaw);
+    p = rotate(p, pose[2]);
     transformed_points.push_back(p);
   }
   return transformed_points;

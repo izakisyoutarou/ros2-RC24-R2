@@ -6,7 +6,7 @@ void DtectLines::setup(const int &trial_num, const double &inlier_dist_threshold
 }
 
 void DtectLines::init(){
-  estimated_diff = Pose();
+  Vector3d estimated_diff(0.0, 0.0, 0.0);
   sum.clear();
   for (int i=0; i<lines.size(); ++i){
     lines[i].clear();
@@ -18,7 +18,7 @@ void DtectLines::init(){
   lines_.resize(8);
 }
 
-void DtectLines::fuse_inliers(const vector<config::LaserPoint> &src_points, const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
+void DtectLines::fuse_inliers(const vector<config::LaserPoint> &src_points, const Vector3d &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
   init();
   devide_points(src_points);
   get_inliers();
@@ -26,19 +26,19 @@ void DtectLines::fuse_inliers(const vector<config::LaserPoint> &src_points, cons
 }
 
 
-void DtectLines::calc_estimated_diff(const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
-  estimated_diff.yaw = calc_diff_angle();
+void DtectLines::calc_estimated_diff(const Vector3d &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
+  estimated_diff[2] = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
     double dist;
     double dist_sum=0.0;
     for(size_t j=0; j<lines_[i].points.size(); j++){
-      if(i<4) dist_sum += lines_[i].points[j].dist * sin(lines_[i].points[j].angle + estimated_diff.yaw);
-      else dist_sum += lines_[i].points[j].dist * cos(lines_[i].points[j].angle + estimated_diff.yaw);
+      if(i<4) dist_sum += lines_[i].points[j].dist * sin(lines_[i].points[j].angle + estimated_diff[2]);
+      else dist_sum += lines_[i].points[j].dist * cos(lines_[i].points[j].angle + estimated_diff[2]);
     }
     dist = dist_sum / lines_[i].points.size();
-    if(i<4) estimated_diff.y = -(estimated.y + odom_to_lidar_y - (dist + map_point_y[i]));
-    else estimated_diff.x = -(estimated.x + odom_to_lidar_x - (-dist + map_point_x[i-4]));
+    if(i<4) estimated_diff[1] = -(estimated[1] + odom_to_lidar_y - (dist + map_point_y[i]));
+    else estimated_diff[0] = -(estimated[0] + odom_to_lidar_x - (-dist + map_point_x[i-4]));
   }
 }
 
@@ -179,4 +179,4 @@ double DtectLines::LPF(const double &raw){
 }
 
 vector<config::LaserPoint> DtectLines::get_sum(){return sum;}
-Pose DtectLines::get_estimated_diff(){return estimated_diff;}
+Vector3d DtectLines::get_estimated_diff(){return estimated_diff;}

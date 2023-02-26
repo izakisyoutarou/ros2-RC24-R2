@@ -3,11 +3,12 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <chrono>
+#include <eigen3/Eigen/Dense>
 
 #include "config.hpp"
 
 using namespace std;
+using namespace Eigen;
 
 class DtectLines{
 public:
@@ -16,10 +17,10 @@ public:
 
   void setup(const int &trial_num, const double &inlier_dist_threshold);
   void init();
-  void fuse_inliers(const vector<config::LaserPoint> &src_points, const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y);
+  void fuse_inliers(const vector<config::LaserPoint> &src_points, const Vector3d &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y);
 
   vector<config::LaserPoint> get_sum();
-  Pose get_estimated_diff();
+  Vector3d get_estimated_diff();
 
 private:
   EstimatedLine calc_inliers(vector<config::LaserPoint> &divided_points);
@@ -30,7 +31,7 @@ private:
   bool clear_points(EstimatedLine &estimated_line, int size_threshold, int angle_threshold_min, int angle_threshold_max);
   double calc_diff_angle();
   double LPF(const double &raw);
-  void calc_estimated_diff(const Pose &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y);
+  void calc_estimated_diff(const Vector3d &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y);
   /* linesの順番
   0:rafter_right
   1:fence_right
@@ -45,11 +46,10 @@ private:
   vector<EstimatedLine> lines_;
   vector<config::LaserPoint> sum;
   EstimatedLine inlier;
-  Pose estimated_diff;
+  Vector3d estimated_diff = Eigen::Vector3d::Zero();
   int trial_num_;
   double inlier_dist_threshold_;
   double detect_length = 0.0;
-  const double distance_threshold=0.8;
+  const double distance_threshold=0.5;
   double last_lpf=0;
-  chrono::system_clock::time_point time_start, time_end;
 };
