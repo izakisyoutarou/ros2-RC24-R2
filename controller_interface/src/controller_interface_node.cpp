@@ -136,6 +136,8 @@ namespace controller_interface
 
             uint8_t _candata_joy[8];
 
+            manual_max_vel = this->get_parameter("manual_linear_max_vel").as_double();
+
             auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
             while(rclcpp::ok())
             {
@@ -162,30 +164,31 @@ namespace controller_interface
                     analog_l_y = 0.f;
                     analog_r_x = 0.f;
                 }
-                    velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
-                    velPlanner_linear_y.vel(upcast(analog_l_x));
-                    velPlanner_angular_z.vel(upcast(analog_r_x));
 
-                    velPlanner_linear_x.cycle();
-                    velPlanner_linear_y.cycle();
-                    velPlanner_angular_z.cycle();
+                velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
+                velPlanner_linear_y.vel(upcast(analog_l_x));
+                velPlanner_angular_z.vel(upcast(analog_r_x));
 
-                    //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
+                velPlanner_linear_x.cycle();
+                velPlanner_linear_y.cycle();
+                velPlanner_angular_z.cycle();
 
-                    float_to_bytes(_candata_joy, (float)velPlanner_linear_x.vel() * max_linear_x);
-                    float_to_bytes(_candata_joy+4, (float)velPlanner_linear_y.vel() * max_linear_y);
-                    for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
+                //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
 
-                    float_to_bytes(_candata_joy, (float)velPlanner_angular_z.vel() * max_angular_z);
-                    for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
+                float_to_bytes(_candata_joy, static_cast<float>(velPlanner_linear_x.vel()) * manual_max_vel);
+                float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_linear_y.vel()) * manual_max_vel);
+                for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    msg_gazebo->linear.x = velPlanner_linear_x.vel();//gazebo_simulator
-                    msg_gazebo->linear.y = -velPlanner_linear_y.vel();
-                    msg_gazebo->angular.z = -velPlanner_angular_z.vel();
+                float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_max_vel);
+                for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
-                    _pub_canusb->publish(*msg_linear);
-                    _pub_canusb->publish(*msg_angular);
-                    _pub_gazebo->publish(*msg_gazebo);
+                msg_gazebo->linear.x = velPlanner_linear_x.vel();//gazebo_simulator
+                msg_gazebo->linear.y = -velPlanner_linear_y.vel();
+                msg_gazebo->angular.z = -velPlanner_angular_z.vel();
+
+                _pub_canusb->publish(*msg_linear);
+                _pub_canusb->publish(*msg_angular);
+                _pub_gazebo->publish(*msg_gazebo);
             }
         }
 
@@ -193,7 +196,7 @@ namespace controller_interface
         {
             //floatからdoubleにupcastするときに計算誤差を表示させないようにする。
             string a = std::to_string(value2);//floatをstringに変換
-            double b = std::stod(a);//stringをsoubeに変換
+            double b = std::stod(a);//stringをdoubeに変換
             return b;
         }
     

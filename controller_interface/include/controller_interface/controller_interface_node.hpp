@@ -69,10 +69,8 @@ namespace controller_interface
             float analog_l_y = 0.0f;
             float analog_r_x = 0.0f;
             float analog_r_y = 0.0f;
-
-            float max_linear_x = 2.0f;
-            float max_linear_y = 2.0f;
-            float max_angular_z = 2.0f;
+            
+            float manual_max_vel = 0.0f;
 
             double sampling_time = 0.0;
 
