@@ -87,6 +87,7 @@ ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
   scripts/spline_trajectories.py
+  scripts/path_plot.py
   #scripts/py_node.py
   DESTINATION lib/${PROJECT_NAME}
 )

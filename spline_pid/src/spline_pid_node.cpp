@@ -113,7 +113,6 @@ void SplinePid::_publisher_callback(){
     if(is_target_changed){
         x_diff = path->x.at(current_count) - last_target_position.x;
         y_diff = path->y.at(current_count) - last_target_position.y;
-        // RCLCPP_INFO(this->get_logger(), "x diff:%lf  y diff:%lf",x_diff, y_diff);
     }
 
     const double error_x = path->x.at(current_count) - self_pose.x;
@@ -229,7 +228,6 @@ void SplinePid::_subscriber_callback_self_pose(const geometry_msgs::msg::Vector3
     this->self_pose.x = msg->x;
     this->self_pose.y = msg->y;
     this->self_pose.z = msg->z;
-    // RCLCPP_INFO(this->get_logger(), "x:%lf  y:%lf  a:%lf",msg->x, msg->y, msg->z);
 }
 void SplinePid::_subscriber_callback_target_angle(const geometry_msgs::msg::Vector3::SharedPtr msg){
     if(max_trajectories>0){
