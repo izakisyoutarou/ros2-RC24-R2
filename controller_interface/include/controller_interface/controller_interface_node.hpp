@@ -9,6 +9,7 @@
 #include "controller_interface_msg/msg/sub_scrn.hpp"
 #include "std_msgs/msg/empty.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 //他のpkg
 #include "utilities/can_utils.hpp"
 #include "utilities/utils.hpp"
@@ -55,6 +56,8 @@ namespace controller_interface
             rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_route;
             //上モノインターフェイスへ
             rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_tool;
+            //gazebo_simulatorへ
+            rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
@@ -64,10 +67,6 @@ namespace controller_interface
 
             double upcast(float value2);
             float roundoff(const float &value, const float &epsilon);
-
-            double vel_lin_x = 0.0f;
-            double vel_lin_y = 0.0f;
-            double vel_ang_z = 0.0f;
 
             float analog_l_x = 0.0f;
             float analog_l_y = 0.0f;
@@ -96,7 +95,7 @@ namespace controller_interface
             VelPlanner velPlanner_linear_x;
             VelPlanner velPlanner_linear_y;
             const VelPlannerLimit limit_linear;
-            VelPlanner velPlanner_angular;
+            VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
             
 

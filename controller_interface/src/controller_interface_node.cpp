@@ -41,10 +41,13 @@ namespace controller_interface
             //上モノへpub
             _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("tool",_qos);
 
+            //gazebo_simulatorへ
+            _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel",_qos);
+
             //計画機
             velPlanner_linear_x.limit(limit_linear);
             velPlanner_linear_y.limit(limit_linear);
-            velPlanner_angular.limit(limit_angular);
+            velPlanner_angular_z.limit(limit_angular);
 
             //UDP
             // struct in_addr local_addr;
@@ -111,6 +114,8 @@ namespace controller_interface
             auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_angular->canid = 0x111;
             msg_angular->candlc = 4;
+
+            auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
             while(rclcpp::ok())
             {
                 // auto start_time = std::chrono::steady_clock::now();
@@ -137,11 +142,11 @@ namespace controller_interface
 
                 velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
                 velPlanner_linear_y.vel(upcast(analog_l_x));
-                velPlanner_angular.vel(upcast(analog_r_x));
+                velPlanner_angular_z.vel(upcast(analog_r_x));
 
                 velPlanner_linear_x.cycle();
                 velPlanner_linear_y.cycle();
-                velPlanner_angular.cycle();
+                velPlanner_angular_z.cycle();
 
                 //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
 
@@ -149,11 +154,16 @@ namespace controller_interface
                 float_to_bytes(_candata_joy+4, (float)velPlanner_linear_y.vel() * max_linear_y);
                 for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                float_to_bytes(_candata_joy, (float)velPlanner_angular.vel() * max_angular_z);
+                float_to_bytes(_candata_joy, (float)velPlanner_angular_z.vel() * max_angular_z);
                 for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
+
+                msg_gazebo->linear.x = velPlanner_linear_x.vel();
+                msg_gazebo->linear.y = -velPlanner_linear_y.vel();
+                msg_gazebo->angular.z = -velPlanner_angular_z.vel();
 
                 _pub_linear->publish(*msg_linear);
                 _pub_angular->publish(*msg_angular);
+                _pub_gazebo->publish(*msg_gazebo);
 
                 // auto end_time = std::chrono::steady_clock::now();
                 // std::chrono::duration<double> elapsed_time = end_time - start_time;
