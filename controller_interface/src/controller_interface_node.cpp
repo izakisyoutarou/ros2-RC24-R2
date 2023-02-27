@@ -8,14 +8,16 @@ namespace controller_interface
     SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options),
         limit_linear(DBL_MAX,
-        get_parameter("linear_max_vel").as_double(),
-        get_parameter("linear_max_acc").as_double(),
-        get_parameter("linear_max_dec").as_double() ),
+        get_parameter("manual_linear_max_vel").as_double(),
+        get_parameter("manual_linear_max_acc").as_double(),
+        get_parameter("manual_linear_max_dec").as_double() ),
         limit_angular(DBL_MAX,
         dtor(get_parameter("angular_max_vel").as_double()),
         dtor(get_parameter("angular_max_acc").as_double()),
         dtor(get_parameter("angular_max_dec").as_double()) )
         {
+            const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
+            sampling_time = heartbeat_ms / 1000.0;
             //controllerからsub
             _sub_pad = this->create_subscription<controller_interface_msg::msg::SubPad>(
                 "sub_pad",
@@ -28,21 +30,31 @@ namespace controller_interface
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_scrn, this, std::placeholders::_1)
             );
-            
+
             //canusbへpub
-            _pub_linear = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
-            _pub_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
-            _pub_restart = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
-            _pub_emergency = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
+            _pub_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
 
-            //経路計画へpub
-            _pub_route = this->create_publisher<controller_interface_msg::msg::RobotControll>("route",_qos);
-
-            //上モノへpub
+            //各nodeへリスタートと手自動の切り替えをpub。デフォルト値をpub
             _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("tool",_qos);
+
+            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
+            msg_tool->restart = static_cast<bool>(is_restart);
+            msg_tool->manyual_swith = static_cast<bool>(is_automatic);
+            _pub_tool->publish(*msg_tool);
 
             //gazebo_simulatorへ
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel",_qos);
+
+            //ハートビート
+            _pub_heartbeat = this->create_publisher<std_msgs::msg::Empty>("heartbeat",_qos);
+
+            _pub_timer = this->create_wall_timer(
+                std::chrono::milliseconds(heartbeat_ms),
+                [this] { 
+                    auto msg_heartbeat = std::make_shared<std_msgs::msg::Empty>();
+                    _pub_heartbeat->publish(*msg_heartbeat);
+                }
+            );
 
             //計画機
             velPlanner_linear_x.limit(limit_linear);
@@ -66,42 +78,44 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg)
         {
-            auto msg_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_reset->canid = 0x002;
-            msg_reset->candlc = 1;
+            auto msg_restart = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_restart->canid = 0x002;
+            msg_restart->candlc = 1;
 
             auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_emergency->canid = 0x000;
             msg_emergency->candlc = 1;
 
-            auto msg_root = std::make_shared<controller_interface_msg::msg::RobotControll>();
-            msg_root->emergency = msg->g;
-            msg_root->manyual_swith = msg->r3;
+            uint8_t _candata_btn;
 
-            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
-            msg_tool->emergency = msg->g;
-            msg_tool->manyual_swith = msg->r3;
+            bool robotcontroll_flag = false;
 
             if(msg->r3)
             {
-                if(mode == Mode::manual) mode = Mode::automatic;
-                else mode = Mode::manual;
+                robotcontroll_flag = true;
+                if(is_automatic == Is_automatic::manual) is_automatic = Is_automatic::automatic;
+                else is_automatic = Is_automatic::manual;
             }
 
             if(msg->s)
             {
-                _candata_btn = 1;
-                for(int i=0; i<msg_reset->candlc; i++) msg_reset->candata[i] = _candata_btn;
-                _pub_restart->publish(*msg_reset);
+                robotcontroll_flag = true;
+                if(is_restart == Is_restart::off) is_restart = Is_restart::on;
+                else is_restart = Is_restart::off;
             }
 
-                
-            _candata_btn = (uint8_t)msg->g;
-            for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn;
-            
-            _pub_emergency->publish(*msg_emergency);
-            _pub_route->publish(*msg_root);
-            _pub_tool->publish(*msg_tool);
+            //RCLCPP_INFO(this->get_logger(), "flag:%d", flag);
+
+            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
+            msg_tool->restart = static_cast<bool>(is_restart);
+            msg_tool->manyual_swith = static_cast<bool>(is_automatic);
+
+            _candata_btn = static_cast<bool>(is_restart);
+            for(int i=0; i<msg_restart->candlc; i++) msg_restart->candata[i] = _candata_btn;
+
+            if(msg->g)_pub_canusb->publish(*msg_emergency);
+            if(msg->s)_pub_canusb->publish(*msg_restart);
+            if(robotcontroll_flag)_pub_tool->publish(*msg_tool);
         }
 
         void SmartphoneGamepad::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
@@ -113,71 +127,66 @@ namespace controller_interface
         void SmartphoneGamepad::callback_udp()
         {
             auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_linear->canid = 0x110;
+            msg_linear->canid = 0x100;
             msg_linear->candlc = 8;
 
             auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_angular->canid = 0x111;
+            msg_angular->canid = 0x101;
             msg_angular->candlc = 4;
+
+            uint8_t _candata_joy[8];
 
             auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
             while(rclcpp::ok())
             {
-                if(mode == Mode::manual)
+                if(is_automatic == Is_automatic::manual)
                 {
-                // auto start_time = std::chrono::steady_clock::now();
+                    clilen = sizeof(cliaddr);
+                    // bufferに受信したデータが格納されている
+                    n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
 
-                clilen = sizeof(cliaddr);
-                // bufferに受信したデータが格納されている
-                n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
+                    if (n < 0)
+                    {
+                        perror("recvfrom");
+                        exit(1);
+                    }
 
-                if (n < 0)
+                    std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
+                    std::memcpy(&analog_l_y, &buffer[4], sizeof(analog_l_y));
+                    std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
+                    std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
+                }
+                else
                 {
-                    perror("recvfrom");
-                    exit(1);
+                    analog_l_x = 0.f;
+                    analog_l_y = 0.f;
+                    analog_r_x = 0.f;
                 }
+                    velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
+                    velPlanner_linear_y.vel(upcast(analog_l_x));
+                    velPlanner_angular_z.vel(upcast(analog_r_x));
 
-                std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
-                std::memcpy(&analog_l_y, &buffer[4], sizeof(analog_l_y));
-                std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
-                std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
+                    velPlanner_linear_x.cycle();
+                    velPlanner_linear_y.cycle();
+                    velPlanner_angular_z.cycle();
 
-                analog_l_x = roundoff(analog_l_x,1e-4);
-                analog_l_y = roundoff(analog_l_y,1e-4);
-                analog_r_x = roundoff(analog_r_x,1e-4);
-                analog_r_y = roundoff(analog_r_y,1e-4);
+                    //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
 
-                velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
-                velPlanner_linear_y.vel(upcast(analog_l_x));
-                velPlanner_angular_z.vel(upcast(analog_r_x));
+                    float_to_bytes(_candata_joy, (float)velPlanner_linear_x.vel() * max_linear_x);
+                    float_to_bytes(_candata_joy+4, (float)velPlanner_linear_y.vel() * max_linear_y);
+                    for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                velPlanner_linear_x.cycle();
-                velPlanner_linear_y.cycle();
-                velPlanner_angular_z.cycle();
+                    float_to_bytes(_candata_joy, (float)velPlanner_angular_z.vel() * max_angular_z);
+                    for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
-                //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
+                    msg_gazebo->linear.x = velPlanner_linear_x.vel();//gazebo_simulator
+                    msg_gazebo->linear.y = -velPlanner_linear_y.vel();
+                    msg_gazebo->angular.z = -velPlanner_angular_z.vel();
 
-                float_to_bytes(_candata_joy, (float)velPlanner_linear_x.vel() * max_linear_x);
-                float_to_bytes(_candata_joy+4, (float)velPlanner_linear_y.vel() * max_linear_y);
-                for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
-
-                float_to_bytes(_candata_joy, (float)velPlanner_angular_z.vel() * max_angular_z);
-                for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
-
-                msg_gazebo->linear.x = velPlanner_linear_x.vel();//gazebo_simulator
-                msg_gazebo->linear.y = -velPlanner_linear_y.vel();
-                msg_gazebo->angular.z = -velPlanner_angular_z.vel();
-
-                _pub_linear->publish(*msg_linear);
-                _pub_angular->publish(*msg_angular);
-                _pub_gazebo->publish(*msg_gazebo);
-
-                // auto end_time = std::chrono::steady_clock::now();
-                // std::chrono::duration<double> elapsed_time = end_time - start_time;
-                // RCLCPP_INFO(this->get_logger(), "Elapsed time: %f", elapsed_time.count());
-                }
+                    _pub_canusb->publish(*msg_linear);
+                    _pub_canusb->publish(*msg_angular);
+                    _pub_gazebo->publish(*msg_gazebo);
             }
-            
         }
 
         double SmartphoneGamepad::upcast(float value2)
@@ -187,14 +196,6 @@ namespace controller_interface
             double b = std::stod(a);//stringをsoubeに変換
             return b;
         }
-
-        float SmartphoneGamepad::roundoff(const float &value, const float &epsilon)
-        {
-            float ans = value;
-            if(abs(ans) < epsilon) ans = 0.0;
-            return ans;
-        }
-
     
     DualSense::DualSense(const rclcpp::NodeOptions &options) : DualSense("", options) {}
     DualSense::DualSense(const std::string &name_space, const rclcpp::NodeOptions &options)

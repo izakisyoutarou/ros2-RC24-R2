@@ -1,2 +1,2 @@
-bool emergency
+bool restart
 bool manyual_swith

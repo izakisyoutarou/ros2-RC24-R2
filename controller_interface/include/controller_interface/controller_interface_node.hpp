@@ -8,7 +8,6 @@
 #include "controller_interface_msg/msg/sub_pad.hpp"
 #include "controller_interface_msg/msg/sub_scrn.hpp"
 #include "std_msgs/msg/empty.hpp"
-#include "std_msgs/msg/string.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 //他のpkg
 #include "utilities/can_utils.hpp"
@@ -48,16 +47,15 @@ namespace controller_interface
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad;
             rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_scrn;
             //CanUsbへ
-            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_restart;
-            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_emergency;
-            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_linear;
-            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_angular;
-            //経路生成・計画へ
-            rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_route;
-            //上モノインターフェイスへ
+            rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
+            //各nodeへリスタートと手自動の切り替えをpub
             rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_tool;
             //gazebo_simulatorへ
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
+            //ハートビート
+            rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_heartbeat;
+            //timer
+            rclcpp::TimerBase::SharedPtr _pub_timer;
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
@@ -66,7 +64,6 @@ namespace controller_interface
             void callback_udp();
 
             double upcast(float value2);
-            float roundoff(const float &value, const float &epsilon);
 
             float analog_l_x = 0.0f;
             float analog_l_y = 0.0f;
@@ -77,12 +74,7 @@ namespace controller_interface
             float max_linear_y = 2.0f;
             float max_angular_z = 2.0f;
 
-            //utility用
-            uint8_t _candata_joy[8];
-            uint8_t _candata_btn;
-
-            //empty
-            std_msgs::msg::Empty empty;
+            double sampling_time = 0.0;
 
             //UDP用
             int sockfd, n;
@@ -98,12 +90,15 @@ namespace controller_interface
             VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
 
-            enum class Mode {
+            enum class Is_automatic {
 		        manual,
 		        automatic
-	        } mode = Mode::manual;
-            
+	        } is_automatic = Is_automatic::manual;
 
+            enum class Is_restart {
+		        off,
+		        on
+	        } is_restart = Is_restart::off;
     };
 
     class DualSense : public rclcpp::Node
