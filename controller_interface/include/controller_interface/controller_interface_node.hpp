@@ -97,6 +97,11 @@ namespace controller_interface
             const VelPlannerLimit limit_linear;
             VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
+
+            enum class Mode {
+		        manual,
+		        automatic
+	        } mode = Mode::manual;
             
 
     };

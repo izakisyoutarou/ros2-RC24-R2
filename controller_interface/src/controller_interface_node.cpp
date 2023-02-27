@@ -82,7 +82,11 @@ namespace controller_interface
             msg_tool->emergency = msg->g;
             msg_tool->manyual_swith = msg->r3;
 
-            //RCLCPP_INFO(this->get_logger(), "flag:%d", msg->a);
+            if(msg->r3)
+            {
+                if(mode == Mode::manual) mode = Mode::automatic;
+                else mode = Mode::manual;
+            }
 
             if(msg->s)
             {
@@ -90,6 +94,7 @@ namespace controller_interface
                 for(int i=0; i<msg_reset->candlc; i++) msg_reset->candata[i] = _candata_btn;
                 _pub_restart->publish(*msg_reset);
             }
+
                 
             _candata_btn = (uint8_t)msg->g;
             for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn;
@@ -118,6 +123,8 @@ namespace controller_interface
             auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
             while(rclcpp::ok())
             {
+                if(mode == Mode::manual)
+                {
                 // auto start_time = std::chrono::steady_clock::now();
 
                 clilen = sizeof(cliaddr);
@@ -157,7 +164,7 @@ namespace controller_interface
                 float_to_bytes(_candata_joy, (float)velPlanner_angular_z.vel() * max_angular_z);
                 for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
-                msg_gazebo->linear.x = velPlanner_linear_x.vel();
+                msg_gazebo->linear.x = velPlanner_linear_x.vel();//gazebo_simulator
                 msg_gazebo->linear.y = -velPlanner_linear_y.vel();
                 msg_gazebo->angular.z = -velPlanner_angular_z.vel();
 
@@ -168,6 +175,7 @@ namespace controller_interface
                 // auto end_time = std::chrono::steady_clock::now();
                 // std::chrono::duration<double> elapsed_time = end_time - start_time;
                 // RCLCPP_INFO(this->get_logger(), "Elapsed time: %f", elapsed_time.count());
+                }
             }
             
         }
