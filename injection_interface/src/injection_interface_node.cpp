@@ -16,7 +16,7 @@ pole_file_path(ament_index_cpp::get_package_share_directory("injection_interface
 tf_injection2robot(get_parameter("tf_injection2robot_m"+to_string(mech_num)).as_double_array())
 {
     _subscription_pole = this->create_subscription<std_msgs::msg::String>(
-        "injection_pole_m+"+to_string(mech_num),
+        "injection_pole_m"+to_string(mech_num),
         _qos,
         std::bind(&InjectionInterface::_subscriber_callback_pole, this, std::placeholders::_1)
     );
@@ -83,6 +83,7 @@ void InjectionInterface::_subscriber_callback_pole(const std_msgs::msg::String::
         robot_pose = move_target_pose;
     }
     else{
+        is_correction_required = false;
         robot_pose = self_pose;
     }
 
@@ -104,7 +105,7 @@ void InjectionInterface::_subscriber_callback_self_pose(const geometry_msgs::msg
 }
 void InjectionInterface::_subscriber_callback_is_move_tracking(const std_msgs::msg::Bool::SharedPtr msg){
     is_move_tracking = msg->data;
-    if(is_correction_required && msg->data){
+    if(is_correction_required && !msg->data){
         _subscriber_callback_pole(last_target);
     }
 }
