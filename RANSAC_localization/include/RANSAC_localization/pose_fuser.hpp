@@ -24,17 +24,18 @@ public:
   ~PoseFuser(){}
   void setup(const double laser_weight, const double odom_weight);
   void init();
-  Vector3d fuse_pose(const Vector3d &ransac_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points);
+  Vector3d fuse_pose(const Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points);
 
 private:
   NormalVector find_correspondence(const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points);
   LaserPoint find_closest_vertical_point(LaserPoint global);
-  Eigen::Matrix2d calculate_ransac_covariance(const Vector3d &ransac_estimated, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points, NormalVector normal_vector, const double laser_weight_);
+  Matrix3d calc_laser_cov(const Vector3d &laser_estimated, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points, NormalVector normal_vector, const double laser_weight_);
   double calculate_vertical_distance(const LaserPoint current, const LaserPoint reference, double x, double y, double yaw, NormalVector normal_vector);
-  Eigen::Matrix2d calculate_motion_covariance(const Vector3d &scan_odom_motion, const double dt, const double odom_weight_);
-  Eigen::Matrix2d svdInverse(const Matrix2d &A);
-  Eigen::Matrix2d rotate_covariance(const Vector3d &ransac_estimated, Eigen::Matrix2d &scan_odom_motion_cov);
-  double fuse(const Eigen::Vector2d &mu1, const Eigen::Matrix2d &cv1, const Eigen::Vector2d &mu2, const Eigen::Matrix2d &cv2, Eigen::Vector2d &mu, Eigen::Matrix2d &cv);
+  Matrix3d calculate_motion_cov(const Vector3d &scan_odom_motion, const double dt, const double odom_weight_);
+  Matrix3d svdInverse(const Matrix3d &A);
+  Matrix3d rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_odom_motion_cov);
+  double fuse(const Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov, Vector3d &estimated, Matrix3d &fused_cov);
+
 
   vector<LaserPoint> current_points;   //対応がとれた現在スキャンの点群
   vector<LaserPoint> reference_points;   //対応がとれた参照スキャンの点群
