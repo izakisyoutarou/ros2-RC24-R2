@@ -18,15 +18,15 @@ void DtectLines::init(){
   lines_.resize(8);
 }
 
-void DtectLines::fuse_inliers(const vector<config::LaserPoint> &src_points, const Vector3d &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
+void DtectLines::fuse_inliers(const vector<config::LaserPoint> &src_points, const Vector3d &estimated, const Vector3d &body_to_sensor){
   init();
   devide_points(src_points);
   get_inliers();
-  calc_estimated_diff(estimated, odom_to_lidar_x, odom_to_lidar_y);
+  calc_estimated_diff(estimated, body_to_sensor);
 }
 
 
-void DtectLines::calc_estimated_diff(const Vector3d &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y){
+void DtectLines::calc_estimated_diff(const Vector3d &estimated, const Vector3d &body_to_sensor){
   estimated_diff[2] = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
@@ -37,8 +37,8 @@ void DtectLines::calc_estimated_diff(const Vector3d &estimated, const double &od
       else dist_sum += lines_[i].points[j].dist * cos(lines_[i].points[j].angle + estimated_diff[2]);
     }
     dist = dist_sum / lines_[i].points.size();
-    if(i<4) estimated_diff[1] = -(estimated[1] + odom_to_lidar_y - (dist + map_point_y[i]));
-    else estimated_diff[0] = -(estimated[0] + odom_to_lidar_x - (-dist + map_point_x[i-4]));
+    if(i<4) estimated_diff[1] = -(estimated[1] + body_to_sensor[1] - (dist + map_point_y[i]));
+    else estimated_diff[0] = -(estimated[0] + body_to_sensor[0] - (-dist + map_point_x[i-4]));
   }
 }
 

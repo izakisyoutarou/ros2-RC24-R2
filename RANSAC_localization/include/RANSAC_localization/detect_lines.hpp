@@ -17,7 +17,7 @@ public:
 
   void setup(const int &trial_num, const double &inlier_dist_threshold);
   void init();
-  void fuse_inliers(const vector<config::LaserPoint> &src_points, const Vector3d &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y);
+  void fuse_inliers(const vector<config::LaserPoint> &src_points, const Vector3d &estimated, const Vector3d &body_to_sensor);
 
   vector<config::LaserPoint> get_sum();
   Vector3d get_estimated_diff();
@@ -31,7 +31,7 @@ private:
   bool clear_points(EstimatedLine &estimated_line, int size_threshold, int angle_threshold_min, int angle_threshold_max);
   double calc_diff_angle();
   double LPF(const double &raw);
-  void calc_estimated_diff(const Vector3d &estimated, const double &odom_to_lidar_x, const double &odom_to_lidar_y);
+  void calc_estimated_diff(const Vector3d &estimated, const Vector3d &body_to_sensor);
   /* linesの順番
   0:rafter_right
   1:fence_right

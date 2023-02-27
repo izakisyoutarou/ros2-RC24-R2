@@ -45,9 +45,8 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   pose_fuser.setup(laser_weight_, odom_weight_);
 
   create_elephant_map();
-  init[0]   = pose_array[0];
-  init[1]   = pose_array[1];
-  init[2] = pose_array[2];
+  tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
+  init << pose_array[0], pose_array[1], pose_array[2];
   odom = init;
   last_estimated = init;
 }
@@ -73,7 +72,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
 }
 
 void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
-  time_start = std::chrono::system_clock::now();
+  time_start = chrono::system_clock::now();
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
@@ -81,12 +80,12 @@ void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::Shared
 
   Vector3d current_scan_odom = odom + est_diff_sum;
   Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
+  tf_laser2robot[5] = current_scan_odom[2];
+  Vector3d body_to_sensor = calc_body_to_sensor(tf_laser2robot, current_scan_odom);
 
-  double odom_to_lidar_x = odom_to_lidar_length * cos(current_scan_odom[2]);
-  double odom_to_lidar_y = odom_to_lidar_length * sin(current_scan_odom[2]);
-  vector<config::LaserPoint> src_points = converter.scan_to_vector(msg, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
+  vector<config::LaserPoint> src_points = converter.scan_to_vector(msg, current_scan_odom, body_to_sensor);
 
-  detect_lines.fuse_inliers(src_points, current_scan_odom, odom_to_lidar_x, odom_to_lidar_y);
+  detect_lines.fuse_inliers(src_points, current_scan_odom, body_to_sensor);
   vector<config::LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
   Vector3d ransac_estimated = current_scan_odom + trans;
@@ -96,8 +95,8 @@ void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::Shared
   est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
   publishers(line_points);
-  time_end = std::chrono::system_clock::now();
-  int msec = std::chrono::duration_cast<std::chrono::milliseconds>(time_end-time_start).count();
+  time_end = chrono::system_clock::now();
+  int msec = chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count();
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", msec);
 }
 
@@ -193,6 +192,24 @@ vector<config::LaserPoint> RANSACLocalization::transform(const vector<config::La
     transformed_points.push_back(p);
   }
   return transformed_points;
+}
+
+Vector3d RANSACLocalization::calc_body_to_sensor(const Vector6d& sensor_pos, const Vector3d& body_pos){
+  // yaw, pitch, rollから回転行列を計算
+  Vector3d sensor_pos_;
+  sensor_pos_ << sensor_pos[0], sensor_pos[1], sensor_pos[2];
+  double s_r = sin(sensor_pos[3]);
+  double s_p = sin(sensor_pos[4]);
+  double s_y = sin(sensor_pos[5]);
+  double c_r = cos(sensor_pos[3]);
+  double c_p = cos(sensor_pos[4]);
+  double c_y = cos(sensor_pos[5]);
+  Matrix3d R;
+  R << c_y * c_p,  c_y * s_p * s_r - s_y * c_r,  c_y * s_p * c_r + s_y * s_r,
+       s_y * c_p,  s_y * s_p * s_r + c_y * c_r,  s_y * s_p * c_r - c_y * s_r,
+      -s_p,        c_p * s_r,                    c_p * c_r;
+  // センサの座標を回転行列で機体座標系に変換する
+  return R * sensor_pos_;
 }
 
 }
