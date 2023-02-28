@@ -65,7 +65,7 @@ namespace controller_interface
             float analog_r_x = 0.0f;
             float analog_r_y = 0.0f;
             
-            float manual_max_vel = 0.0f;
+            const float manual_max_vel = 0.0f;
 
             double sampling_time = 0.0;
 

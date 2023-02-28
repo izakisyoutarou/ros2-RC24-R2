@@ -23,6 +23,8 @@ namespace controller_interface
         {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
             sampling_time = heartbeat_ms / 1000.0;
+
+            //const auto defalt_is_restart = this->get_parameter("defalt_is_restart").as_bool();
             //controllerからsub
             _sub_pad = this->create_subscription<controller_interface_msg::msg::SubPad>(
                 "sub_pad",
@@ -43,8 +45,8 @@ namespace controller_interface
             _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("tool",_qos);
 
             auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
-            msg_tool->is_restart = static_cast<bool>(is_restart);
-            msg_tool->is_autonomy = static_cast<bool>(is_autonomy);
+            msg_tool->is_restart = this->get_parameter("defalt_is_restart").as_bool();
+            msg_tool->is_autonomy = this->get_parameter("defalt_is_autonomy").as_bool();
             _pub_tool->publish(*msg_tool);
 
             //gazebo_simulatorへ
