@@ -24,15 +24,10 @@
 #include <arpa/inet.h>
 #include <cstring>//memcpyのため
 
-#define BUFSIZE 1024
-
-using VelPlanner = velocity_planner::trapezoidal_velocity_planner::TrapezoidalVelocityPlanner;
-using VelPlannerLimit = velocity_planner::trapezoidal_velocity_planner::Limit_t;
-
-using std::string;
-
 namespace controller_interface
 {
+    using VelPlanner = velocity_planner::trapezoidal_velocity_planner::TrapezoidalVelocityPlanner;
+    using VelPlannerLimit = velocity_planner::trapezoidal_velocity_planner::Limit_t;
     class SmartphoneGamepad : public rclcpp::Node
     {
         public:
@@ -88,10 +83,10 @@ namespace controller_interface
             VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
 
-            enum class Is_automatic {
+            enum class Is_autonomy {
 		        manual,
-		        automatic
-	        } is_automatic = Is_automatic::manual;
+		        autonomy
+	        } is_autonomy = Is_autonomy::manual;
 
             enum class Is_restart {
 		        off,

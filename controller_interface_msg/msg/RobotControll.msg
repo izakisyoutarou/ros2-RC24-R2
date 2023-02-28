@@ -1,2 +1,2 @@
-bool restart
-bool manyual_swith
+bool is_restart
+bool is_autonomy

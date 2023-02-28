@@ -4,6 +4,9 @@ using namespace utils;
 
 namespace controller_interface
 {
+    #define BUFSIZE 1024
+    using std::string;
+
     SmartphoneGamepad::SmartphoneGamepad(const rclcpp::NodeOptions &options) : SmartphoneGamepad("", options) {}
     SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options),
@@ -14,7 +17,9 @@ namespace controller_interface
         limit_angular(DBL_MAX,
         dtor(get_parameter("angular_max_vel").as_double()),
         dtor(get_parameter("angular_max_acc").as_double()),
-        dtor(get_parameter("angular_max_dec").as_double()) )
+        dtor(get_parameter("angular_max_dec").as_double()) ),
+
+        manual_max_vel(static_cast<float>(get_parameter("manual_linear_max_vel").as_double()))
         {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
             sampling_time = heartbeat_ms / 1000.0;
@@ -38,8 +43,8 @@ namespace controller_interface
             _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("tool",_qos);
 
             auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
-            msg_tool->restart = static_cast<bool>(is_restart);
-            msg_tool->manyual_swith = static_cast<bool>(is_automatic);
+            msg_tool->is_restart = static_cast<bool>(is_restart);
+            msg_tool->is_autonomy = static_cast<bool>(is_autonomy);
             _pub_tool->publish(*msg_tool);
 
             //gazebo_simulatorへ
@@ -93,8 +98,8 @@ namespace controller_interface
             if(msg->r3)
             {
                 robotcontroll_flag = true;
-                if(is_automatic == Is_automatic::manual) is_automatic = Is_automatic::automatic;
-                else is_automatic = Is_automatic::manual;
+                if(is_autonomy == Is_autonomy::manual) is_autonomy = Is_autonomy::autonomy;
+                else is_autonomy = Is_autonomy::manual;
             }
 
             if(msg->s)
@@ -107,8 +112,8 @@ namespace controller_interface
             //RCLCPP_INFO(this->get_logger(), "flag:%d", flag);
 
             auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
-            msg_tool->restart = static_cast<bool>(is_restart);
-            msg_tool->manyual_swith = static_cast<bool>(is_automatic);
+            msg_tool->is_restart = static_cast<bool>(is_restart);
+            msg_tool->is_autonomy = static_cast<bool>(is_autonomy);
 
             _candata_btn = static_cast<bool>(is_restart);
             for(int i=0; i<msg_restart->candlc; i++) msg_restart->candata[i] = _candata_btn;
@@ -134,14 +139,12 @@ namespace controller_interface
             msg_angular->canid = 0x101;
             msg_angular->candlc = 4;
 
-            uint8_t _candata_joy[8];
-
-            manual_max_vel = this->get_parameter("manual_linear_max_vel").as_double();
+            uint8_t _candata_joy[8];   
 
             auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
             while(rclcpp::ok())
             {
-                if(is_automatic == Is_automatic::manual)
+                if(is_autonomy == Is_autonomy::manual)
                 {
                     clilen = sizeof(cliaddr);
                     // bufferに受信したデータが格納されている
@@ -157,38 +160,39 @@ namespace controller_interface
                     std::memcpy(&analog_l_y, &buffer[4], sizeof(analog_l_y));
                     std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
                     std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
+
+                    if(is_autonomy == Is_autonomy::autonomy)
+                    {
+                        analog_l_x = 0.f;
+                        analog_l_y = 0.f;
+                        analog_r_x = 0.f;
+                    }
+
+                    velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
+                    velPlanner_linear_y.vel(upcast(analog_l_x));
+                    velPlanner_angular_z.vel(upcast(analog_r_x));
+
+                    velPlanner_linear_x.cycle();
+                    velPlanner_linear_y.cycle();
+                    velPlanner_angular_z.cycle();
+
+                    //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
+
+                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_linear_x.vel()) * manual_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_linear_y.vel()) * manual_max_vel);
+                    for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
+
+                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_max_vel);
+                    for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
+
+                    msg_gazebo->linear.x = velPlanner_linear_x.vel();//gazebo_simulator
+                    msg_gazebo->linear.y = -velPlanner_linear_y.vel();
+                    msg_gazebo->angular.z = -velPlanner_angular_z.vel();
+
+                    _pub_canusb->publish(*msg_linear);
+                    _pub_canusb->publish(*msg_angular);
+                    _pub_gazebo->publish(*msg_gazebo);
                 }
-                else
-                {
-                    analog_l_x = 0.f;
-                    analog_l_y = 0.f;
-                    analog_r_x = 0.f;
-                }
-
-                velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
-                velPlanner_linear_y.vel(upcast(analog_l_x));
-                velPlanner_angular_z.vel(upcast(analog_r_x));
-
-                velPlanner_linear_x.cycle();
-                velPlanner_linear_y.cycle();
-                velPlanner_angular_z.cycle();
-
-                //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
-
-                float_to_bytes(_candata_joy, static_cast<float>(velPlanner_linear_x.vel()) * manual_max_vel);
-                float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_linear_y.vel()) * manual_max_vel);
-                for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
-
-                float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_max_vel);
-                for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
-
-                msg_gazebo->linear.x = velPlanner_linear_x.vel();//gazebo_simulator
-                msg_gazebo->linear.y = -velPlanner_linear_y.vel();
-                msg_gazebo->angular.z = -velPlanner_angular_z.vel();
-
-                _pub_canusb->publish(*msg_linear);
-                _pub_canusb->publish(*msg_angular);
-                _pub_gazebo->publish(*msg_gazebo);
             }
         }
 
