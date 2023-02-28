@@ -7,7 +7,6 @@
 #include "controller_interface_msg/msg/robot_controll.hpp"
 #include "controller_interface_msg/msg/sub_pad.hpp"
 #include "controller_interface_msg/msg/sub_scrn.hpp"
-#include "geometry_msgs/msg/twist.hpp"
 //他のpkg
 #include "utilities/can_utils.hpp"
 #include "utilities/utils.hpp"
@@ -44,8 +43,6 @@ namespace controller_interface
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
             //各nodeへリスタートと手自動の切り替えをpub
             rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_tool;
-            //gazebo_simulatorへ
-            rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;
             //QoS

@@ -49,9 +49,6 @@ namespace controller_interface
             msg_tool->is_autonomy = this->get_parameter("defalt_is_autonomy").as_bool();
             _pub_tool->publish(*msg_tool);
 
-            //gazebo_simulatorへ
-            _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel",_qos);
-
             //ハートビート
             _pub_timer = this->create_wall_timer(
                 std::chrono::milliseconds(heartbeat_ms),
@@ -59,7 +56,7 @@ namespace controller_interface
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 1;
-                    _pub_canusb->publish(*msg_heartbeat);
+                   // _pub_canusb->publish(*msg_heartbeat);
                 }
             );
 
@@ -144,7 +141,6 @@ namespace controller_interface
 
             bool flag_autonomy = false;   
 
-            auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
             while(rclcpp::ok())
             {
                 if(is_autonomy == Is_autonomy::manual)
@@ -181,13 +177,8 @@ namespace controller_interface
                     float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
-                    msg_gazebo->linear.x = velPlanner_linear_x.vel();//gazebo_simulator
-                    msg_gazebo->linear.y = -velPlanner_linear_y.vel();
-                    msg_gazebo->angular.z = -velPlanner_angular_z.vel();
-
                     _pub_canusb->publish(*msg_linear);
                     _pub_canusb->publish(*msg_angular);
-                    _pub_gazebo->publish(*msg_gazebo);
 
                     flag_autonomy = true;
                 }
@@ -204,7 +195,6 @@ namespace controller_interface
 
                         _pub_canusb->publish(*msg_linear);
                         _pub_canusb->publish(*msg_angular);
-                        _pub_gazebo->publish(*msg_gazebo);
                      
                         flag_autonomy = false; 
                     }
