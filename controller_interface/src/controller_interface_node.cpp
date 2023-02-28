@@ -42,7 +42,7 @@ namespace controller_interface
             _pub_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
 
             //各nodeへリスタートと手自動の切り替えをpub。デフォルト値をpub
-            _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("tool",_qos);
+            _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("robot_controll",_qos);
 
             auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
             msg_tool->is_restart = this->get_parameter("defalt_is_restart").as_bool();
@@ -53,13 +53,13 @@ namespace controller_interface
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel",_qos);
 
             //ハートビート
-            _pub_heartbeat = this->create_publisher<std_msgs::msg::Empty>("heartbeat",_qos);
-
             _pub_timer = this->create_wall_timer(
                 std::chrono::milliseconds(heartbeat_ms),
                 [this] { 
-                    auto msg_heartbeat = std::make_shared<std_msgs::msg::Empty>();
-                    _pub_heartbeat->publish(*msg_heartbeat);
+                    auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                    msg_heartbeat->canid = 0x001;
+                    msg_heartbeat->candlc = 1;
+                    _pub_canusb->publish(*msg_heartbeat);
                 }
             );
 
@@ -107,14 +107,13 @@ namespace controller_interface
             if(msg->s)
             {
                 robotcontroll_flag = true;
-                if(is_restart == Is_restart::off) is_restart = Is_restart::on;
-                else is_restart = Is_restart::off;
+                is_autonomy = Is_autonomy::manual;
             }
 
             //RCLCPP_INFO(this->get_logger(), "flag:%d", flag);
 
             auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
-            msg_tool->is_restart = static_cast<bool>(is_restart);
+            msg_tool->is_restart = msg->s;
             msg_tool->is_autonomy = static_cast<bool>(is_autonomy);
 
             _candata_btn = static_cast<bool>(is_restart);
@@ -141,7 +140,9 @@ namespace controller_interface
             msg_angular->canid = 0x101;
             msg_angular->candlc = 4;
 
-            uint8_t _candata_joy[8];   
+            uint8_t _candata_joy[8];
+
+            bool flag_autonomy = false;   
 
             auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
             while(rclcpp::ok())
@@ -162,13 +163,6 @@ namespace controller_interface
                     std::memcpy(&analog_l_y, &buffer[4], sizeof(analog_l_y));
                     std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
                     std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
-
-                    if(is_autonomy == Is_autonomy::autonomy)
-                    {
-                        analog_l_x = 0.f;
-                        analog_l_y = 0.f;
-                        analog_r_x = 0.f;
-                    }
 
                     velPlanner_linear_x.vel(upcast(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
                     velPlanner_linear_y.vel(upcast(analog_l_x));
@@ -194,6 +188,26 @@ namespace controller_interface
                     _pub_canusb->publish(*msg_linear);
                     _pub_canusb->publish(*msg_angular);
                     _pub_gazebo->publish(*msg_gazebo);
+
+                    flag_autonomy = true;
+                }
+                else 
+                {
+                    if(flag_autonomy == true)
+                    {
+                        float_to_bytes(_candata_joy, 0);
+                        float_to_bytes(_candata_joy+4, 0);
+                        for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
+
+                        float_to_bytes(_candata_joy, 0);
+                        for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
+
+                        _pub_canusb->publish(*msg_linear);
+                        _pub_canusb->publish(*msg_angular);
+                        _pub_gazebo->publish(*msg_gazebo);
+                     
+                        flag_autonomy = false; 
+                    }
                 }
             }
         }
