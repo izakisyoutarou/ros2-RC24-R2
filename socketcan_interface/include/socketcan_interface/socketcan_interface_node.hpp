@@ -26,6 +26,7 @@ namespace socketcan_interface {
 
         void _publisher_callback();
         void _subscriber_callback(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+
     public:
         SOCKETCAN_INTERFACE_PUBLIC
         explicit SocketcanInterface(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());

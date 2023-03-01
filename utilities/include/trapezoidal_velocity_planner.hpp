@@ -24,17 +24,19 @@
 namespace velocity_planner {
 namespace trapezoidal_velocity_planner {
 
-rclcpp::Clock system_clock(RCL_ROS_TIME);
+using namespace std;
+
+//rclcpp::Clock system_clock(RCL_ROS_TIME);
+
+// int64_t micros(){
+//     return system_clock.now().nanoseconds()*1e-3;
+// }
 
 template <class T>
     constexpr T constrain(T x, T min, T max) {
 	if(x<min) return min;
 	else if(max<x) return max;
 	else return x;
-}
-
-int64_t micros(){
-    return system_clock.now().nanoseconds()*1e-3;
 }
 
 struct Physics_t {
@@ -142,7 +144,6 @@ public:
 	double acc() override { return current_.acc; }
 
 	bool hasAchievedTarget() override { return has_achieved_target; }
-
 private:
 
 	Physics_t current_;
@@ -158,7 +159,6 @@ private:
 	} mode = Mode::null;
 
 	bool has_achieved_target = false;
-
 };
 
 }

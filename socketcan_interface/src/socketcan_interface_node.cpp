@@ -63,6 +63,7 @@ namespace socketcan_interface {
     void SocketcanInterface::_publisher_callback() {
         auto msg = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
 
+
         int nbytes;
         struct can_frame frame{};
         errno = 0;
@@ -90,6 +91,7 @@ namespace socketcan_interface {
             }
             known_id_rx_publisher[frame.can_id]->publish(*msg);
         }
+
     }
 
     void SocketcanInterface::_subscriber_callback(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg) {
