@@ -11,15 +11,15 @@ namespace controller_interface
     SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options),
         limit_linear(DBL_MAX,
-        get_parameter("manual_linear_max_vel").as_double(),
-        get_parameter("manual_linear_max_acc").as_double(),
-        get_parameter("manual_linear_max_dec").as_double() ),
+        get_parameter("linear_max_vel").as_double(),
+        get_parameter("linear_max_acc").as_double(),
+        get_parameter("linear_max_dec").as_double() ),
         limit_angular(DBL_MAX,
         dtor(get_parameter("angular_max_vel").as_double()),
         dtor(get_parameter("angular_max_acc").as_double()),
         dtor(get_parameter("angular_max_dec").as_double()) ),
-
-        manual_max_vel(static_cast<float>(get_parameter("manual_linear_max_vel").as_double())),
+        
+        manual_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
         defalt_autonomous_flag(get_parameter("defalt_autonomous_flag").as_bool())
         {
