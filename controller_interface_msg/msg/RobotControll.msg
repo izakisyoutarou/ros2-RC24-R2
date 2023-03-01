@@ -1,2 +1,2 @@
 bool is_restart
-bool is_autonomy
+bool is_autonomous

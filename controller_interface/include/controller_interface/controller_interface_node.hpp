@@ -62,9 +62,14 @@ namespace controller_interface
             float analog_r_x = 0.0f;
             float analog_r_y = 0.0f;
             
-            const float manual_max_vel = 0.0f;
-
             double sampling_time = 0.0;
+
+            bool is_autonomous;
+            bool is_reset;
+
+            const float manual_max_vel = 0.0f;
+            const bool defalt_restart_flag;
+            const bool defalt_autonomous_flag;
 
             //UDP用
             int sockfd, n;
@@ -79,16 +84,6 @@ namespace controller_interface
             const VelPlannerLimit limit_linear;
             VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
-
-            enum class Is_autonomy {
-		        manual,
-		        autonomy
-	        } is_autonomy = Is_autonomy::manual;
-
-            enum class Is_restart {
-		        off,
-		        on
-	        } is_restart = Is_restart::off;
     };
 
     class DualSense : public rclcpp::Node

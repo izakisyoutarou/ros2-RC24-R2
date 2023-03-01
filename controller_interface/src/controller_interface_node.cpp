@@ -11,15 +11,17 @@ namespace controller_interface
     SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options),
         limit_linear(DBL_MAX,
-        get_parameter("manual_linear_max_vel").as_double(),
-        get_parameter("manual_linear_max_acc").as_double(),
-        get_parameter("manual_linear_max_dec").as_double() ),
+        get_parameter("linear_max_vel").as_double(),
+        get_parameter("linear_max_acc").as_double(),
+        get_parameter("linear_max_dec").as_double() ),
         limit_angular(DBL_MAX,
         dtor(get_parameter("angular_max_vel").as_double()),
         dtor(get_parameter("angular_max_acc").as_double()),
         dtor(get_parameter("angular_max_dec").as_double()) ),
 
-        manual_max_vel(static_cast<float>(get_parameter("manual_linear_max_vel").as_double()))
+        manual_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
+        defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
+        defalt_autonomous_flag(get_parameter("defalt_autonomous_flag").as_bool())
         {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
             sampling_time = heartbeat_ms / 1000.0;
@@ -45,8 +47,10 @@ namespace controller_interface
             _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("robot_controll",_qos);
 
             auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
-            msg_tool->is_restart = this->get_parameter("defalt_is_restart").as_bool();
-            msg_tool->is_autonomy = this->get_parameter("defalt_is_autonomy").as_bool();
+            msg_tool->is_restart = defalt_restart_flag;
+            msg_tool->is_autonomous = defalt_autonomous_flag;
+            this->is_reset = defalt_restart_flag;
+            this->is_autonomous = defalt_autonomous_flag;
             _pub_tool->publish(*msg_tool);
 
             //gazebo_simulatorへ
@@ -97,26 +101,25 @@ namespace controller_interface
 
             bool robotcontroll_flag = false;
 
-            if(msg->r3)
+             if(msg->r3)
             {
                 robotcontroll_flag = true;
-                if(is_autonomy == Is_autonomy::manual) is_autonomy = Is_autonomy::autonomy;
-                else is_autonomy = Is_autonomy::manual;
+                if(is_autonomous == false) is_autonomous = true;
+                else is_autonomous = false;
             }
 
             if(msg->s)
             {
                 robotcontroll_flag = true;
-                is_autonomy = Is_autonomy::manual;
+                is_autonomous = defalt_autonomous_flag;
             }
-
             //RCLCPP_INFO(this->get_logger(), "flag:%d", flag);
 
             auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
             msg_tool->is_restart = msg->s;
-            msg_tool->is_autonomy = static_cast<bool>(is_autonomy);
+            msg_tool->is_autonomous = static_cast<bool>(is_autonomous);
 
-            _candata_btn = static_cast<bool>(is_restart);
+            _candata_btn = is_reset;
             for(int i=0; i<msg_restart->candlc; i++) msg_restart->candata[i] = _candata_btn;
 
             if(msg->g)_pub_canusb->publish(*msg_emergency);
@@ -142,12 +145,12 @@ namespace controller_interface
 
             uint8_t _candata_joy[8];
 
-            bool flag_autonomy = false;   
+            bool flag_autonomous = false;   
 
             auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
             while(rclcpp::ok())
             {
-                if(is_autonomy == Is_autonomy::manual)
+                if(is_autonomous == false)
                 {
                     clilen = sizeof(cliaddr);
                     // bufferに受信したデータが格納されている
@@ -189,11 +192,11 @@ namespace controller_interface
                     _pub_canusb->publish(*msg_angular);
                     _pub_gazebo->publish(*msg_gazebo);
 
-                    flag_autonomy = true;
+                    flag_autonomous = true;
                 }
                 else 
                 {
-                    if(flag_autonomy == true)
+                    if(flag_autonomous == true)
                     {
                         float_to_bytes(_candata_joy, 0);
                         float_to_bytes(_candata_joy+4, 0);
@@ -206,7 +209,7 @@ namespace controller_interface
                         _pub_canusb->publish(*msg_angular);
                         _pub_gazebo->publish(*msg_gazebo);
                      
-                        flag_autonomy = false; 
+                        flag_autonomous = false; 
                     }
                 }
             }
