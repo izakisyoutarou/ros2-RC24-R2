@@ -4,7 +4,7 @@
 #include <string>
 //使うmsg
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
-#include "controller_interface_msg/msg/robot_controll.hpp"
+#include "controller_interface_msg/msg/base_control.hpp"
 #include "controller_interface_msg/msg/sub_pad.hpp"
 #include "controller_interface_msg/msg/sub_scrn.hpp"
 //他のpkg
@@ -42,7 +42,7 @@ namespace controller_interface
             //CanUsbへ
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
             //各nodeへリスタートと手自動の切り替えをpub
-            rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_tool;
+            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_tool;
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;
             //QoS
@@ -63,10 +63,12 @@ namespace controller_interface
             
             bool is_autonomous;
             bool is_reset;
+            bool is_emergency;
 
             const float manual_max_vel;
             const bool defalt_restart_flag;
             const bool defalt_autonomous_flag;
+            const bool defalt_emergency_flag;
 
             //UDP用
             int sockfd, n;

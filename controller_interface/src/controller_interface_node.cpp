@@ -21,7 +21,8 @@ namespace controller_interface
         
         manual_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
-        defalt_autonomous_flag(get_parameter("defalt_autonomous_flag").as_bool())
+        defalt_autonomous_flag(get_parameter("defalt_autonomous_flag").as_bool()),
+        defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool())
         {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
             sampling_time = heartbeat_ms / 1000.0;
@@ -43,13 +44,14 @@ namespace controller_interface
             _pub_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
 
             //各nodeへリスタートと手自動の切り替えをpub。デフォルト値をpub
-            _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("robot_controll",_qos);
+            _pub_tool = this->create_publisher<controller_interface_msg::msg::BaseControl>("base_control",_qos);
 
-            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
+            auto msg_tool = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_tool->is_restart = defalt_restart_flag;
             msg_tool->is_autonomous = defalt_autonomous_flag;
             this->is_reset = defalt_restart_flag;
             this->is_autonomous = defalt_autonomous_flag;
+            this->is_emergency = defalt_emergency_flag;
             _pub_tool->publish(*msg_tool);
 
             //ハートビート
@@ -87,7 +89,7 @@ namespace controller_interface
         {
             auto msg_restart = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_restart->canid = 0x002;
-            msg_restart->candlc = 1;
+            msg_restart->candlc = 0;
 
             auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_emergency->canid = 0x000;
@@ -95,33 +97,46 @@ namespace controller_interface
 
             uint8_t _candata_btn;
 
-            bool robotcontroll_flag = false;
+            bool robotcontrol_flag = false;
 
             if(msg->r3)
             {
-                robotcontroll_flag = true;
+                robotcontrol_flag = true;
                 if(is_autonomous == false) is_autonomous = true;
                 else is_autonomous = false;
             }
 
-            if(msg->s)
+           if(msg->g)
             {
-                robotcontroll_flag = true;
-                is_autonomous = defalt_autonomous_flag;
+                robotcontrol_flag = true;
+                if(is_emergency == false) is_emergency = true;
+                else is_emergency = false;
             }
 
+            if(msg->s)
+            {
+                robotcontrol_flag = true;
+                is_autonomous = defalt_autonomous_flag;
+                is_emergency = defalt_emergency_flag;
+            }
+
+            is_reset = msg->s;
             //RCLCPP_INFO(this->get_logger(), "flag:%d", flag);
 
-            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
-            msg_tool->is_restart = msg->s;
+            auto msg_tool = std::make_shared<controller_interface_msg::msg::BaseControl>();
+            msg_tool->is_restart = is_reset;
             msg_tool->is_autonomous = is_autonomous;
+            msg_tool->is_emergency = is_emergency;
 
             _candata_btn = is_reset;
             for(int i=0; i<msg_restart->candlc; i++) msg_restart->candata[i] = _candata_btn;
 
+            _candata_btn = is_emergency;
+            for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn;
+
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(msg->s)_pub_canusb->publish(*msg_restart);
-            if(robotcontroll_flag)_pub_tool->publish(*msg_tool);
+            if(robotcontrol_flag)_pub_tool->publish(*msg_tool);
         }
 
         void SmartphoneGamepad::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
