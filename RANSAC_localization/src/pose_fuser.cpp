@@ -11,7 +11,7 @@ void PoseFuser::init(){
   reference_points.clear();
 }
 
-Vector3d PoseFuser::fuse_pose(const Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points){
+Vector3d PoseFuser::fuse_pose(const Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points){
   if(global_points.size()==0) return current_scan_odom;
   init();
   NormalVector normal_vector = find_correspondence(src_points, global_points, current_points, reference_points);
@@ -24,9 +24,9 @@ Vector3d PoseFuser::fuse_pose(const Vector3d &laser_estimated, const Vector3d &s
   return estimated;
 }
 
-NormalVector PoseFuser::find_correspondence(const vector<config::LaserPoint> &src_points, const vector<config::LaserPoint> &global_points, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points){
-  LaserPoint global;
-  LaserPoint current;
+NormalVector PoseFuser::find_correspondence(const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points){
+  CorrespondLaserPoint global;
+  CorrespondLaserPoint current;
   NormalVector normal_vector;
   double sum_x=0.0;
   double sum_y=0.0;
@@ -35,7 +35,7 @@ NormalVector PoseFuser::find_correspondence(const vector<config::LaserPoint> &sr
     current.y = src_points[i].y;
     global.x = global_points[i].x;
     global.y = global_points[i].y;
-    LaserPoint closest_reference = find_closest_vertical_point(global);
+    CorrespondLaserPoint closest_reference = find_closest_vertical_point(global);
     sum_x+=closest_reference.nx;
     sum_y+=closest_reference.ny;
     current_points.push_back(current);
@@ -47,9 +47,9 @@ NormalVector PoseFuser::find_correspondence(const vector<config::LaserPoint> &sr
   return normal_vector;
 }
 
-LaserPoint PoseFuser::find_closest_vertical_point(LaserPoint global){
-  LaserPoint closest;
-  LaserPoint vertical_distance;
+CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint global){
+  CorrespondLaserPoint closest;
+  CorrespondLaserPoint vertical_distance;
   double distance_min = 100.0;
   double x[4] = {map_point_x[0], map_point_x[1], map_point_x[2], distance_min};  //4つ目が最小距離にならないようにしている。
   for(int i=0; i<4; i++){
@@ -77,7 +77,7 @@ LaserPoint PoseFuser::find_closest_vertical_point(LaserPoint global){
   return closest;
 }
 
-Matrix3d PoseFuser::calc_laser_cov(const Vector3d &laser_estimated, vector<LaserPoint> &current_points, vector<LaserPoint> &reference_points, NormalVector normal_vector, const double laser_weight_){
+Matrix3d PoseFuser::calc_laser_cov(const Vector3d &laser_estimated, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points, NormalVector normal_vector, const double laser_weight_){
   double dd = 0.00001;  //数値微分の刻み
   vector<double> Jx; //ヤコビ行列のxの列
   vector<double> Jy; //ヤコビ行列のyの列
@@ -107,11 +107,11 @@ Matrix3d PoseFuser::calc_laser_cov(const Vector3d &laser_estimated, vector<Laser
   hes(2,0) = hes(0,2);
   hes(2,1) = hes(1,2);
   double esp = 1e-6;
-  hes += esp * Eigen::Matrix3d::Identity();   //行列の要素が0になり、逆行列が求まらない場合の対処
+  hes += esp * Matrix3d::Identity();   //行列の要素が0になり、逆行列が求まらない場合の対処
   return svdInverse(hes)*laser_weight_;
 }
 
-double PoseFuser::calculate_vertical_distance(const LaserPoint current, const LaserPoint reference, double x, double y, double yaw, NormalVector normal_vector){
+double PoseFuser::calculate_vertical_distance(const CorrespondLaserPoint current, const CorrespondLaserPoint reference, double x, double y, double yaw, NormalVector normal_vector){
   double x_ = cos(yaw)*current.x - sin(yaw)*current.y + x;                     // clpを推定位置で座標変換
   double y_ = sin(yaw)*current.x + cos(yaw)*current.y + y;
   return (x_-reference.x)*normal_vector.normalize_x + (y_-reference.y)*normal_vector.normalize_y;

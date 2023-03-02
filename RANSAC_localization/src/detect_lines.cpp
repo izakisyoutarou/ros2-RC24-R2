@@ -18,7 +18,7 @@ void DtectLines::init(){
   lines_.resize(8);
 }
 
-void DtectLines::fuse_inliers(const vector<config::LaserPoint> &src_points, const Vector3d &estimated, const Vector3d &body_to_sensor){
+void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vector3d &estimated, const Vector3d &body_to_sensor){
   init();
   devide_points(src_points);
   get_inliers();
@@ -60,7 +60,7 @@ double DtectLines::calc_diff_angle(){
   return LPF(diff_angle/get_angle_count);
 }
 
-void DtectLines::devide_points(const vector<config::LaserPoint> &src_points){
+void DtectLines::devide_points(const vector<LaserPoint> &src_points){
   for(size_t i=0; i<src_points.size(); i++){
     set_points(lines[0], map_point_x[0], map_point_x[2], map_point_y[0], map_point_y[0], src_points[i]);
     set_points(lines[1], map_point_x[1], map_point_x[2], map_point_y[1], map_point_y[1], src_points[i]);
@@ -82,12 +82,12 @@ void DtectLines::get_inliers(){
   }
 }
 
-void DtectLines::set_points(vector<config::LaserPoint> &points, const double map_point_x_1, const double map_point_x_2, const double map_point_y_1, const double map_point_y_2, const config::LaserPoint &src_point){
+void DtectLines::set_points(vector<LaserPoint> &points, const double map_point_x_1, const double map_point_x_2, const double map_point_y_1, const double map_point_y_2, const LaserPoint &src_point){
   if(map_point_x_1 - distance_threshold < src_point.x &&
      map_point_x_2 + distance_threshold > src_point.x &&
      map_point_y_1 - distance_threshold < src_point.y &&
      map_point_y_2 + distance_threshold > src_point.y){
-    config::LaserPoint point;
+    LaserPoint point;
     point = src_point;
     points.push_back(point);
   }
@@ -96,7 +96,7 @@ void DtectLines::set_points(vector<config::LaserPoint> &points, const double map
 
 
 void DtectLines::input_points(const EstimatedLine &line){
-  config::LaserPoint sum_point;
+  LaserPoint sum_point;
   for(size_t i=0; i<line.points.size(); i++){
     sum_point.x = line.points[i].x;
     sum_point.y = line.points[i].y;
@@ -105,7 +105,7 @@ void DtectLines::input_points(const EstimatedLine &line){
 }
 
 
-EstimatedLine DtectLines::calc_inliers(vector<config::LaserPoint> &divided_points){
+EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
   inlier.points.clear();
   inlier.angle=0.0;
   if(divided_points.size()==0){
@@ -151,7 +151,7 @@ EstimatedLine DtectLines::calc_inliers(vector<config::LaserPoint> &divided_point
   for(size_t i=0; i<best_inlier_num; i++){
     double dist = abs(best_diff_y * divided_points[i].x + best_diff_x * divided_points[i].y + best_diff_xy) / sqrt(best_diff_y * best_diff_y + best_diff_x * best_diff_x);
     if (dist < inlier_dist_threshold_) {
-      config::LaserPoint temp_point;
+      LaserPoint temp_point;
       temp_point.x = divided_points[i].x;
       temp_point.y = divided_points[i].y;
       temp_point.angle = divided_points[i].angle;
@@ -178,5 +178,5 @@ double DtectLines::LPF(const double &raw){
   return lpf;
 }
 
-vector<config::LaserPoint> DtectLines::get_sum(){return sum;}
+vector<LaserPoint> DtectLines::get_sum(){return sum;}
 Vector3d DtectLines::get_estimated_diff(){return estimated_diff;}

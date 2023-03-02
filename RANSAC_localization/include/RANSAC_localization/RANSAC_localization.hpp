@@ -23,7 +23,8 @@
 
 using namespace std;
 using namespace Eigen;
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
+
+typedef Matrix<double, 6, 1> Vector6d;
 
 namespace self_localization{
 class RANSACLocalization : public rclcpp::Node{
@@ -42,10 +43,10 @@ private:
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void create_elephant_map();
-  void publishers(vector<config::LaserPoint> &points);
-  config::LaserPoint rotate(config::LaserPoint point, double theta);
-  vector<config::LaserPoint> transform(const vector<config::LaserPoint> &points, const Vector3d &pose);
-  Vector3d calc_body_to_sensor(const Vector6d& sensor_pos, const Vector3d& body_pos);
+  void publishers(vector<LaserPoint> &points);
+  LaserPoint rotate(LaserPoint point, double theta);
+  vector<LaserPoint> transform(const vector<LaserPoint> &points, const Vector3d &pose);
+  Vector3d calc_body_to_sensor(const Vector6d& sensor_pos);
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
@@ -61,7 +62,7 @@ private:
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
   rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
-  vector<config::LaserPoint> map_points;
+  vector<LaserPoint> map_points;
   Vector3d init = Vector3d::Zero();
   Vector3d odom = Vector3d::Zero();
   Vector3d last_odom = Vector3d::Zero();
@@ -69,12 +70,7 @@ private:
   Vector3d est_diff_sum = Vector3d::Zero();
   Vector3d last_estimated = Vector3d::Zero();
   Vector6d tf_laser2robot = Vector6d::Zero();
-  double odom_to_lidar_length = 0.4655;
-  double reso = 0.125;
-  double view_ranges = 270.0;
   double last_scan_received_time=0.0;
-  double last_odom_received_time=0.0;
-  int scan_execution_time=0;
 
   chrono::system_clock::time_point time_start, time_end;
 

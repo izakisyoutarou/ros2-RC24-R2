@@ -9,10 +9,10 @@ class Converter{
 public:
   Converter(){};
 
-  vector<config::LaserPoint> scan_to_vector(const sensor_msgs::msg::LaserScan::SharedPtr msg, const Vector3d &pose, const Vector3d &body_to_sensor){
-    vector<config::LaserPoint> src_points;
+  vector<LaserPoint> scan_to_vector(const sensor_msgs::msg::LaserScan::SharedPtr msg, const Vector3d &pose, const Vector3d &body_to_sensor){
+    vector<LaserPoint> src_points;
     for(size_t i=0; i< msg->ranges.size(); ++i) {
-      config::LaserPoint src_point;
+      LaserPoint src_point;
       if(msg->ranges[i] > 14 || msg->ranges[i] < 0.5) continue;
       src_point.angle = msg->angle_min + msg->angle_increment * i - pose[2] + body_to_sensor[2];
       src_point.dist = msg->ranges[i];
@@ -23,7 +23,7 @@ public:
     return src_points;
   }
 
-  sensor_msgs::msg::PointCloud2 vector_to_PC2(vector<config::LaserPoint> &points){
+  sensor_msgs::msg::PointCloud2 vector_to_PC2(vector<LaserPoint> &points){
     vector<vector<float>> points_;
     vector<float> point;
     for(size_t i=0; i<points.size(); i++){

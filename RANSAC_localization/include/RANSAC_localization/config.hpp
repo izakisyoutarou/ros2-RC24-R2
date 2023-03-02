@@ -5,18 +5,11 @@
 
 using namespace std;
 
-namespace config{
 struct LaserPoint{
   double x=0.0;
   double y=0.0;
   double angle=0.0;
   double dist=0.0;
-};
-}
-
-struct EstimatedLine{
-  double angle=0.0;
-  vector<config::LaserPoint> points;
 };
 
 const double map_point_x[3] = {0.05-6., 2.-6., 5.9875-6.};
