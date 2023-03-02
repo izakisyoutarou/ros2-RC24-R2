@@ -156,7 +156,7 @@ void RANSACLocalization::create_elephant_map(){
     map_points.push_back(map_point);
   }
   //右縦向きのフェンス
-  for(int i=0; i<=int((map_point_x[3] - map_point_x[1])*1000); i++){
+  for(int i=0; i<=int((map_point_x[3]-bridge_width - map_point_x[1])*1000); i++){
     map_point.x = static_cast<double>(i)/1000 + map_point_x[1];
     map_point.y = map_point_y[1];
     map_points.push_back(map_point);

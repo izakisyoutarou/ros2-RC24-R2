@@ -62,7 +62,7 @@ double DtectLines::calc_diff_angle(){
 void DtectLines::devide_points(const vector<LaserPoint> &src_points){
   for(size_t i=0; i<src_points.size(); i++){
     set_points(lines[0], map_point_x[0], map_point_x[3], map_point_y[0], map_point_y[0], src_points[i]);
-    set_points(lines[1], map_point_x[1], map_point_x[3], map_point_y[1], map_point_y[1], src_points[i]);
+    set_points(lines[1], map_point_x[1], map_point_x[3]-bridge_width-distance_threshold, map_point_y[1], map_point_y[1], src_points[i]);
     set_points(lines[2], map_point_x[1], map_point_x[2], map_point_y[2], map_point_y[2], src_points[i]);
     set_points(lines[3], map_point_x[0], map_point_x[2], map_point_y[3], map_point_y[3], src_points[i]);
     set_points(lines[4], map_point_x[0], map_point_x[0], map_point_y[0], map_point_y[3], src_points[i]);
