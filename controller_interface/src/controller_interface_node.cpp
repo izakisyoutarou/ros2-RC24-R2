@@ -21,6 +21,7 @@ namespace controller_interface
 
         manual_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
+        defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool()),
         defalt_autonomous_flag(get_parameter("defalt_autonomous_flag").as_bool())
         {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
@@ -44,12 +45,13 @@ namespace controller_interface
             _pub_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
 
             //各nodeへリスタートと手自動の切り替えをpub。デフォルト値をpub
-            _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControll>("robot_controll",_qos);
+            _pub_tool = this->create_publisher<controller_interface_msg::msg::RobotControl>("robot_control",_qos);
 
-            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
+            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControl>();
             msg_tool->is_restart = defalt_restart_flag;
             msg_tool->is_autonomous = defalt_autonomous_flag;
             this->is_reset = defalt_restart_flag;
+            this->is_emergency = defalt_emergency_flag;
             this->is_autonomous = defalt_autonomous_flag;
             _pub_tool->publish(*msg_tool);
 
@@ -91,40 +93,56 @@ namespace controller_interface
         {
             auto msg_restart = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_restart->canid = 0x002;
-            msg_restart->candlc = 1;
+            msg_restart->candlc = 0;
 
             auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_emergency->canid = 0x000;
-            msg_emergency->candlc = 1;
+            msg_emergency->candlc = 0;
 
             uint8_t _candata_btn;
 
-            bool robotcontroll_flag = false;
+            bool robotcontrol_flag = false;
 
              if(msg->r3)
             {
-                robotcontroll_flag = true;
+                robotcontrol_flag = true;
                 if(is_autonomous == false) is_autonomous = true;
                 else is_autonomous = false;
             }
 
+            if(msg->g)
+            {
+                robotcontrol_flag = true;
+                if(is_emergency == false) is_emergency = true;
+                else is_emergency = false;
+            }
+
             if(msg->s)
             {
-                robotcontroll_flag = true;
+                robotcontrol_flag = true;
                 is_autonomous = defalt_autonomous_flag;
+                is_emergency = defalt_emergency_flag;
             }
+
+            
+
+            is_reset = msg->s;
+            is_emergency = msg->g;
             //RCLCPP_INFO(this->get_logger(), "flag:%d", flag);
 
-            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControll>();
+            auto msg_tool = std::make_shared<controller_interface_msg::msg::RobotControl>();
             msg_tool->is_restart = msg->s;
-            msg_tool->is_autonomous = static_cast<bool>(is_autonomous);
+            msg_tool->is_autonomous = is_autonomous;
 
             _candata_btn = is_reset;
             for(int i=0; i<msg_restart->candlc; i++) msg_restart->candata[i] = _candata_btn;
 
+            _candata_btn = is_emergency;
+            for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn;
+
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(msg->s)_pub_canusb->publish(*msg_restart);
-            if(robotcontroll_flag)_pub_tool->publish(*msg_tool);
+            if(robotcontrol_flag)_pub_tool->publish(*msg_tool);
         }
 
         void SmartphoneGamepad::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
@@ -225,7 +243,26 @@ namespace controller_interface
     
     DualSense::DualSense(const rclcpp::NodeOptions &options) : DualSense("", options) {}
     DualSense::DualSense(const std::string &name_space, const rclcpp::NodeOptions &options)
-        : rclcpp::Node("controller_interface_node", name_space, options)
+        : rclcpp::Node("controller_interface_node", name_space, options),
+        limit_linear(DBL_MAX,
+        get_parameter("linear_max_vel").as_double(),
+        get_parameter("linear_max_acc").as_double(),
+        get_parameter("linear_max_dec").as_double() ),
+        limit_angular(DBL_MAX,
+        dtor(get_parameter("angular_max_vel").as_double()),
+        dtor(get_parameter("angular_max_acc").as_double()),
+        dtor(get_parameter("angular_max_dec").as_double()) )
         {
+            _sub_SPpad = this->create_subscription<sensor_msgs::msg::Joy>(
+                "/joy",
+                _qos,
+                std::bind(&DualSense::callback_SPpad, this, std::placeholders::_1)
+            );
+            RCLCPP_INFO(this->get_logger(), "Hello World");
+        }
+
+        void DualSense::callback_SPpad(const sensor_msgs::msg::Joy::SharedPtr msg)
+        {
+            RCLCPP_INFO(this->get_logger(), "Hello World");
         }
 }

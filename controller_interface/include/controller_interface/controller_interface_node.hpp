@@ -4,10 +4,11 @@
 #include <string>
 //使うmsg
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
-#include "controller_interface_msg/msg/robot_controll.hpp"
+#include "controller_interface_msg/msg/robot_control.hpp"
 #include "controller_interface_msg/msg/sub_pad.hpp"
 #include "controller_interface_msg/msg/sub_scrn.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "sensor_msgs/msg/joy.hpp"
 //他のpkg
 #include "utilities/can_utils.hpp"
 #include "utilities/utils.hpp"
@@ -43,7 +44,7 @@ namespace controller_interface
             //CanUsbへ
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
             //各nodeへリスタートと手自動の切り替えをpub
-            rclcpp::Publisher<controller_interface_msg::msg::RobotControll>::SharedPtr _pub_tool;
+            rclcpp::Publisher<controller_interface_msg::msg::RobotControl>::SharedPtr _pub_tool;
             //gazebo_simulatorへ
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
             //timer
@@ -64,11 +65,13 @@ namespace controller_interface
             
             double sampling_time = 0.0;
 
-            bool is_autonomous;
             bool is_reset;
+            bool is_emergency;
+            bool is_autonomous;
 
             const float manual_max_vel = 0.0f;
             const bool defalt_restart_flag;
+            const bool defalt_emergency_flag;
             const bool defalt_autonomous_flag;
 
             //UDP用
@@ -91,10 +94,24 @@ namespace controller_interface
         public:
             CONTROLLER_INTERFACE_PUBLIC
             explicit DualSense(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+
             CONTROLLER_INTERFACE_PUBLIC
             explicit DualSense(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
         private:
+            //controllerから
+            rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr _sub_SPpad;
+            rclcpp::QoS _qos = rclcpp::QoS(10);
+
+            void callback_SPpad(const sensor_msgs::msg::Joy::SharedPtr msg);
+
             float x = 0.f;
+            
+            //計画機
+            VelPlanner velPlanner_linear_x;
+            VelPlanner velPlanner_linear_y;
+            const VelPlannerLimit limit_linear;
+            VelPlanner velPlanner_angular_z;
+            const VelPlannerLimit limit_angular;
     };
 }
