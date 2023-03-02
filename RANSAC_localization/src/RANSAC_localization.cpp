@@ -100,7 +100,7 @@ void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::Shared
   vector<LaserPoint> global_points = transform(line_points, trans);
 
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points);
-  est_diff_sum += estimated - current_scan_odom;
+  // est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
   publishers(line_points);
   time_end = chrono::system_clock::now();
@@ -132,7 +132,7 @@ void RANSACLocalization::publishers(vector<LaserPoint> &points){
 void RANSACLocalization::create_elephant_map(){
   LaserPoint map_point;
   //右の垂木
-  for(int i=0; i<=int((map_point_x[2] - map_point_x[0])*1000); i++){
+  for(int i=0; i<=int((map_point_x[3] - map_point_x[0])*1000); i++){
     map_point.x = static_cast<double>(i)/1000 + map_point_x[0];
     map_point.y = map_point_y[0];
     map_points.push_back(map_point);
@@ -151,12 +151,12 @@ void RANSACLocalization::create_elephant_map(){
   }
   //右奥正面向きのフェンス
   for(int i=0; i<=int((map_point_y[1] - map_point_y[0])*1000); i++){
-    map_point.x = map_point_x[2];
+    map_point.x = map_point_x[3];
     map_point.y = static_cast<double>(i)/1000 + map_point_y[0];
     map_points.push_back(map_point);
   }
   //右縦向きのフェンス
-  for(int i=0; i<=int((map_point_x[2] - map_point_x[1])*1000); i++){
+  for(int i=0; i<=int((map_point_x[3] - map_point_x[1])*1000); i++){
     map_point.x = static_cast<double>(i)/1000 + map_point_x[1];
     map_point.y = map_point_y[1];
     map_points.push_back(map_point);

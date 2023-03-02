@@ -51,13 +51,12 @@ CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint
   CorrespondLaserPoint closest;
   CorrespondLaserPoint vertical_distance;
   double distance_min = 100.0;
-  double x[4] = {map_point_x[0], map_point_x[1], map_point_x[2], distance_min};  //4つ目が最小距離にならないようにしている。
   for(int i=0; i<4; i++){
-    vertical_distance.x = fabs(x[i] - global.x);
+    vertical_distance.x = fabs(map_point_x[4] - global.x);
     vertical_distance.y = fabs(map_point_y[4] - global.y);
     if(vertical_distance.x < distance_min){
       distance_min = vertical_distance.x;
-      closest.x = x[i];
+      closest.x = map_point_x[4];
       closest.y = global.y;
     }
     if(vertical_distance.y < distance_min){
@@ -66,7 +65,7 @@ CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint
       closest.y = map_point_y[i];
     }
   }
-  if(closest.x==map_point_x[0] || closest.x==map_point_x[1] || closest.x==map_point_x[2]){
+  if(closest.x==map_point_x[0] || closest.x==map_point_x[1] || closest.x==map_point_x[2] || closest.x==map_point_x[3]){
     closest.nx=1.0;
     closest.ny=0.0;
   }
