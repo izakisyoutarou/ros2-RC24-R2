@@ -6,7 +6,6 @@ void DtectLines::setup(const int &trial_num, const double &inlier_dist_threshold
 }
 
 void DtectLines::init(){
-  Vector3d estimated_diff(0.0, 0.0, 0.0);
   sum.clear();
   for (int i=0; i<lines.size(); ++i){
     lines[i].clear();

@@ -42,6 +42,7 @@ private:
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+  void init();
   void create_elephant_map();
   void publishers(vector<LaserPoint> &points);
   LaserPoint rotate(LaserPoint point, double theta);
@@ -63,10 +64,8 @@ private:
   rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
   vector<LaserPoint> map_points;
-  Vector3d init = Vector3d::Zero();
+  Vector3d init_pose = Vector3d::Zero();
   Vector3d odom = Vector3d::Zero();
-  Vector3d last_odom = Vector3d::Zero();
-  Vector3d diff_odom = Vector3d::Zero();
   Vector3d est_diff_sum = Vector3d::Zero();
   Vector3d last_estimated = Vector3d::Zero();
   Vector6d tf_laser2robot = Vector6d::Zero();

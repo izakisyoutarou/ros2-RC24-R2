@@ -47,9 +47,16 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
 
   create_elephant_map();
   tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
-  init << pose_array[0], pose_array[1], pose_array[2];
-  odom = init;
-  last_estimated = init;
+  init_pose << pose_array[0], pose_array[1], pose_array[2];
+  init();
+}
+
+void RANSACLocalization::init(){
+  est_diff_sum = Vector3d::Zero();
+  odom = init_pose;
+  last_estimated = init_pose;
+  pose_fuser.init();
+  detect_lines.init();
 }
 
 void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -57,8 +64,8 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   double x = (double)bytes_to_float(_candata);
   double y = (double)bytes_to_float(_candata+4);
-  odom[0] = x + init[0];
-  odom[1] = y + init[1];
+  odom[0] = x + init_pose[0];
+  odom[1] = y + init_pose[1];
   vector_msg.x = odom[0] + est_diff_sum[0];
   vector_msg.y = odom[1] + est_diff_sum[1];
 }
@@ -67,7 +74,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   uint8_t _candata[8];
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   double yaw = (double)bytes_to_float(_candata);
-  odom[2] = yaw + init[2];
+  odom[2] = yaw + init_pose[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
   self_pose_publisher->publish(vector_msg);
 }
@@ -181,6 +188,7 @@ LaserPoint RANSACLocalization::rotate(LaserPoint point, double theta){
   p.y = point.x * sin(theta) + point.y * cos(theta);
   return p;
 }
+
 vector<LaserPoint> RANSACLocalization::transform(const vector<LaserPoint> &points, const Vector3d &pose) {
   vector<LaserPoint> transformed_points;
   for (const auto& point : points) {
