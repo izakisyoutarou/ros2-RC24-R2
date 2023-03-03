@@ -6,6 +6,7 @@ void DtectLines::setup(const int &trial_num, const double &inlier_dist_threshold
 }
 
 void DtectLines::init(){
+  estimated_diff = Vector3d::Zero();
   sum.clear();
   for (int i=0; i<lines.size(); ++i){
     lines[i].clear();
@@ -43,20 +44,20 @@ void DtectLines::calc_estimated_diff(const Vector3d &estimated, const Vector3d &
 
 double DtectLines::calc_diff_angle(){
   double diff_angle=0.0;
-  double angle=0.0;
+  double best_diff_angle=100.0;
   int get_angle_count=0;
   for(size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
     get_angle_count++;
-    if(i<4) angle = lines_[i].angle;
+    if(i<4) diff_angle = lines_[i].angle;
     else{
-      if(lines_[i].angle<0) angle = lines_[i].angle + M_PI/2;
-      else angle = lines_[i].angle - M_PI/2;
+      if(lines_[i].angle<0) diff_angle = lines_[i].angle + M_PI/2;
+      else diff_angle = lines_[i].angle - M_PI/2;
     }
-    diff_angle += angle;
+    if(diff_angle < best_diff_angle) best_diff_angle = diff_angle;
   }
   if(get_angle_count==0) return 0.0;
-  return LPF(diff_angle/get_angle_count);
+  return best_diff_angle;
 }
 
 void DtectLines::devide_points(const vector<LaserPoint> &src_points){
@@ -120,18 +121,18 @@ EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
   // ランダムサンプリング
   for (int i = 0; i < trial_num_; i++) {
     // ランダムに2点を選択する
-    int p1_idx = static_cast<int>(rand() / (RAND_MAX + 1.0) * divided_points.size());
-    int p2_idx = static_cast<int>(rand() / (RAND_MAX + 1.0) * divided_points.size());
+    const int p1_idx = static_cast<int>(rand() / (RAND_MAX + 1.0) * divided_points.size());
+    const int p2_idx = static_cast<int>(rand() / (RAND_MAX + 1.0) * divided_points.size());
     // 直線の係数を計算する
-    double diff_y = divided_points[p2_idx].y - divided_points[p1_idx].y;
-    double diff_x = divided_points[p1_idx].x - divided_points[p2_idx].x;
-    double diff_xy = divided_points[p1_idx].y * divided_points[p2_idx].x - divided_points[p2_idx].y * divided_points[p1_idx].x;
+    const double diff_y = divided_points[p2_idx].y - divided_points[p1_idx].y;
+    const double diff_x = divided_points[p1_idx].x - divided_points[p2_idx].x;
+    const double diff_xy = divided_points[p1_idx].y * divided_points[p2_idx].x - divided_points[p2_idx].y * divided_points[p1_idx].x;
     detect_length = sqrt(diff_x*diff_x + diff_y*diff_y);
-    if(detect_length < 1.1) continue;
+    if(detect_length < 1.5) continue;
     // インライア数を計算する
     int inlier_num = 0;
     for (const auto& point : divided_points) {
-      double dist = abs(diff_y * point.x + diff_x * point.y + diff_xy) / sqrt(diff_y * diff_y + diff_x * diff_x);
+      const double dist = abs(diff_y * point.x + diff_x * point.y + diff_xy) / sqrt(diff_y * diff_y + diff_x * diff_x);
       if (dist < inlier_dist_threshold_) {
         inlier_num++;
       }
@@ -148,7 +149,7 @@ EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
     }
   }
   for(size_t i=0; i<best_inlier_num; i++){
-    double dist = abs(best_diff_y * divided_points[i].x + best_diff_x * divided_points[i].y + best_diff_xy) / sqrt(best_diff_y * best_diff_y + best_diff_x * best_diff_x);
+    const double dist = abs(best_diff_y * divided_points[i].x + best_diff_x * divided_points[i].y + best_diff_xy) / sqrt(best_diff_y * best_diff_y + best_diff_x * best_diff_x);
     if (dist < inlier_dist_threshold_) {
       LaserPoint temp_point;
       temp_point.x = divided_points[i].x;
@@ -171,7 +172,7 @@ bool DtectLines::clear_points(EstimatedLine &estimated_line, int size_threshold,
 }
 
 double DtectLines::LPF(const double &raw){
-  double k=0.3;
+  double k=0.1;
   double lpf = (1 - k) * last_lpf + k * raw;
   last_lpf = lpf;
   return lpf;

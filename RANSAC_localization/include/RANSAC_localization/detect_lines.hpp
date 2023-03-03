@@ -37,6 +37,8 @@ private:
   double calc_diff_angle();
   double LPF(const double &raw);
   void calc_estimated_diff(const Vector3d &estimated, const Vector3d &body_to_sensor);
+
+  vector<vector<LaserPoint>> lines;
   /* linesの順番
   0:rafter_right
   1:fence_right
@@ -46,7 +48,6 @@ private:
   5:fence_front
   6:fence_centor_right
   7:fence_centor_left*/
-  vector<vector<LaserPoint>> lines;
   vector<EstimatedLine> lines_;
   vector<LaserPoint> sum;
   EstimatedLine inlier;
@@ -54,6 +55,6 @@ private:
   int trial_num_;
   double inlier_dist_threshold_;
   double detect_length = 0.0;
-  const double distance_threshold=0.5;
+  const double distance_threshold=0.7;
   double last_lpf=0;
 };

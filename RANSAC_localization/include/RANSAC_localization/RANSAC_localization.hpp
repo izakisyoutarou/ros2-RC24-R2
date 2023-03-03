@@ -72,11 +72,5 @@ private:
   double last_scan_received_time=0.0;
 
   chrono::system_clock::time_point time_start, time_end;
-
-  ///////////////////////////////////////////////チューニング///////////////////////////////////////////////
-  double laser_weight_;
-  double odom_weight_;
-  int trial_num_;
-  double inlier_dist_threshold_;
 };
 }
