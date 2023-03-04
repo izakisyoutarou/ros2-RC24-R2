@@ -26,7 +26,8 @@ find_package(rosidl_default_generators REQUIRED)
 set(msg_files
   "msg/SubPad.msg"
   "msg/SubScrn.msg"
-  "msg/RobotControl.msg"
+  "msg/BaseControl.msg"
+  "msg/Convergence.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
