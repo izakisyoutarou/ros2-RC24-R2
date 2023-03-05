@@ -76,8 +76,8 @@ void DtectLines::devide_points(const vector<LaserPoint> &src_points){
 void DtectLines::get_inliers(){
   for(size_t i=0; i<lines.size(); i++){
     lines_[i]=calc_inliers(lines[i]);
-    if(i<4) clear_points(lines_[i], 100, 0, 10);
-    else clear_points(lines_[i], 100, 80, 90);
+    if(i<4) clear_points(lines_[i], 100, 0, 30);
+    else clear_points(lines_[i], 100, 60, 90);
     input_points(lines_[i]);
   }
 }

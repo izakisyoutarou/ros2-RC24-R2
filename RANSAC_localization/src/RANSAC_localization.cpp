@@ -40,7 +40,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
 
   map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>("self_localization/map", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
 
-  self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>("self_localization/self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
+  self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>("self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
 
   detect_lines.setup(trial_num_, inlier_dist_threshold_);
   pose_fuser.setup(laser_weight_, odom_weight_);
@@ -115,7 +115,7 @@ void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::Shared
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points);
   est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
-  publishers(line_points);
+  publishers(global_points);
   time_end = chrono::system_clock::now();
   int msec = chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count();
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", msec);
