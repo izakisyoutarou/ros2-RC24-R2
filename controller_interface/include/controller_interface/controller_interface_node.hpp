@@ -55,7 +55,7 @@ namespace controller_interface
             //controllerへ
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
             //各nodeへリスタートと手自動の切り替えをpub
-            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_tool;
+            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;
             //QoS
@@ -81,7 +81,8 @@ namespace controller_interface
             double sampling_time = 0.0;
             
             //base_control用
-            bool is_autonomous;
+            bool is_wheel_autonomous;
+            bool is_injection_autonomous;
             bool is_reset;
             bool is_emergency;
 
@@ -93,8 +94,10 @@ namespace controller_interface
             bool is_injection1_convergence;
 
             const float manual_max_vel;
+            const int udp_port;
             const bool defalt_restart_flag;
-            const bool defalt_autonomous_flag;
+            const bool defalt_wheel_autonomous_flag;
+            const bool defalt_injection_autonomous_flag;
             const bool defalt_emergency_flag;
 
             //UDP用

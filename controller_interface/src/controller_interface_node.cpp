@@ -20,8 +20,10 @@ namespace controller_interface
         dtor(get_parameter("angular_max_dec").as_double()) ),
         
         manual_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
+        udp_port(get_parameter("udp_port").as_int()),
         defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
-        defalt_autonomous_flag(get_parameter("defalt_autonomous_flag").as_bool()),
+        defalt_wheel_autonomous_flag(get_parameter("defalt_wheel_autonomous_flag").as_bool()),
+        defalt_injection_autonomous_flag(get_parameter("defalt_injection_autonomous_flag").as_bool()),
         defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool())
         {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
@@ -74,16 +76,19 @@ namespace controller_interface
             _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("pub_convergence" , _qos);
 
             //各nodeへリスタートと手自動の切り替えをpub。
-            _pub_tool = this->create_publisher<controller_interface_msg::msg::BaseControl>("base_control",_qos);
+            _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("base_control",_qos);
 
             //デフォルト値をpub.。各種、boolに初期値を代入。
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = defalt_restart_flag;
-            msg_base_control->is_autonomous = defalt_autonomous_flag;
+            msg_base_control->is_wheel_autonomous = defalt_wheel_autonomous_flag;
+            msg_base_control->is_injection_autonomous = defalt_injection_autonomous_flag;
+            msg_base_control->is_emergency = defalt_emergency_flag;
             this->is_reset = defalt_restart_flag;
-            this->is_autonomous = defalt_autonomous_flag;
+            this->is_wheel_autonomous = defalt_wheel_autonomous_flag;
+            this->is_injection_autonomous = defalt_injection_autonomous_flag;
             this->is_emergency = defalt_emergency_flag;
-            _pub_tool->publish(*msg_base_control);
+            _pub_base_control->publish(*msg_base_control);
 
             //ハートビート
             _pub_timer = this->create_wall_timer(
@@ -132,20 +137,28 @@ namespace controller_interface
 
             uint8_t _candata_btn[2];
 
-            bool robotcontrol_flag = false;
-            bool flag_restart = false;
-            bool flag_injection0 = false;
-            bool flag_injection1 = false;
+            bool robotcontrol_flag = false;//base_control(手自動、緊急、リスタート)が押されたらpubする
+            bool flag_restart = false;//resertがtureをpubした後にfalseをpubする
+            bool flag_injection0 = false;//左の発射機構の最終射出許可
+            bool flag_injection1 = false;//右の発射機構の最終射出許可
 
-            //r3は手自動の切り替え。is_autonomousを使って、トグルになるようにしてる。
+            //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。
             if(msg->r3)
             {
                 robotcontrol_flag = true;
-                if(is_autonomous == false) is_autonomous = true;
-                else is_autonomous = false;
+                if(is_wheel_autonomous == false) is_wheel_autonomous = true;
+                else is_wheel_autonomous = false;
             }
 
-            //gは緊急。is_autonomousを使って、トグルになるようにしてる。
+            //r3は上物の手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。
+            if(msg->l3)
+            {
+                robotcontrol_flag = true;
+                if(is_injection_autonomous == false) is_injection_autonomous = true;
+                else is_injection_autonomous = false;
+            }
+
+            //gは緊急。is_emergencyを使って、トグルになるようにしてる。
             if(msg->g)
             {
                 robotcontrol_flag = true;
@@ -154,12 +167,11 @@ namespace controller_interface
             }
 
             //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
-            //flag_restartはresertがtureをpubした後にfalseをpubするよう。
             if(msg->s)
             {
                 robotcontrol_flag = true;
                 flag_restart = true;
-                is_autonomous = defalt_autonomous_flag;
+                is_wheel_autonomous = defalt_wheel_autonomous_flag;
                 is_emergency = defalt_emergency_flag;
             }
 
@@ -192,7 +204,8 @@ namespace controller_interface
             //basecontrolへの代入
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = is_reset;
-            msg_base_control->is_autonomous = is_autonomous;
+            msg_base_control->is_wheel_autonomous = is_wheel_autonomous;
+            msg_base_control->is_injection_autonomous = is_injection_autonomous;
             msg_base_control->is_emergency = is_emergency;
             
             //mainへ緊急を送る代入
@@ -207,11 +220,11 @@ namespace controller_interface
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(msg->s)_pub_canusb->publish(*msg_restart);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
-            if(robotcontrol_flag)_pub_tool->publish(*msg_base_control);
+            if(robotcontrol_flag)_pub_base_control->publish(*msg_base_control);
             if(flag_restart)
             {
                 msg_base_control->is_restart = false;
-                _pub_tool->publish(*msg_base_control);
+                _pub_base_control->publish(*msg_base_control);
             }
         }
 
@@ -233,16 +246,18 @@ namespace controller_interface
 
             uint8_t _candata_joy[8];
 
-            bool flag_autonomous = false;   
+            bool flag_autonomous = false;
 
+            
             while(rclcpp::ok())
             {
-                if(is_autonomous == false)
+                if(is_wheel_autonomous == false)
                 {
                     clilen = sizeof(cliaddr);
+                    
                     // bufferに受信したデータが格納されている
                     n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
-
+                    
                     if (n < 0)
                     {
                         perror("recvfrom");
