@@ -19,14 +19,14 @@ namespace injection_param_calculator{
 
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_can;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_isConvergenced;
-            rclcpp::Publisher<injection_interface_msg::msg::InjectionCommand>::SharedPtr _pub_test_injection;
+            //rclcpp::Publisher<injection_interface_msg::msg::InjectionCommand>::SharedPtr _pub_test_injection;
 
             void callback_injection(const injection_interface_msg::msg::InjectionCommand::SharedPtr msg);
 
             double f(double v0);
             double diff(double v0);
             void calculateElevation();
-            void calculateVelocity();
+            bool calculateVelocity();
 
             injection_interface_msg::msg::InjectionCommand injection_comand;
             double velocity;

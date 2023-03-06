@@ -31,13 +31,8 @@ namespace injection_param_calculator{
             _pub_can = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx",_qos);
             //_pub_injection_direction = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx",_qos);
             _pub_isConvergenced = this->create_publisher<std_msgs::msg::Bool>("is_calculator_convergenced_m"+to_string(mech_num),_qos);
-            _pub_test_injection = this->create_publisher<injection_interface_msg::msg::InjectionCommand>("injcetion_command_m"+to_string(mech_num),_qos);
+            //_pub_test_injection = this->create_publisher<injection_interface_msg::msg::InjectionCommand>("injcetion_command_m"+to_string(mech_num),_qos);
             RCLCPP_INFO(this->get_logger(),"create injection_m"+to_string(mech_num));
-            // auto msg_test_injection = std::make_shared<injection_interface_msg::msg::InjectionCommand>();
-            // msg_test_injection->distance = 5.5;
-            // msg_test_injection->direction = dtor(45.0*pow(-1,mech_num));
-            // msg_test_injection->height = 1.9;
-            // _pub_test_injection->publish(*msg_test_injection);
         }
     void InjectionParamCalculator::callback_injection(const injection_interface_msg::msg::InjectionCommand::SharedPtr msg){
         // auto msg_injection_parameter = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
@@ -50,16 +45,17 @@ namespace injection_param_calculator{
         // RCLCPP_INFO(this->get_logger(),"mech_num: %d msg_injection_direction_canid: %x",mech_num,msg_injection_direction->canid);
         auto msg_injection = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         auto msg_yaw = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-
+        auto msg_isConvergenced = std::make_shared<std_msgs::msg::Bool>();
+        bool isConvergenced = false;
         injection_comand.distance = msg->distance;
         injection_comand.direction = msg->direction;
         injection_comand.height = msg->height;
 
         calculateElevation();
-        calculateVelocity();
+        isConvergenced = calculateVelocity();
+        msg_isConvergenced->data = isConvergenced;
         RCLCPP_INFO(this->get_logger(),"mech_num: %d velocity: %lf[m/s] elevation: %lf[rad]",mech_num,velocity, elevation);
         RCLCPP_INFO(this->get_logger(),"mech_num: %d direction: %lf[rad]",mech_num,injection_comand.direction);
-
 
         msg_injection->canid = 0x130 + 2*mech_num;
         msg_injection->candlc = 8;
@@ -71,17 +67,16 @@ namespace injection_param_calculator{
         for(int i=0; i<msg_injection->candlc; i++) msg_injection->candata[i] = _candata[i];
         // std::copy(std::begin(_candata), std::end(_candata), msg_injection->candata.begin());
 
-
         msg_yaw->canid = 0x130 + 2*mech_num + 1;
         msg_yaw->candlc = 4;
         float_to_bytes(_candata, static_cast<float>(direction));
         for(int i=0; i<msg_yaw->candlc; i++) msg_yaw->candata[i] = _candata[i];
-
-        if(true){
-        _pub_can->publish(*msg_injection);
-        _pub_can->publish(*msg_yaw);
+        
+        _pub_isConvergenced->publish(*msg_isConvergenced);
+        if(isConvergenced){
+            _pub_can->publish(*msg_injection);
+            _pub_can->publish(*msg_yaw);
         }
-
     }
         
     void InjectionParamCalculator::calculateElevation(){
@@ -93,36 +88,40 @@ namespace injection_param_calculator{
             elevation = dtor(pitch_limit[1]);
         }
     }
-    void InjectionParamCalculator::calculateVelocity(){
+    bool InjectionParamCalculator::calculateVelocity(){
         int num_loop = 0;
         double old_velocity = calculat_first_velocity;
-        // bool isConvergenced = false;
-        auto isConvergenced = std::make_shared<std_msgs::msg::Bool>();
+        bool isConvergenced = false;
+        //auto isConvergenced = std::make_shared<std_msgs::msg::Bool>();
         bool isAiming = false;
         while(!isAiming){
             if(!(dtor(yow_limit[0]) <= injection_comand.direction && injection_comand.direction <= dtor(yow_limit[1]))){
-                isConvergenced->data = false;
-                RCLCPP_INFO(this->get_logger(),"範囲外です!!",injection_comand.direction);
+                //isConvergenced->data = false;
+                isConvergenced = false;
+                RCLCPP_INFO(this->get_logger(),"mech_num: %d 範囲外です!!",mech_num,injection_comand.direction);
                 break;
             }
             double new_velocity = old_velocity -f(old_velocity)/diff(old_velocity);
             if(abs(new_velocity-old_velocity)<eps && 0 < new_velocity && new_velocity < velocity_lim_max){
                 isAiming = true;
-                isConvergenced->data = true;
+                //isConvergenced->data = true;
+                isConvergenced=true;
                 velocity = new_velocity;
-
             }
             old_velocity = new_velocity;
             num_loop++;
             if(num_loop>max_loop){
                 isAiming=false;
-                isConvergenced->data = false;
-                RCLCPP_INFO(this->get_logger(),"発散しました");
+                //isConvergenced->data = false;
+                isConvergenced=false;
+                RCLCPP_INFO(this->get_logger(),"mech_num: %d 発散しました",mech_num);
                 break;
             }
         }
         //RCLCPP_INFO(this->get_logger(),"velocity: %lf",velocity);
-        _pub_isConvergenced->publish(*isConvergenced);
+        //_pub_isConvergenced->publish(*isConvergenced);
+        //RCLCPP_INFO(this->get_logger(),"isConvergned: %d",isConvergenced);
+        return isConvergenced;
     }
     double InjectionParamCalculator::f(double v0){
         double c_sin = sin(elevation);
@@ -135,7 +134,6 @@ namespace injection_param_calculator{
         double y0 = foundation_hight;
         double x = injection_comand.distance - l*c_cos;
         double y = injection_comand.height -(y0 + l*c_sin);
-        //RCLCPP_INFO(this->get_logger(),"c_sin %lf c_cos %lf c_tan %lf",c_sin,c_cos,c_tan);
         return x*c_tan + m*g*x/(k*v0*c_cos) + m*m*g/(k*k)*log(abs(1-k*x/(m*v0*c_cos))) - y;
     }
     double InjectionParamCalculator::diff(double v0){
