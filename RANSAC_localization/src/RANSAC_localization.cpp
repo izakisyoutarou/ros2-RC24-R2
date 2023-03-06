@@ -9,7 +9,8 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   const auto pose_array = this->get_parameter("initial_pose").as_double_array();
   const auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
   const auto laser_weight_ = this->get_parameter("laser_weight").as_double();
-  const auto odom_weight_ = this->get_parameter("odom_weight").as_double();
+  const auto odom_weight_liner_ = this->get_parameter("odom_weight_liner").as_double();
+  const auto odom_weight_angler_ = this->get_parameter("odom_weight_angler").as_double();
   const auto trial_num_ = this->get_parameter("trial_num").as_int();
   const auto inlier_dist_threshold_ = this->get_parameter("inlier_dist_threshold").as_double();
 
@@ -43,7 +44,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>("self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
 
   detect_lines.setup(trial_num_, inlier_dist_threshold_);
-  pose_fuser.setup(laser_weight_, odom_weight_);
+  pose_fuser.setup(laser_weight_, odom_weight_liner_, odom_weight_angler_);
 
   create_elephant_map();
   tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
@@ -115,7 +116,7 @@ void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::Shared
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points);
   est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
-  publishers(global_points);
+  publishers(src_points);
   time_end = chrono::system_clock::now();
   int msec = chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count();
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", msec);

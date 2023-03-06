@@ -1,9 +1,10 @@
 #include "RANSAC_localization/pose_fuser.hpp"
 
 
-void PoseFuser::setup(const double laser_weight, const double odom_weight){
+void PoseFuser::setup(const double laser_weight, const double odom_weight_liner, const double odom_weight_angler){
   laser_weight_ = laser_weight;
-  odom_weight_ = odom_weight;
+  odom_weight_liner_ = odom_weight_liner;
+  odom_weight_angler_ = odom_weight_angler;
 }
 
 void PoseFuser::init(){
@@ -15,14 +16,10 @@ Vector3d PoseFuser::fuse_pose(const Vector3d &laser_estimated, const Vector3d &s
   init();
   if(global_points.size()==0) return current_scan_odom;
   NormalVector normal_vector = find_correspondence(src_points, global_points, current_points, reference_points);
-  Matrix3d laser_cov = laser_weight_*calc_laser_cov(laser_estimated, current_points, reference_points, normal_vector);
-  Matrix3d scan_odom_motion_cov = odom_weight_*calculate_motion_cov(scan_odom_motion, dt_scan);  // オドメトリで得た移動量の共分散
-
+  Matrix3d laser_cov = laser_weight_ * calc_laser_cov(laser_estimated, current_points, reference_points, normal_vector);
+  Matrix3d scan_odom_motion_cov = calc_motion_cov(scan_odom_motion, dt_scan);
   Matrix3d rotate_scan_odom_motion_cov = rotate_cov(laser_estimated, scan_odom_motion_cov);
-  Vector3d estimated;
-  Matrix3d fused_cov;               // センサ融合後の共分散
-  fuse(laser_estimated, laser_cov, current_scan_odom, rotate_scan_odom_motion_cov, estimated, fused_cov);  // 2つの正規分布の融合
-  return estimated;
+  return fuse(laser_estimated, laser_cov, current_scan_odom, rotate_scan_odom_motion_cov);
 }
 
 NormalVector PoseFuser::find_correspondence(const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points){
@@ -78,16 +75,16 @@ CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint
 }
 
 Matrix3d PoseFuser::calc_laser_cov(const Vector3d &laser_estimated, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points, NormalVector normal_vector){
-  const double dd = 1e-5;  //数値微分の刻み
+  const double dd = 1e-6;  //数値微分の刻み
   vector<double> Jx; //ヤコビ行列のxの列
   vector<double> Jy; //ヤコビ行列のyの列
   vector<double> Jyaw; //ヤコビ行列のyawの列
 
   for(size_t i=0; i<current_points.size(); i++){
-    double vertical_distance   = calculate_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1],    laser_estimated[2], normal_vector);
-    double vertical_distance_x = calculate_vertical_distance(current_points[i], reference_points[i], laser_estimated[0]+dd, laser_estimated[1],    laser_estimated[2], normal_vector);
-    double vertical_distance_y = calculate_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1]+dd, laser_estimated[2], normal_vector);
-    double vertical_distance_yaw = calculate_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1], laser_estimated[2] + dd, normal_vector);
+    double vertical_distance   = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1],    laser_estimated[2], normal_vector);
+    double vertical_distance_x = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0]+dd, laser_estimated[1],    laser_estimated[2], normal_vector);
+    double vertical_distance_y = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1]+dd, laser_estimated[2], normal_vector);
+    double vertical_distance_yaw = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1], laser_estimated[2] + dd, normal_vector);
     Jx.push_back((vertical_distance_x - vertical_distance) / dd);
     Jy.push_back((vertical_distance_y - vertical_distance) / dd);
     Jyaw.push_back((vertical_distance_yaw - vertical_distance) / dd);
@@ -111,25 +108,57 @@ Matrix3d PoseFuser::calc_laser_cov(const Vector3d &laser_estimated, vector<Corre
   return svdInverse(hes);
 }
 
-double PoseFuser::calculate_vertical_distance(const CorrespondLaserPoint current, const CorrespondLaserPoint reference, double x, double y, double yaw, NormalVector normal_vector){
+double PoseFuser::calc_vertical_distance(const CorrespondLaserPoint current, const CorrespondLaserPoint reference, double x, double y, double yaw, NormalVector normal_vector){
   const double x_ = cos(yaw)*current.x - sin(yaw)*current.y + x;                     // clpを推定位置で座標変換
   const double y_ = sin(yaw)*current.x + cos(yaw)*current.y + y;
   return (x_-reference.x)*normal_vector.normalize_x + (y_-reference.y)*normal_vector.normalize_y;
 }
 
-Matrix3d PoseFuser::calculate_motion_cov(const Vector3d &scan_odom_motion, const double dt_scan){
-  double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt_scan;
-  double wt = abs(scan_odom_motion[2]/dt_scan);
+Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const double dt){
+  double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt;
+  double wt = abs(scan_odom_motion[2]/dt);
   const double thre = 0.1;                   // 静止時にlidarを信頼しすぎないための下限値
   if (vt < thre) vt = thre;
   if (wt < thre) wt = thre;
   Matrix3d C1;
   C1.setZero();
-  C1(0,0) = 1/(vt*vt);                 // 並進成分x
-  C1(1,1) = 1/(vt*vt);                 // 並進成分y
-  C1(2,2) = 1/(wt*wt);                 // 回転成分
+  C1(0,0) = 1*odom_weight_liner_/(vt*vt);                 // 並進成分x
+  C1(1,1) = 1*odom_weight_liner_/(vt*vt);                 // 並進成分y
+  C1(2,2) = 1*odom_weight_angler_/(wt*wt);                 // 回転成分
 
   return C1;
+}
+
+Matrix3d PoseFuser::calc_motion_cov_plus(const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, const double dt) {
+  double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt;
+  double wt = abs(scan_odom_motion[2] / dt);
+  const double thre = 0.1;                   // 静止時にlidarを信頼しすぎないための下限値
+  if (vt < thre) vt = thre;
+  if (wt < thre) wt = thre;
+  double cs = cos(current_scan_odom[2]);
+  double sn = sin(current_scan_odom[2]);
+ // 累積する場合は、時刻t-1の共分散行列sigmaから、時刻tの共分散行列を計算
+  Matrix3d A = Matrix3d::Zero(3,3);
+  if(accum){
+    Matrix3d Jxk;
+    Jxk << 1, 0, -vt*dt*sn,
+           0, 1,  vt*dt*cs,
+           0, 0,          1;
+    A = Jxk*last_cov*Jxk.transpose();
+  }
+  accum=true;
+
+  Matrix2d Uk;
+  Uk << odom_weight_liner_/(vt*vt),                         0,
+                               0, odom_weight_angler_/(wt*wt);
+  Matrix<double, 3, 2> Juk;
+  Juk << dt*cs,  0,
+         dt*sn,  0,
+             0, dt;
+  Matrix3d B = Juk*Uk*Juk.transpose();
+  Matrix3d cov = last_cov = A + B;
+  last_cov = cov;
+  return cov;
 }
 
 Matrix3d PoseFuser::rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_odom_motion_cov){
@@ -143,12 +172,12 @@ Matrix3d PoseFuser::rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_o
   return J*scan_odom_motion_cov*JT;  // 回転変換
 }
 
-double PoseFuser::fuse(const Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov, Vector3d &estimated, Matrix3d &fused_cov){
+Vector3d PoseFuser::fuse(const Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov){
   // 共分散行列の融合
   Matrix3d IC1 = svdInverse(laser_cov);
   Matrix3d IC2 = svdInverse(rotate_scan_odom_motion_cov);
   Matrix3d IC = IC1 + IC2;
-  fused_cov = svdInverse(IC);
+  Matrix3d fused_cov = svdInverse(IC);
 
   //角度を連続に保つ
   Vector3d laser_estimated_ = laser_estimated;
@@ -156,12 +185,12 @@ double PoseFuser::fuse(const Vector3d &laser_estimated, const Matrix3d &laser_co
   if (da > M_PI) laser_estimated_[2] += 2*M_PI;
   else if (da < -M_PI) laser_estimated_[2] -= 2*M_PI;
 
-  // 平均の融合
+  // 平均を算出
   Vector3d nu1 = IC1*laser_estimated;
   Vector3d nu2 = IC2*current_scan_odom;
-  Vector3d nu3 = nu1 + nu2;
-  estimated = fused_cov*nu3;
+  Vector3d estimated = fused_cov * (nu1 + nu2);
   estimated[2] = normalize_yaw(estimated[2]);
+  return estimated;
 }
 
 
