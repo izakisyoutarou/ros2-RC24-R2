@@ -23,13 +23,13 @@ find_package(socketcan_interface_msg REQUIRED)
 find_package(injection_interface_msg REQUIRED)
 find_package(utilities REQUIRED)
 
-add_library(injection_param_calculator 
+add_library(injection_param_calculator_node 
   src/injection_param_calculator.cpp
 )
-target_include_directories(injection_param_calculator PUBLIC
+target_include_directories(injection_param_calculator_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-ament_target_dependencies(injection_param_calculator
+ament_target_dependencies(injection_param_calculator_node
   rclcpp
   std_msgs
   socketcan_interface_msg
@@ -37,14 +37,14 @@ ament_target_dependencies(injection_param_calculator
   utilities
 )
 
-target_compile_definitions(injection_param_calculator PRIVATE "INJECTION_PARAM_CALCULATOR_BUILDING_LIBRARY")
+target_compile_definitions(injection_param_calculator_node PRIVATE "INJECTION_PARAM_CALCULATOR_BUILDING_LIBRARY")
 
 install(
   DIRECTORY include/
   DESTINATION include
 )
 install(
-  TARGETS injection_param_calculator
+  TARGETS injection_param_calculator_node
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -69,7 +69,7 @@ ament_export_include_directories(
   include
 )
 ament_export_libraries(
-  injection_param_calculator
+  injection_param_calculator_node
 )
 ament_export_targets(
   export_${PROJECT_NAME}
