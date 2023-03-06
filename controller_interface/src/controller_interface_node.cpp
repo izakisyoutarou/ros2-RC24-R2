@@ -114,7 +114,7 @@ namespace controller_interface
             servaddr.sin_family = AF_INET;
             //servaddr.sin_addr = local_addr;
             servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-            servaddr.sin_port = htons(5000);
+            servaddr.sin_port = htons(udp_port);
             bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
             
             //UDPthread
@@ -150,7 +150,7 @@ namespace controller_interface
                 else is_wheel_autonomous = false;
             }
 
-            //r3は上物の手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。
+            //r3は上物の手自動の切り替え。is_injection_autonomousを使って、トグルになるようにしてる。
             if(msg->l3)
             {
                 robotcontrol_flag = true;
@@ -172,6 +172,7 @@ namespace controller_interface
                 robotcontrol_flag = true;
                 flag_restart = true;
                 is_wheel_autonomous = defalt_wheel_autonomous_flag;
+                is_injection_autonomous = defalt_injection_autonomous_flag;
                 is_emergency = defalt_emergency_flag;
             }
 
@@ -182,7 +183,6 @@ namespace controller_interface
                 if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                 flag_injection0 = true;
-                is_spline_convergence = false;
                 is_injection0_convergence = false;
                 is_injection_calculator0_convergence = false;
                 }
@@ -193,11 +193,12 @@ namespace controller_interface
                 if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
                 {
                 flag_injection1 = true;
-                is_spline_convergence = false;
                 is_injection1_convergence = false;
                 is_injection_calculator1_convergence = false;
                 }
             }
+
+            //RCLCPP_INFO(this->get_logger(), "is_in0:%d is_inca0:%d is_in1:%d is_inca1:%d", is_injection0_convergence, is_injection_calculator0_convergence, is_injection_calculator1_convergence, is_injection_calculator1_convergence);
 
             is_reset = msg->s;
 
