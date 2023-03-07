@@ -14,20 +14,25 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   const auto trial_num_ = this->get_parameter("trial_num").as_int();
   const auto inlier_dist_threshold_ = this->get_parameter("inlier_dist_threshold").as_double();
 
+  initialize_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+    "can_rx_000",_qos,
+    bind(&RANSACLocalization::callback_initialize, this, placeholders::_1));
+
+  restart_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+    "can_rx_002",_qos,
+    bind(&RANSACLocalization::callback_restart, this, placeholders::_1));
+
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
-  "scan", rclcpp::SensorDataQoS(),
-  bind(&RANSACLocalization::scan_callback, this, placeholders::_1));
+    "scan", rclcpp::SensorDataQoS(),
+  bind(&RANSACLocalization::callback_scan, this, placeholders::_1));
 
   odom_linear_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_rx_100",
-    _qos,
-    bind(&RANSACLocalization::callback_odom_linear, this, placeholders::_1)
-  );
+    "can_rx_100",_qos,
+    bind(&RANSACLocalization::callback_odom_linear, this, placeholders::_1));
+
   odom_angular_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_rx_101",
-    _qos,
-    bind(&RANSACLocalization::callback_odom_angular, this, placeholders::_1)
-  );
+    "can_rx_101",_qos,
+    bind(&RANSACLocalization::callback_odom_angular, this, placeholders::_1));
 
 
   ransaced_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -39,9 +44,11 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
     "self_localization/pose", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
 
-  map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>("self_localization/map", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
+  map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+    "self_localization/map", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
 
-  self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>("self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
+  self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
+    "self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
 
   detect_lines.setup(trial_num_, inlier_dist_threshold_);
   pose_fuser.setup(laser_weight_, odom_weight_liner_, odom_weight_angler_);
@@ -59,6 +66,14 @@ void RANSACLocalization::init(){
   last_estimated = init_pose;
   pose_fuser.init();
   detect_lines.init();
+}
+
+void RANSACLocalization::callback_initialize(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+  init();
+}
+
+void RANSACLocalization::callback_restart(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+  init();
 }
 
 void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -93,7 +108,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   self_pose_publisher->publish(vector_msg);
 }
 
-void RANSACLocalization::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg){
+void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::SharedPtr msg){
   time_start = chrono::system_clock::now();
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;

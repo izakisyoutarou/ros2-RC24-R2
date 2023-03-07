@@ -38,8 +38,9 @@ private:
   PoseFuser pose_fuser;  // センサ融合器
   DtectLines detect_lines;
   Converter converter;
-
-  void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
+  void callback_initialize(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+  void callback_restart(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+  void callback_scan(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void init();
@@ -52,6 +53,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_angular_subscriber;
+  rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr initialize_subscriber;
+  rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr restart_subscriber;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_publisher;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ransaced_publisher;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
