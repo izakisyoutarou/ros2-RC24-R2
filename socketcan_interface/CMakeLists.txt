@@ -57,6 +57,9 @@ install(
         RUNTIME DESTINATION bin
         DESTINATION include/${PROJECT_NAME})
 
+install(DIRECTORY config
+    DESTINATION share/${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

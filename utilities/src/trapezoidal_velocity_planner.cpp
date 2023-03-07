@@ -1,7 +1,15 @@
 #include "trapezoidal_velocity_planner.hpp"
 
+
+
 namespace velocity_planner {
 namespace trapezoidal_velocity_planner {
+
+rclcpp::Clock system_clock(RCL_ROS_TIME);
+
+int64_t micros(){
+    return system_clock.now().nanoseconds()*1e-3;
+}
 
 //VelPlanner
 void VelPlanner::cycle() {
@@ -160,6 +168,7 @@ void TrapezoidalVelocityPlanner::vel(double vel) {
 		velPlanner.current(posPlanner.current());
 	}
 	else {
+		
 		velPlanner.cycle();
 	}
 	mode = Mode::vel;
