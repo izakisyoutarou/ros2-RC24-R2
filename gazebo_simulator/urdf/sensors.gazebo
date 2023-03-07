@@ -48,8 +48,6 @@
       <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
         <ros>
           <namespace>/gazebo_simulator</namespace>
-          <!-- <argument>camera/image_raw:=/swerve_bot/camera/image</argument> -->
-          <!-- <argument>camera/camera_info:=/swerve_bot/camera/image/camera_info</argument> -->
         </ros>
         <camera_name>camera</camera_name>
         <frame_name>camera</frame_name>

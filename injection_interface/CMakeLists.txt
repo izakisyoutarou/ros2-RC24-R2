@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(spline_pid)
+project(injection_interface)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -18,44 +18,44 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
-find_package(ament_cmake_python REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclpy REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(path_msg REQUIRED)
-find_package(socketcan_interface_msg REQUIRED)
+find_package(injection_interface_msg REQUIRED)
 find_package(utilities REQUIRED)
 
-add_library(spline_pid_node src/spline_pid_node.cpp)
-target_include_directories(spline_pid_node PUBLIC
+
+add_library(injection_interface_node src/injection_interface_node.cpp)
+target_include_directories(injection_interface_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-ament_target_dependencies(spline_pid_node
+ament_target_dependencies(injection_interface_node
+  ament_index_cpp
   rclcpp
   std_msgs
   geometry_msgs
-  path_msg
-  socketcan_interface_msg
+  injection_interface_msg
   utilities
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(spline_pid_node PRIVATE "SPLINE_PID_BUILDING_LIBRARY")
+target_compile_definitions(injection_interface_node PRIVATE "INJECTION_INTERFACE_BUILDING_LIBRARY")
 
 install(
   DIRECTORY include/
   DESTINATION include
 )
 install(
-  TARGETS spline_pid_node
+  TARGETS injection_interface_node
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
+install(DIRECTORY config
+ DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -72,25 +72,13 @@ ament_export_include_directories(
   include
 )
 ament_export_libraries(
-  spline_pid_node
+  injection_interface_node
 )
 ament_export_targets(
   export_${PROJECT_NAME}
 )
 ament_export_dependencies(
-    rclcpp
-    path_msg
+  injection_interface_msg
 )
-
-#-- for Python
-ament_python_install_package(${PROJECT_NAME})
-
-install(PROGRAMS
-  scripts/spline_trajectories.py
-  scripts/path_plot.py
-  #scripts/py_node.py
-  DESTINATION lib/${PROJECT_NAME}
-)
-#--- end Python
 
 ament_package()

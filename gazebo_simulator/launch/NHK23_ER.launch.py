@@ -14,7 +14,9 @@ def generate_launch_description():
 
     package_name = 'gazebo_simulator'
     world_file_name = 'NHK23_court.world'
-    urdf_file_name = 'swerve_bot.urdf'
+    urdf_file_name = 'er.urdf'
+    # オイラー角からクオータニオンにする - https://ken3susume.com/archives/12958
+    initial_pose = 'position: {x: -5.5, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}'
 
     # full  path to urdf and world file
 
@@ -33,8 +35,7 @@ def generate_launch_description():
     xml = xml.replace('"', '\\"')
 
     # this is argument format for spwan_entity service
-    spwan_args = '{name: \"swerve_bot\", xml: \"'  +  xml + '\" ,\
-    initial_pose: {position: {x: -5.5, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}'
+    spwan_args = '{name: \"er\", xml: \"'  +  xml + '\" , initial_pose: {' + initial_pose + '}}'
 
     # create and return launch description object
     return LaunchDescription([
