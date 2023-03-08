@@ -30,9 +30,9 @@ namespace injection_param_calculator{
 
             _pub_can = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx",_qos);
             //_pub_injection_direction = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx",_qos);
-            _pub_isConvergenced = this->create_publisher<std_msgs::msg::Bool>("is_calculator_convergenced_m"+to_string(mech_num),_qos);
+            _pub_isConvergenced = this->create_publisher<std_msgs::msg::Bool>("is_calculator_convergenced_"+int_to_string(mech_num),_qos);
             //_pub_test_injection = this->create_publisher<injection_interface_msg::msg::InjectionCommand>("injcetion_command_m"+to_string(mech_num),_qos);
-            RCLCPP_INFO(this->get_logger(),"create injection_m"+to_string(mech_num));
+            RCLCPP_INFO(this->get_logger(),"create injection_"+to_string(mech_num));
         }
     void InjectionParamCalculator::callback_injection(const injection_interface_msg::msg::InjectionCommand::SharedPtr msg){
         // auto msg_injection_parameter = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
@@ -71,14 +71,25 @@ namespace injection_param_calculator{
         msg_yaw->candlc = 4;
         float_to_bytes(_candata, static_cast<float>(direction));
         for(int i=0; i<msg_yaw->candlc; i++) msg_yaw->candata[i] = _candata[i];
-        
         _pub_isConvergenced->publish(*msg_isConvergenced);
         if(isConvergenced){
             _pub_can->publish(*msg_injection);
             _pub_can->publish(*msg_yaw);
         }
     }
+    std::string InjectionParamCalculator::int_to_string(int mech_num){
+        std::string side;
+        switch (mech_num)
+        {
+        case 0:
+            side = "left";
+            break;
         
+        case 1:
+            side = "right";
+        }
+        return side;
+    }
     void InjectionParamCalculator::calculateElevation(){
         double pitch = atan2(injection_comand.height,injection_comand.distance);
         if(dtor(angle_bounds) > pitch){
@@ -95,10 +106,11 @@ namespace injection_param_calculator{
         //auto isConvergenced = std::make_shared<std_msgs::msg::Bool>();
         bool isAiming = false;
         while(!isAiming){
-            if(!(dtor(yow_limit[0]) <= injection_comand.direction && injection_comand.direction <= dtor(yow_limit[1]))){
+            if(!(dtor(yow_limit[0]) < injection_comand.direction && injection_comand.direction < dtor(yow_limit[1]))){
                 //isConvergenced->data = false;
                 isConvergenced = false;
                 RCLCPP_INFO(this->get_logger(),"mech_num: %d 範囲外です!!",mech_num,injection_comand.direction);
+                velocity = 0.0;
                 break;
             }
             double new_velocity = old_velocity -f(old_velocity)/diff(old_velocity);
@@ -114,6 +126,7 @@ namespace injection_param_calculator{
                 isAiming=false;
                 //isConvergenced->data = false;
                 isConvergenced=false;
+                velocity = 0.0;
                 RCLCPP_INFO(this->get_logger(),"mech_num: %d 発散しました",mech_num);
                 break;
             }
