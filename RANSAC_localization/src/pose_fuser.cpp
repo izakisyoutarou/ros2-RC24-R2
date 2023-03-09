@@ -15,17 +15,16 @@ void PoseFuser::init(){
 Vector3d PoseFuser::fuse_pose(const Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points){
   init();
   if(global_points.size()==0) return current_scan_odom;
-  NormalVector normal_vector = find_correspondence(src_points, global_points, current_points, reference_points);
-  Matrix3d laser_cov = laser_weight_ * calc_laser_cov(laser_estimated, current_points, reference_points, normal_vector);
+  find_correspondence(src_points, global_points, current_points, reference_points);
+  Matrix3d laser_cov = laser_weight_ * calc_laser_cov(laser_estimated, current_points, reference_points);
   Matrix3d scan_odom_motion_cov = calc_motion_cov(scan_odom_motion, dt_scan);
   Matrix3d rotate_scan_odom_motion_cov = rotate_cov(laser_estimated, scan_odom_motion_cov);
   return fuse(laser_estimated, laser_cov, current_scan_odom, rotate_scan_odom_motion_cov);
 }
 
-NormalVector PoseFuser::find_correspondence(const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points){
+void PoseFuser::find_correspondence(const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points){
   CorrespondLaserPoint global;
   CorrespondLaserPoint current;
-  NormalVector normal_vector;
   double sum_x=0.0;
   double sum_y=0.0;
   for(size_t i=0; i<global_points.size(); i++){
@@ -34,15 +33,9 @@ NormalVector PoseFuser::find_correspondence(const vector<LaserPoint> &src_points
     global.x = global_points[i].x;
     global.y = global_points[i].y;
     CorrespondLaserPoint closest_reference = find_closest_vertical_point(global);
-    sum_x+=closest_reference.nx;
-    sum_y+=closest_reference.ny;
     current_points.push_back(current);
     reference_points.push_back(closest_reference);
   }
-  const double L = sqrt(sum_x*sum_x + sum_y*sum_y);
-  normal_vector.normalize_x = sum_x / L; // 平均（正規化）
-  normal_vector.normalize_y = sum_y / L;
-  return normal_vector;
 }
 
 CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint global){
@@ -74,17 +67,17 @@ CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint
   return closest;
 }
 
-Matrix3d PoseFuser::calc_laser_cov(const Vector3d &laser_estimated, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points, NormalVector normal_vector){
+Matrix3d PoseFuser::calc_laser_cov(const Vector3d &laser_estimated, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points){
   const double dd = 1e-6;  //数値微分の刻み
   vector<double> Jx; //ヤコビ行列のxの列
   vector<double> Jy; //ヤコビ行列のyの列
   vector<double> Jyaw; //ヤコビ行列のyawの列
 
   for(size_t i=0; i<current_points.size(); i++){
-    double vertical_distance   = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1],    laser_estimated[2], normal_vector);
-    double vertical_distance_x = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0]+dd, laser_estimated[1],    laser_estimated[2], normal_vector);
-    double vertical_distance_y = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1]+dd, laser_estimated[2], normal_vector);
-    double vertical_distance_yaw = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1], laser_estimated[2] + dd, normal_vector);
+    double vertical_distance   = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1],    laser_estimated[2]);
+    double vertical_distance_x = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0]+dd, laser_estimated[1],    laser_estimated[2]);
+    double vertical_distance_y = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1]+dd, laser_estimated[2]);
+    double vertical_distance_yaw = calc_vertical_distance(current_points[i], reference_points[i], laser_estimated[0],    laser_estimated[1], laser_estimated[2] + dd);
     Jx.push_back((vertical_distance_x - vertical_distance) / dd);
     Jy.push_back((vertical_distance_y - vertical_distance) / dd);
     Jyaw.push_back((vertical_distance_yaw - vertical_distance) / dd);
@@ -108,10 +101,10 @@ Matrix3d PoseFuser::calc_laser_cov(const Vector3d &laser_estimated, vector<Corre
   return svdInverse(hes);
 }
 
-double PoseFuser::calc_vertical_distance(const CorrespondLaserPoint current, const CorrespondLaserPoint reference, double x, double y, double yaw, NormalVector normal_vector){
+double PoseFuser::calc_vertical_distance(const CorrespondLaserPoint current, const CorrespondLaserPoint reference, double x, double y, double yaw){
   const double x_ = cos(yaw)*current.x - sin(yaw)*current.y + x;                     // clpを推定位置で座標変換
   const double y_ = sin(yaw)*current.x + cos(yaw)*current.y + y;
-  return (x_-reference.x)*normal_vector.normalize_x + (y_-reference.y)*normal_vector.normalize_y;
+  return (x_-reference.x)*reference.nx + (y_-reference.y)*reference.ny;
 }
 
 Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const double dt){
