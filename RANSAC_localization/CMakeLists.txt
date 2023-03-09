@@ -30,6 +30,7 @@ set(dependencies
   tf2_ros
   utilities
   socketcan_interface_msg
+  controller_interface_msg
   Eigen3
 )
 

@@ -21,6 +21,7 @@
   <depend>std_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>socketcan_interface_msg</depend>
+  <depend>controller_interface_msg</depend>
   <depend>utilities</depend>
 
   <export>

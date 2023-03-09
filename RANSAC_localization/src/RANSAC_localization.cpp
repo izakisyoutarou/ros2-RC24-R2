@@ -14,12 +14,8 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   const auto trial_num_ = this->get_parameter("trial_num").as_int();
   const auto inlier_dist_threshold_ = this->get_parameter("inlier_dist_threshold").as_double();
 
-  initialize_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_rx_000",_qos,
-    bind(&RANSACLocalization::callback_initialize, this, placeholders::_1));
-
-  restart_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_rx_002",_qos,
+  restart_subscriber = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+    "base_control",_qos,
     bind(&RANSACLocalization::callback_restart, this, placeholders::_1));
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -68,12 +64,9 @@ void RANSACLocalization::init(){
   detect_lines.init();
 }
 
-void RANSACLocalization::callback_initialize(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
-  init();
-}
-
-void RANSACLocalization::callback_restart(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
-  init();
+void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
+  RCLCPP_INFO(this->get_logger(), "RESTART");
+  if(msg->is_restart) init();
 }
 
 void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
