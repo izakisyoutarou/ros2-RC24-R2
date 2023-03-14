@@ -75,6 +75,9 @@ namespace controller_interface
             void callback_injection_calculator_er_right(const std_msgs::msg::Bool::SharedPtr msg);
             void callback_injection_calculator_rr(const std_msgs::msg::Bool::SharedPtr msg);
             
+            //どこにいれればいいかわからん
+            bool is_injection_left;
+
             //base_control用
             bool is_wheel_autonomous;
             bool is_injection_autonomous;

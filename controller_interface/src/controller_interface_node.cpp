@@ -32,7 +32,6 @@ namespace controller_interface
         defalt_injection_autonomous_flag(get_parameter("defalt_injection_autonomous_flag").as_bool()),
         defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool())
         {  
-            RCLCPP_INFO(this->get_logger(), "vel_x:%d", udp_port);
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
 
             //controllerからsub
@@ -109,7 +108,7 @@ namespace controller_interface
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 1;
-                    _pub_canusb->publish(*msg_heartbeat);
+                    //_pub_canusb->publish(*msg_heartbeat);
                 }
             );
 
@@ -117,6 +116,7 @@ namespace controller_interface
             velPlanner_linear_x.limit(limit_linear);
             velPlanner_linear_y.limit(limit_linear);
             velPlanner_angular_z.limit(limit_angular);
+            velPlanner_injection_v.limit(limit_injection);
 
             //UDP
             // struct in_addr local_addr;
@@ -157,7 +157,6 @@ namespace controller_interface
             //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。
             if(msg->r3)
             {
-                RCLCPP_INFO(this->get_logger(), "hello world");
                 robotcontrol_flag = true;
                 if(is_wheel_autonomous == false) is_wheel_autonomous = true;
                 else is_wheel_autonomous = false;
@@ -242,7 +241,6 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_udp()
         {
-
             auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_linear->canid = 0x100;
             msg_linear->candlc = 8;
@@ -269,7 +267,8 @@ namespace controller_interface
 
             uint8_t _candata_joy[8];
 
-            bool flag_autonomous = false;
+            bool flag_wheel_autonomous = false;
+            bool flag_injection_autonomous = false;
 
             float analog_l_x = 0.0f;
             float analog_l_y = 0.0f;
@@ -278,26 +277,24 @@ namespace controller_interface
 
             while(rclcpp::ok())
             {
-                if(udp_port == 50000 || udp_port == 52000)
-                {
-                if(is_wheel_autonomous == false)
-                {
-                    clilen = sizeof(cliaddr);
+                clilen = sizeof(cliaddr);
                     
-                    // bufferに受信したデータが格納されている
-                    n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
+                // bufferに受信したデータが格納されている
+                n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
                     
-                    if (n < 0)
-                    {
-                        perror("recvfrom");
-                        exit(1);
-                    }
+                if (n < 0)
+                {
+                    perror("recvfrom");
+                    exit(1);
+                }
 
-                    std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
-                    std::memcpy(&analog_l_y, &buffer[4], sizeof(analog_l_y));
-                    std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
-                    std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
+                std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
+                std::memcpy(&analog_l_y, &buffer[4], sizeof(analog_l_y));
+                std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
+                std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
 
+                if(is_wheel_autonomous == false && is_injection_autonomous == true)
+                {
                     velPlanner_linear_x.vel(static_cast<double>(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
                     velPlanner_linear_y.vel(static_cast<double>(analog_l_x));
                     velPlanner_angular_z.vel(static_cast<double>(analog_r_x));
@@ -318,89 +315,58 @@ namespace controller_interface
                     _pub_canusb->publish(*msg_linear);
                     _pub_canusb->publish(*msg_angular);
 
-                    flag_autonomous = true;
+                    flag_wheel_autonomous = true;
+                }
+                else if(is_injection_autonomous == false && is_wheel_autonomous == true)
+                {
+                    velPlanner_injection_v.vel(static_cast<double>(analog_l_x));
+
+                    velPlanner_injection_v.cycle();
+
+                    float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_injection_v.vel()) * manual_injection_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(atan2(-analog_r_x, analog_r_y)));
+
+                    if(is_injection_left)
+                    {
+                    for(int i=0; i<msg_l_elevation_velocity->candlc; i++) msg_l_elevation_velocity->candata[i] = _candata_joy[i];
+                    for(int i=0; i<msg_l_yaw->candlc; i++) msg_l_yaw->candata[i] = _candata_joy[i];
+
+                    _pub_canusb->publish(*msg_l_elevation_velocity);
+                    _pub_canusb->publish(*msg_l_yaw);
+                    }
+                    else
+                    {
+                        for(int i=0; i<msg_r_elevation_velocity->candlc; i++) msg_r_elevation_velocity->candata[i] = _candata_joy[i];
+                        for(int i=0; i<msg_r_yaw->candlc; i++) msg_r_yaw->candata[i] = _candata_joy[i];
+
+                        _pub_canusb->publish(*msg_r_elevation_velocity);
+                        _pub_canusb->publish(*msg_r_yaw);
+                    }
+
+                    flag_injection_autonomous = true;
                 }
                 else 
                 {
                     //手動から自動になったときに、一回だけ速度指令値に0を代入してpubする。
-                    if(flag_autonomous == true)
+                    if(flag_wheel_autonomous == true || flag_injection_autonomous == true)
                     {
+                        RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
+                        
                         float_to_bytes(_candata_joy, 0);
-                        float_to_bytes(_candata_joy+4, 0);
                         for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
-
-                        float_to_bytes(_candata_joy, 0);
                         for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
+                        for(int i=0; i<msg_l_elevation_velocity->candlc; i++) msg_l_elevation_velocity->candata[i] = _candata_joy[i];
+                        for(int i=0; i<msg_l_yaw->candlc; i++) msg_l_yaw->candata[i] = _candata_joy[i];
+                        for(int i=0; i<msg_r_elevation_velocity->candlc; i++) msg_r_elevation_velocity->candata[i] = _candata_joy[i];
+                        for(int i=0; i<msg_r_yaw->candlc; i++) msg_r_yaw->candata[i] = _candata_joy[i];
 
                         _pub_canusb->publish(*msg_linear);
                         _pub_canusb->publish(*msg_angular);
                      
-                        flag_autonomous = false; 
+                        flag_wheel_autonomous = false;
+                        flag_injection_autonomous = false;
                     }
                 }
-                }
-                if(udp_port == 51000 || udp_port == 52000)
-                {
-                if(is_injection_autonomous == false)
-                {
-                    clilen = sizeof(cliaddr);
-                    
-                    // bufferに受信したデータが格納されている
-                    n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
-                    
-                    if (n < 0)
-                    {
-                        perror("recvfrom");
-                        exit(1);
-                    }
-
-                    std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
-                    std::memcpy(&analog_l_y, &buffer[4], sizeof(analog_l_y));
-                    std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
-                    std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
-
-                    velPlanner_linear_x.vel(static_cast<double>(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
-                    velPlanner_linear_y.vel(static_cast<double>(analog_l_x));
-                    velPlanner_angular_z.vel(static_cast<double>(analog_r_x));
-
-                    velPlanner_linear_x.cycle();
-                    velPlanner_linear_y.cycle();
-                    velPlanner_angular_z.cycle();
-
-                    //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
-
-                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_linear_x.vel()));
-                    float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_linear_y.vel()) * manual_linear_max_vel);
-                    for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
-
-                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()));
-                    for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
-
-                    _pub_canusb->publish(*msg_linear);
-                    _pub_canusb->publish(*msg_angular);
-
-                    flag_autonomous = true;
-                }
-                else 
-                {
-                    //手動から自動になったときに、一回だけ速度指令値に0を代入してpubする。
-                    if(flag_autonomous == true)
-                    {
-                        float_to_bytes(_candata_joy, 0);
-                        float_to_bytes(_candata_joy+4, 0);
-                        for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
-
-                        float_to_bytes(_candata_joy, 0);
-                        for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
-
-                        _pub_canusb->publish(*msg_linear);
-                        _pub_canusb->publish(*msg_angular);
-                     
-                        flag_autonomous = false; 
-                    }
-                }
-                }
-                
             }
         }
 
