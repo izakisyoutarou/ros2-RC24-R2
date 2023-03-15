@@ -24,6 +24,7 @@ namespace controller_interface
         dtor(get_parameter("injection_max_dec").as_double()) ),
         
         udp_port(udp_port),
+        tcp_endpoint_num(tcp_endpoint_num),
         manual_linear_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         manual_angular_max_vel(dtor(static_cast<float>(get_parameter("angular_max_vel").as_double()))),
         manual_injection_max_vel(dtor(static_cast<float>(get_parameter("injection_max_vel").as_double()))),
@@ -154,20 +155,34 @@ namespace controller_interface
             bool flag_injection0 = false;//左の発射機構の最終射出許可
             bool flag_injection1 = false;//右の発射機構の最終射出許可
 
-            //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。
+            //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
+            //ERの上物の場合は、上物の切り替えに当てている。
+            
             if(msg->r3)
             {
-                robotcontrol_flag = true;
-                if(is_wheel_autonomous == false) is_wheel_autonomous = true;
-                else is_wheel_autonomous = false;
+                if(udp_port == 50000 || udp_port == 52000)
+                {
+                    robotcontrol_flag = true;
+                    if(is_wheel_autonomous == false) is_wheel_autonomous = true;
+                    else is_wheel_autonomous = false;
+                }
+                if(udp_port == 51000)
+                {
+                    robotcontrol_flag = true;
+                    if(is_injection_0 == false) is_injection_0 = true;
+                    else is_injection_0 = false;
+                }
             }
 
-            //l3は上物の手自動の切り替え。is_injection_autonomousを使って、トグルになるようにしてる。
-            if(msg->l3)
+            //l3は上物の手自動の切り替え。is_injection_autonomousを使って、トグルになるようにしてる。ERの足回りからもらう必要はない
+            if(udp_port == 51000 || udp_port == 52000)
             {
-                robotcontrol_flag = true;
-                if(is_injection_autonomous == false) is_injection_autonomous = true;
-                else is_injection_autonomous = false;
+                if(msg->l3)
+                {
+                    robotcontrol_flag = true;
+                    if(is_injection_autonomous == false) is_injection_autonomous = true;
+                    else is_injection_autonomous = false;
+                }
             }
 
             //gは緊急。is_emergencyを使って、トグルになるようにしてる。
@@ -326,7 +341,7 @@ namespace controller_interface
                     float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_injection_v.vel()) * manual_injection_max_vel);
                     float_to_bytes(_candata_joy, static_cast<float>(atan2(-analog_r_x, analog_r_y)));
 
-                    if(is_injection_left)
+                    if(is_injection_0)
                     {
                     for(int i=0; i<msg_l_elevation_velocity->candlc; i++) msg_l_elevation_velocity->candata[i] = _candata_joy[i];
                     for(int i=0; i<msg_l_yaw->candlc; i++) msg_l_yaw->candata[i] = _candata_joy[i];
@@ -351,7 +366,7 @@ namespace controller_interface
                     if(flag_wheel_autonomous == true || flag_injection_autonomous == true)
                     {
                         RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
-                        
+
                         float_to_bytes(_candata_joy, 0);
                         for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
                         for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
@@ -362,7 +377,7 @@ namespace controller_interface
 
                         _pub_canusb->publish(*msg_linear);
                         _pub_canusb->publish(*msg_angular);
-                     
+
                         flag_wheel_autonomous = false;
                         flag_injection_autonomous = false;
                     }
