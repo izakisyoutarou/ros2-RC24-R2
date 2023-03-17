@@ -75,12 +75,10 @@ namespace controller_interface
             void callback_injection_calculator_er_right(const std_msgs::msg::Bool::SharedPtr msg);
             void callback_injection_calculator_rr(const std_msgs::msg::Bool::SharedPtr msg);
             
-            //どこにいれればいいかわからん
-            bool is_injection_0;
-
             //base_control用
             bool is_wheel_autonomous;
             bool is_injection_autonomous;
+            bool is_injection_m0;
             bool is_reset;
             bool is_emergency;
 
@@ -95,6 +93,7 @@ namespace controller_interface
             const float manual_linear_max_vel;
             const float manual_angular_max_vel;
             const float manual_injection_max_vel;
+            const float defalt_pitch;
             const int udp_port;
             const int tcp_endpoint_num;
             const bool defalt_restart_flag;

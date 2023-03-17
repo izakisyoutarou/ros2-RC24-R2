@@ -25,6 +25,7 @@ namespace controller_interface
         
         udp_port(udp_port),
         tcp_endpoint_num(tcp_endpoint_num),
+        defalt_pitch(static_cast<float>(get_parameter("defalt_pitch").as_double())),
         manual_linear_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         manual_angular_max_vel(dtor(static_cast<float>(get_parameter("angular_max_vel").as_double()))),
         manual_injection_max_vel(dtor(static_cast<float>(get_parameter("injection_max_vel").as_double()))),
@@ -85,7 +86,7 @@ namespace controller_interface
             _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/base_control",_qos);
 
             //test用のpub
-            _pub_test = this->create_publisher<std_msgs::msg::Bool>("is_move_tracking", _qos);
+            //_pub_test = this->create_publisher<std_msgs::msg::Bool>("is_move_tracking", _qos);
 
             //デフォルト値をpub.。各種、boolに初期値を代入。
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
@@ -169,19 +170,20 @@ namespace controller_interface
                 if(udp_port == 51000)
                 {
                     robotcontrol_flag = true;
-                    if(is_injection_0 == false) is_injection_0 = true;
-                    else is_injection_0 = false;
+                    if(is_injection_m0 == false) is_injection_m0 = true;
+                    else is_injection_m0 = false;
                 }
             }
 
             //l3は上物の手自動の切り替え。is_injection_autonomousを使って、トグルになるようにしてる。ERの足回りからもらう必要はない
-            if(udp_port == 51000 || udp_port == 52000)
+            
+            if(msg->l3)
             {
-                if(msg->l3)
+                if(udp_port == 51000 || udp_port == 52000)
                 {
-                    robotcontrol_flag = true;
-                    if(is_injection_autonomous == false) is_injection_autonomous = true;
-                    else is_injection_autonomous = false;
+                robotcontrol_flag = true;
+                if(is_injection_autonomous == false) is_injection_autonomous = true;
+                else is_injection_autonomous = false;
                 }
             }
 
@@ -194,34 +196,44 @@ namespace controller_interface
             }
 
             //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
+            
             if(msg->s)
             {
+                if(udp_port == 50000 || udp_port == 52000)
+                {
                 robotcontrol_flag = true;
                 flag_restart = true;
                 is_wheel_autonomous = defalt_wheel_autonomous_flag;
                 is_injection_autonomous = defalt_injection_autonomous_flag;
                 is_emergency = defalt_emergency_flag;
+                }
             }
 
             //l2が左、r2が右の発射機構のトリガー。
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(udp_port == 51000)
                 {
-                flag_injection0 = true;
-                is_injection0_convergence = false;
-                is_injection_calculator0_convergence = false;
+                    if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
+                    {
+                        flag_injection0 = true;
+                        is_injection0_convergence = false;
+                        is_injection_calculator0_convergence = false;
+                    }
                 }
             }
             
             if(msg->r2)
             {
-                if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
+                if(udp_port == 51000 || udp_port == 52000)
                 {
-                flag_injection1 = true;
-                is_injection1_convergence = false;
-                is_injection_calculator1_convergence = false;
+                    if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
+                    {
+                        flag_injection1 = true;
+                        is_injection1_convergence = false;
+                        is_injection_calculator1_convergence = false;
+                    }
                 }
             }
 
@@ -230,9 +242,11 @@ namespace controller_interface
             //basecontrolへの代入
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = is_reset;
+            msg_base_control->is_emergency = is_emergency;
             msg_base_control->is_wheel_autonomous = is_wheel_autonomous;
             msg_base_control->is_injection_autonomous = is_injection_autonomous;
-            msg_base_control->is_emergency = is_emergency;
+            msg_base_control->is_injection_m0 = is_injection_m0;
+
             
             //mainへ緊急を送る代入
             _candata_btn[0] = is_emergency;
@@ -290,6 +304,8 @@ namespace controller_interface
             float analog_r_x = 0.0f;
             float analog_r_y = 0.0f;
 
+            float pitch = defalt_pitch;
+
             while(rclcpp::ok())
             {
                 clilen = sizeof(cliaddr);
@@ -337,21 +353,26 @@ namespace controller_interface
                     velPlanner_injection_v.vel(static_cast<double>(analog_l_x));
 
                     velPlanner_injection_v.cycle();
-
-                    float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_injection_v.vel()) * manual_injection_max_vel);
-                    float_to_bytes(_candata_joy, static_cast<float>(atan2(-analog_r_x, analog_r_y)));
-
-                    if(is_injection_0)
+                    
+                    if(is_injection_m0)
                     {
-                    for(int i=0; i<msg_l_elevation_velocity->candlc; i++) msg_l_elevation_velocity->candata[i] = _candata_joy[i];
-                    for(int i=0; i<msg_l_yaw->candlc; i++) msg_l_yaw->candata[i] = _candata_joy[i];
+                        float_to_bytes(_candata_joy, pitch);
+                        float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_injection_v.vel()) * manual_injection_max_vel);
+                        for(int i=0; i<msg_l_elevation_velocity->candlc; i++) msg_l_elevation_velocity->candata[i] = _candata_joy[i];
 
-                    _pub_canusb->publish(*msg_l_elevation_velocity);
-                    _pub_canusb->publish(*msg_l_yaw);
+                        float_to_bytes(_candata_joy, static_cast<float>(atan2(-analog_r_x, analog_r_y)));
+                        for(int i=0; i<msg_l_yaw->candlc; i++) msg_l_yaw->candata[i] = _candata_joy[i];
+
+                        _pub_canusb->publish(*msg_l_elevation_velocity);
+                        _pub_canusb->publish(*msg_l_yaw);
                     }
                     else
                     {
+                        float_to_bytes(_candata_joy, pitch);
+                        float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_injection_v.vel()) * manual_injection_max_vel);
                         for(int i=0; i<msg_r_elevation_velocity->candlc; i++) msg_r_elevation_velocity->candata[i] = _candata_joy[i];
+
+                        float_to_bytes(_candata_joy, static_cast<float>(atan2(-analog_r_x, analog_r_y)));
                         for(int i=0; i<msg_r_yaw->candlc; i++) msg_r_yaw->candata[i] = _candata_joy[i];
 
                         _pub_canusb->publish(*msg_r_elevation_velocity);
@@ -365,8 +386,6 @@ namespace controller_interface
                     //手動から自動になったときに、一回だけ速度指令値に0を代入してpubする。
                     if(flag_wheel_autonomous == true || flag_injection_autonomous == true)
                     {
-                        RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
-
                         float_to_bytes(_candata_joy, 0);
                         for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
                         for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
