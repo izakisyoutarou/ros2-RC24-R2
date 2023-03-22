@@ -82,6 +82,8 @@ namespace controller_interface
             //controllerへpub
             _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/pub_convergence" , _qos);
 
+            _pub_scrn = this->create_publisher<controller_interface_msg::msg::SubPad>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/sub_scrn" , _qos);
+
             //各nodeへリスタートと手自動の切り替えをpub。
             _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/base_control",_qos);
 
@@ -451,28 +453,90 @@ namespace controller_interface
             // _pub_convergence->publish(*msg_injection_calculator1_convergence);
         }
     
-    DualSense::DualSense(const rclcpp::NodeOptions &options) : DualSense("", options) {}
-    DualSense::DualSense(const std::string &name_space, const rclcpp::NodeOptions &options)
-        : rclcpp::Node("controller_interface_node", name_space, options),
-        limit_linear(DBL_MAX,
-        get_parameter("linear_max_vel").as_double(),
-        get_parameter("linear_max_acc").as_double(),
-        get_parameter("linear_max_dec").as_double() ),
-        limit_angular(DBL_MAX,
-        dtor(get_parameter("angular_max_vel").as_double()),
-        dtor(get_parameter("angular_max_acc").as_double()),
-        dtor(get_parameter("angular_max_dec").as_double()) )
+    CommonProces::CommonProces(const rclcpp::NodeOptions &options) : CommonProces("", options) {}
+    CommonProces::CommonProces(const std::string &name_space, const rclcpp::NodeOptions &options)
+        : rclcpp::Node("controller_common_proces_node", name_space, options)
         {
-            _sub_SPpad = this->create_subscription<sensor_msgs::msg::Joy>(
-                "/joy",
+            const auto pole_btn_ms = this->get_parameter("pole_btn_ms").as_int();
+
+            _sub_tcp1_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
+                "ros_tcp_endpoint_1/sub_scrn",
                 _qos,
-                std::bind(&DualSense::callback_SPpad, this, std::placeholders::_1)
+                std::bind(&CommonProces::callback_tcp1_scrn, this, std::placeholders::_1)
             );
-            RCLCPP_INFO(this->get_logger(), "Hello World");
+
+            _sub_tcp2_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
+                "ros_tcp_endpoint_2/sub_scrn",
+                _qos,
+                std::bind(&CommonProces::callback_tcp2_scrn, this, std::placeholders::_1)
+            );
+
+            _sub_tcp3_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
+                "ros_tcp_endpoint_3/sub_scrn",
+                _qos,
+                std::bind(&CommonProces::callback_tcp3_scrn, this, std::placeholders::_1)
+            );
+
+            _pub_tcp1_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_1/pub_scrn",_qos);
+
+            _pub_tcp2_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_2/pub_scrn",_qos);
+            
+            _pub_tcp3_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_3/pub_scrn",_qos);
+
+            _pub_timer = this->create_wall_timer(
+                std::chrono::milliseconds(pole_btn_ms),
+                [this] { 
+                    auto msg_pole_btn = std::make_shared<controller_interface_msg::msg::SubScrn>();
+                    msg_pole_btn->a = sub_scrn_2[0];
+                    msg_pole_btn->b = sub_scrn_2[1];
+                    msg_pole_btn->c = sub_scrn_2[2];
+                    msg_pole_btn->d = sub_scrn_2[3];
+                    msg_pole_btn->e = sub_scrn_2[4];
+                    msg_pole_btn->f = sub_scrn_2[5];
+                    msg_pole_btn->g = sub_scrn_2[6];
+                    msg_pole_btn->h = sub_scrn_2[7];
+                    msg_pole_btn->i = sub_scrn_2[8];
+                    msg_pole_btn->j = sub_scrn_2[9];
+                    msg_pole_btn->k = sub_scrn_2[10];
+                    _pub_tcp1_scrn->publish(*msg_pole_btn);
+                    _pub_tcp2_scrn->publish(*msg_pole_btn);
+                    _pub_tcp3_scrn->publish(*msg_pole_btn);
+                }
+            );
         }
 
-        void DualSense::callback_SPpad(const sensor_msgs::msg::Joy::SharedPtr msg)
+        void CommonProces::callback_tcp1_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
         {
-            RCLCPP_INFO(this->get_logger(), "Hello World");
+            assignment(msg);
+        }
+
+        void CommonProces::callback_tcp2_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
+        {
+            assignment(msg);
+        }
+
+        void CommonProces::callback_tcp3_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
+        {
+            assignment(msg);
+        }
+
+        void CommonProces::assignment(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
+        {
+            sub_scrn_1[0] = msg->a;
+            sub_scrn_1[1] = msg->b;
+            sub_scrn_1[2] = msg->c;
+            sub_scrn_1[3] = msg->d;
+            sub_scrn_1[4] = msg->e;
+            sub_scrn_1[5] = msg->f;
+            sub_scrn_1[6] = msg->g;
+            sub_scrn_1[7] = msg->h;
+            sub_scrn_1[8] = msg->i;
+            sub_scrn_1[9] = msg->j;
+            sub_scrn_1[10] = msg->k;
+            for(int i=0; i<11; i++)
+            {
+                if(sub_scrn_2[i] == false)sub_scrn_2[i] = sub_scrn_1[i];
+            }
+            RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", sub_scrn_2[0], sub_scrn_2[1], sub_scrn_2[2], sub_scrn_2[3], sub_scrn_2[4], sub_scrn_2[5], sub_scrn_2[6], sub_scrn_2[7], sub_scrn_2[8], sub_scrn_2[9], sub_scrn_2[10]);
         }
 }

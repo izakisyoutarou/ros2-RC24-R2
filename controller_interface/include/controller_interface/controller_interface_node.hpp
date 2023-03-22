@@ -6,6 +6,7 @@
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "controller_interface_msg/msg/sub_pad.hpp"
+#include "controller_interface_msg/msg/sub_scrn.hpp"
 #include "controller_interface_msg/msg/convergence.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/joy.hpp"
@@ -54,6 +55,7 @@ namespace controller_interface
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
             //controllerへ
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
+            rclcpp::Publisher<controller_interface_msg::msg::SubPad>::SharedPtr _pub_scrn;
             //各nodeへリスタートと手自動の切り替えをpub
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
             //test用のpub
@@ -120,29 +122,37 @@ namespace controller_interface
             const VelPlannerLimit limit_injection;
     };
 
-    class DualSense : public rclcpp::Node
+    class CommonProces : public rclcpp::Node
     {
         public:
             CONTROLLER_INTERFACE_PUBLIC
-            explicit DualSense(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+            explicit CommonProces(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
             CONTROLLER_INTERFACE_PUBLIC
-            explicit DualSense(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+            explicit CommonProces(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
         private:
             //controllerから
-            rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr _sub_SPpad;
+            rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_tcp1_scrn;
+            rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_tcp2_scrn;
+            rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_tcp3_scrn;
+
+            rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp1_scrn;
+            rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp2_scrn;
+            rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp3_scrn;
+
+            //timer
+            rclcpp::TimerBase::SharedPtr _pub_timer;
+            
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
-            void callback_SPpad(const sensor_msgs::msg::Joy::SharedPtr msg);
+            void callback_tcp1_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
+            void callback_tcp2_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
+            void callback_tcp3_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
 
-            float x = 0.f;
-            
-            //計画機
-            VelPlanner velPlanner_linear_x;
-            VelPlanner velPlanner_linear_y;
-            const VelPlannerLimit limit_linear;
-            VelPlanner velPlanner_angular_z;
-            const VelPlannerLimit limit_angular;
+            void assignment(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
+
+            bool sub_scrn_1[11];
+            bool sub_scrn_2[11];
     };
 }
