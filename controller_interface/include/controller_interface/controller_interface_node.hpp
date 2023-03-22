@@ -55,7 +55,7 @@ namespace controller_interface
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
             //controllerへ
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
-            rclcpp::Publisher<controller_interface_msg::msg::SubPad>::SharedPtr _pub_scrn;
+            rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_scrn;
             //各nodeへリスタートと手自動の切り替えをpub
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
             //test用のpub

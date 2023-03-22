@@ -82,7 +82,7 @@ namespace controller_interface
             //controllerへpub
             _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/pub_convergence" , _qos);
 
-            _pub_scrn = this->create_publisher<controller_interface_msg::msg::SubPad>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/sub_scrn" , _qos);
+            _pub_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/sub_scrn" , _qos);
 
             //各nodeへリスタートと手自動の切り替えをpub。
             _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/base_control",_qos);
@@ -151,6 +151,8 @@ namespace controller_interface
             msg_injection->canid = 0x120;
             msg_injection->candlc = 2;
 
+            auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
+
             uint8_t _candata_btn[2];
 
             bool robotcontrol_flag = false;//base_control(手自動、緊急、リスタート)が押されたらpubする
@@ -201,6 +203,17 @@ namespace controller_interface
             
             if(msg->s)
             {
+                msg_sub_scrn->a = false;
+                msg_sub_scrn->b = false;
+                msg_sub_scrn->c = false;
+                msg_sub_scrn->d = false;
+                msg_sub_scrn->e = false;
+                msg_sub_scrn->f = false;
+                msg_sub_scrn->g = false;
+                msg_sub_scrn->h = false;
+                msg_sub_scrn->i = false;
+                msg_sub_scrn->j = false;
+                msg_sub_scrn->k = false;
                 if(udp_port == 50000 || udp_port == 52000)
                 {
                 robotcontrol_flag = true;
@@ -260,9 +273,13 @@ namespace controller_interface
             for(int i=0; i<msg_injection->candlc; i++) msg_injection->candata[i] = _candata_btn[i];
 
             if(msg->g)_pub_canusb->publish(*msg_emergency);
-            if(msg->s)_pub_canusb->publish(*msg_restart);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
             if(robotcontrol_flag)_pub_base_control->publish(*msg_base_control);
+            if(msg->s)
+            {
+                _pub_canusb->publish(*msg_restart);
+                _pub_scrn->publish(*msg_sub_scrn);
+            }
             if(flag_restart)
             {
                 msg_base_control->is_restart = false;
@@ -535,7 +552,8 @@ namespace controller_interface
             sub_scrn_1[10] = msg->k;
             for(int i=0; i<11; i++)
             {
-                if(sub_scrn_2[i] == false)sub_scrn_2[i] = sub_scrn_1[i];
+                //if(sub_scrn_2[i] == false)sub_scrn_2[i] = sub_scrn_1[i];
+                sub_scrn_2[i] = sub_scrn_1[i];
             }
             RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", sub_scrn_2[0], sub_scrn_2[1], sub_scrn_2[2], sub_scrn_2[3], sub_scrn_2[4], sub_scrn_2[5], sub_scrn_2[6], sub_scrn_2[7], sub_scrn_2[8], sub_scrn_2[9], sub_scrn_2[10]);
         }
