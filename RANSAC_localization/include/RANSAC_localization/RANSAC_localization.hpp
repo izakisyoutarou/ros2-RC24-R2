@@ -78,5 +78,7 @@ private:
   double last_scan_received_time=0.0;
 
   chrono::system_clock::time_point time_start, time_end;
+
+  bool plot_mode_;
 };
 }
