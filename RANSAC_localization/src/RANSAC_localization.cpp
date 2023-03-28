@@ -114,11 +114,12 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d current_scan_odom = odom + est_diff_sum;
   Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
   tf_laser2robot[5] = current_scan_odom[2];
-  Vector3d body_to_sensor = calc_body_to_sensor(tf_laser2robot);
+  Vector3d laser = current_scan_odom + calc_body_to_sensor(tf_laser2robot);
 
-  vector<LaserPoint> src_points = converter.scan_to_vector(msg, current_scan_odom, body_to_sensor);
+  vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
+  vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points, 0.1);
 
-  detect_lines.fuse_inliers(src_points, current_scan_odom, body_to_sensor);
+  detect_lines.fuse_inliers(src_points, laser);
   vector<LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
   Vector3d ransac_estimated = current_scan_odom + trans;
@@ -127,10 +128,10 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points);
   est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
-  if(plot_mode_) publishers(src_points);
+  if(plot_mode_) publishers(filtered_points);
   time_end = chrono::system_clock::now();
   int msec = chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count();
-  // RCLCPP_INFO(this->get_logger(), "scan time->%d", msec);
+  RCLCPP_INFO(this->get_logger(), "scan time->%d", msec);
 }
 
 void RANSACLocalization::publishers(vector<LaserPoint> &points){
