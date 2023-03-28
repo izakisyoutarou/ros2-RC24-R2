@@ -43,46 +43,64 @@ namespace controller_interface
         private:
             //controllerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad;
+
             //mainボードから
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main;
+
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
+
             //injection_param_calculatorから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_er_left;
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_er_right;
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_rr;
+
+            //common_processから
+            rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_common_base_control;
+
             //CanUsbへ
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
+
             //controllerへ
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
-            rclcpp::Publisher<controller_interface_msg::msg::SubPad>::SharedPtr _pub_scrn;
+            rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_scrn;
+
             //各nodeへリスタートと手自動の切り替えをpub
-            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
+            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_common_base_control;
+
             //test用のpub
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_test;
+
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;
+
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
             //controllerからのcallback
             void callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_udp();
+
+            //common_processからのcallback
+            void callback_common_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
+
             //mainからのcallback
             void callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+
             //splineからのcallback
             void callback_spline(const std_msgs::msg::Bool::SharedPtr msg);
-            //injection_param_calculatorから
+
+            //injection_param_calculatorからのcallback
             void callback_injection_calculator_er_left(const std_msgs::msg::Bool::SharedPtr msg);
             void callback_injection_calculator_er_right(const std_msgs::msg::Bool::SharedPtr msg);
             void callback_injection_calculator_rr(const std_msgs::msg::Bool::SharedPtr msg);
             
             //base_control用
-            bool is_wheel_autonomous;
-            bool is_injection_autonomous;
-            bool is_injection_m0;
-            bool is_reset;
-            bool is_emergency;
+            bool is_reset = false;
+            bool is_emergency = false;
+            bool is_wheel_autonomous = false;
+            bool is_injection_autonomous = false;
+            bool is_injection_m0 = false;
 
             //convergence用
             bool is_spline_convergence;
@@ -102,6 +120,7 @@ namespace controller_interface
             const bool defalt_wheel_autonomous_flag;
             const bool defalt_injection_autonomous_flag;
             const bool defalt_emergency_flag;
+            const bool defalt_injection_m0_flag;
 
             //UDP用
             int sockfd, n;
@@ -137,22 +156,35 @@ namespace controller_interface
             rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_tcp2_scrn;
             rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_tcp3_scrn;
 
+            //controller_interfaceから
+            rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_tcp1_base_control;
+            rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_tcp2_base_control;
+            rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_tcp3_base_control;
+
+            //controllへ
             rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp1_scrn;
             rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp2_scrn;
             rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp3_scrn;
+
+            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_tcp1_base_control;
+            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_tcp2_base_control;
+            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_tcp3_base_control;
 
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;
             
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
-            void callback_tcp1_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
-            void callback_tcp2_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
-            void callback_tcp3_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
+            void callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
 
-            void assignment(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
+            void callback_base_contol_ER_main(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
 
-            bool sub_scrn_1[11];
-            bool sub_scrn_2[11];
+            void callback_base_contol_ER_sub(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
+
+            void callback_base_contol_RR(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
+
+            bool sub_scrn[11] = {false};
+            bool sub_base_control[5] = {false};
+            bool reset_flag = false;
     };
 }
