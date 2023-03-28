@@ -20,6 +20,7 @@
 #include "RANSAC_localization/pose_fuser.hpp"
 #include "RANSAC_localization/detect_lines.hpp"
 #include "RANSAC_localization/converter.hpp"
+#include "RANSAC_localization/voxel_grid_filter.hpp"
 
 #include "visibility.h"
 
@@ -40,6 +41,7 @@ private:
   PoseFuser pose_fuser;  // センサ融合器
   DtectLines detect_lines;
   Converter converter;
+  VoxelGridFilter voxel_grid_filter;
   void callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
   void callback_scan(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
