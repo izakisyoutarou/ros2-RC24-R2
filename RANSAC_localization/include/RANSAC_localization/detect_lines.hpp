@@ -20,9 +20,9 @@ public:
   DtectLines(){};
   ~DtectLines(){};
 
-  void setup(const int &trial_num, const double &inlier_dist_threshold);
+  void setup(const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold);
   void init();
-  void fuse_inliers(const vector<LaserPoint> &src_points, const Vector3d &laser);
+  void fuse_inliers(const vector<LaserPoint> &src_points);
 
   vector<LaserPoint> get_sum();
   Vector3d get_estimated_diff();
@@ -33,10 +33,10 @@ private:
   void devide_points(const vector<LaserPoint> &src_points);
   void set_points(vector<LaserPoint> &points, const double map_point_x_1, const double map_point_x_2, const double map_point_y_1, const double map_point_y_2, const LaserPoint &src_point);
   void input_points(const EstimatedLine &line);
-  bool clear_points(EstimatedLine &estimated_line, int size_threshold, int angle_threshold_min, int angle_threshold_max);
+  bool clear_points(EstimatedLine &estimated_line, int angle_threshold_min, int angle_threshold_max);
   double calc_diff_angle();
   double LPF(const double &raw);
-  void calc_estimated_diff(const Vector3d &laser);
+  void calc_estimated_diff();
 
   vector<vector<LaserPoint>> lines;
   /* linesの順番
@@ -52,8 +52,10 @@ private:
   vector<LaserPoint> sum;
   EstimatedLine inlier;
   Vector3d estimated_diff = Vector3d::Zero();
+  double voxel_size_;
   int trial_num_;
   double inlier_dist_threshold_;
+  double points_num_threshold;
   double detect_length = 0.0;
   const double distance_threshold=0.8;
   double last_lpf=0;

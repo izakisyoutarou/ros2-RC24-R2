@@ -1,8 +1,10 @@
 #include "RANSAC_localization/detect_lines.hpp"
 
-void DtectLines::setup(const int &trial_num, const double &inlier_dist_threshold){
+void DtectLines::setup(const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold){
+  voxel_size_ = voxel_size;
   trial_num_ = trial_num;
   inlier_dist_threshold_ = inlier_dist_threshold;
+  points_num_threshold = inlier_length_threshold / voxel_size_;
 }
 
 void DtectLines::init(){
@@ -18,27 +20,26 @@ void DtectLines::init(){
   lines_.resize(8);
 }
 
-void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vector3d &laser){
+void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points){
   init();
   devide_points(src_points);
   get_inliers();
-  calc_estimated_diff(laser);
+  calc_estimated_diff();
 }
 
 
-void DtectLines::calc_estimated_diff(const Vector3d &laser){
+void DtectLines::calc_estimated_diff(){
   estimated_diff[2] = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
-    double dist;
-    double dist_sum=0.0;
+    double sum=0.0;
     for(size_t j=0; j<lines_[i].points.size(); j++){
-      if(i<4) dist_sum += lines_[i].points[j].dist * sin(lines_[i].points[j].angle + estimated_diff[2]);
-      else dist_sum += lines_[i].points[j].dist * cos(lines_[i].points[j].angle + estimated_diff[2]);
+      if(i<4) sum += lines_[i].points[j].y;
+      else sum += lines_[i].points[j].x;
     }
-    dist = dist_sum / lines_[i].points.size();
-    if(i<4) estimated_diff[1] = -(laser[1] - (dist + map_point_y[i]));
-    else estimated_diff[0] = -(laser[0] - (-dist + map_point_x[i-4]));
+    if(i<4) estimated_diff[1] = map_point_y[i] - sum / lines_[i].points.size();
+    else estimated_diff[0] = map_point_x[i-4] - sum / lines_[i].points.size();
+
   }
 }
 
@@ -76,8 +77,8 @@ void DtectLines::devide_points(const vector<LaserPoint> &src_points){
 void DtectLines::get_inliers(){
   for(size_t i=0; i<lines.size(); i++){
     lines_[i]=calc_inliers(lines[i]);
-    if(i<4) clear_points(lines_[i], 100, 0, 30);
-    else clear_points(lines_[i], 100, 60, 90);
+    if(i<4) clear_points(lines_[i], 0, 30);
+    else clear_points(lines_[i], 60, 90);
     input_points(lines_[i]);
   }
 }
@@ -127,8 +128,6 @@ EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
     const double diff_y = divided_points[p2_idx].y - divided_points[p1_idx].y;
     const double diff_x = divided_points[p1_idx].x - divided_points[p2_idx].x;
     const double diff_xy = divided_points[p1_idx].y * divided_points[p2_idx].x - divided_points[p2_idx].y * divided_points[p1_idx].x;
-    detect_length = sqrt(diff_x*diff_x + diff_y*diff_y);
-    if(detect_length < 1.5) continue;
     // インライア数を計算する
     int inlier_num = 0;
     for (const auto& point : divided_points) {
@@ -154,8 +153,6 @@ EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
       LaserPoint temp_point;
       temp_point.x = divided_points[i].x;
       temp_point.y = divided_points[i].y;
-      temp_point.angle = divided_points[i].angle;
-      temp_point.dist = divided_points[i].dist;
       inlier.points.push_back(temp_point);
     }
   }
@@ -163,8 +160,8 @@ EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
   return inlier;
 }
 
-bool DtectLines::clear_points(EstimatedLine &estimated_line, int size_threshold, int angle_threshold_min, int angle_threshold_max){
-  if(estimated_line.points.size()<size_threshold || abs(radToDeg(estimated_line.angle)) > angle_threshold_max || abs(radToDeg(estimated_line.angle)) < angle_threshold_min){
+bool DtectLines::clear_points(EstimatedLine &estimated_line, int angle_threshold_min, int angle_threshold_max){
+  if(estimated_line.points.size()<points_num_threshold || abs(radToDeg(estimated_line.angle)) > angle_threshold_max || abs(radToDeg(estimated_line.angle)) < angle_threshold_min){
     estimated_line.points.clear();
     return true;
   }

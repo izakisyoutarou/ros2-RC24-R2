@@ -12,8 +12,10 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   const auto laser_weight_ = this->get_parameter("laser_weight").as_double();
   const auto odom_weight_liner_ = this->get_parameter("odom_weight_liner").as_double();
   const auto odom_weight_angler_ = this->get_parameter("odom_weight_angler").as_double();
+  const auto voxel_size_ = this->get_parameter("voxel_size").as_double();
   const auto trial_num_ = this->get_parameter("trial_num").as_int();
   const auto inlier_dist_threshold_ = this->get_parameter("inlier_dist_threshold").as_double();
+  const auto inlier_length_threshold_ = this->get_parameter("inlier_length_threshold").as_double();
 
   restart_subscriber = this->create_subscription<controller_interface_msg::msg::BaseControl>(
     "base_control",_qos,
@@ -34,8 +36,9 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
     "self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
 
-  detect_lines.setup(trial_num_, inlier_dist_threshold_);
+  detect_lines.setup(voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
   pose_fuser.setup(laser_weight_, odom_weight_liner_, odom_weight_angler_);
+  voxel_grid_filter.setup(voxel_size_);
 
   tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
   init_pose << pose_array[0], pose_array[1], pose_array[2];
@@ -117,21 +120,25 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d laser = current_scan_odom + calc_body_to_sensor(tf_laser2robot);
 
   vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
-  vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points, 0.1);
+  vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(laser, src_points);
 
-  detect_lines.fuse_inliers(src_points, laser);
+  detect_lines.fuse_inliers(filtered_points);
   vector<LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
+
   Vector3d ransac_estimated = current_scan_odom + trans;
   vector<LaserPoint> global_points = transform(line_points, trans);
 
-  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, src_points, global_points);
+  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, filtered_points, global_points);
+
   est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
-  if(plot_mode_) publishers(filtered_points);
+
+  if(plot_mode_) publishers(line_points);
+
   time_end = chrono::system_clock::now();
-  int msec = chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count();
-  RCLCPP_INFO(this->get_logger(), "scan time->%d", msec);
+  // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
+  // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
 }
 
 void RANSACLocalization::publishers(vector<LaserPoint> &points){

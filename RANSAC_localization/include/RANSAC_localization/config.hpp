@@ -8,8 +8,6 @@ using namespace std;
 struct LaserPoint{
   double x=0.0;
   double y=0.0;
-  double angle=0.0;
-  double dist=0.0;
 };
 
 const double map_point_x[4] = {0.05-6., 1.975-6., 5.9875-6., 6.-6.};
