@@ -183,6 +183,8 @@ namespace controller_interface
 
             void callback_base_contol_RR(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
 
+            void assignment_base_control_ER();
+
             bool sub_scrn[11] = {false};
             bool sub_base_control[5] = {false};
             bool reset_flag = false;

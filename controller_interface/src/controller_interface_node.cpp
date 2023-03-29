@@ -187,7 +187,6 @@ namespace controller_interface
                     if(is_injection_m0 == false) is_injection_m0 = true;
                     else is_injection_m0 = false;
                 }
-                RCLCPP_INFO(this->get_logger(), "wheel:%d:injection_m0%d",is_wheel_autonomous, is_injection_m0);
             }
 
             //l3は上物の手自動の切り替え。is_injection_autonomousを使って、トグルになるようにしてる。ERの足回りからもらう必要はない
@@ -356,8 +355,6 @@ namespace controller_interface
                 std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
                 std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
 
-                //RCLCPP_INFO(this->get_logger(), "whe:%d,inj:%d", is_wheel_autonomous,is_injection_autonomous);
-
                 if(is_wheel_autonomous == false && is_injection_autonomous == true)
                 {
                     velPlanner_linear_x.vel(static_cast<double>(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
@@ -428,6 +425,10 @@ namespace controller_interface
 
                         _pub_canusb->publish(*msg_linear);
                         _pub_canusb->publish(*msg_angular);
+                        _pub_canusb->publish(*msg_l_elevation_velocity);
+                        _pub_canusb->publish(*msg_l_yaw);
+                        _pub_canusb->publish(*msg_r_elevation_velocity);
+                        _pub_canusb->publish(*msg_r_yaw);
 
                         flag_wheel_autonomous = false;
                         flag_injection_autonomous = false;
@@ -438,6 +439,7 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_common_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
         {
+            //CommonProsesからのBaseContolをsubしてコントローラとの同期をする
             is_reset = msg->is_restart;
             is_emergency = msg->is_emergency;
             is_wheel_autonomous = msg->is_wheel_autonomous; 
@@ -498,6 +500,7 @@ namespace controller_interface
         {
             const auto pole_btn_ms = this->get_parameter("pole_btn_ms").as_int();
 
+            //コントローラからSubScrnをsub
             _sub_tcp1_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
                 "ros_tcp_endpoint_1/sub_scrn",
                 _qos,
@@ -516,6 +519,7 @@ namespace controller_interface
                 std::bind(&CommonProces::callback_scrn, this, std::placeholders::_1)
             );
 
+            //controller_intefaceからBaseConstrolをsub
             _sub_tcp1_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
                 "ros_tcp_endpoint_1/sub_base_control",
                 _qos,
@@ -534,53 +538,24 @@ namespace controller_interface
                 std::bind(&CommonProces::callback_base_contol_RR, this, std::placeholders::_1)
             );
 
+            //コントローラにSubScrnをpubする
             _pub_tcp1_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_1/pub_scrn",_qos);
 
             _pub_tcp2_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_2/pub_scrn",_qos);
             
             _pub_tcp3_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_3/pub_scrn",_qos);
 
+            //コントローラにBaseControlをpubする
             _pub_tcp1_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_1/pub_base_control",_qos);
 
             _pub_tcp2_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_2/pub_base_control",_qos);
 
             _pub_tcp3_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_3/pub_base_control",_qos);
-            
-            _pub_timer = this->create_wall_timer(
-                std::chrono::milliseconds(pole_btn_ms),
-                [this] { 
-                    auto msg_pole_btn = std::make_shared<controller_interface_msg::msg::SubScrn>();
-                    msg_pole_btn->a = sub_scrn[0];
-                    msg_pole_btn->b = sub_scrn[1];
-                    msg_pole_btn->c = sub_scrn[2];
-                    msg_pole_btn->d = sub_scrn[3];
-                    msg_pole_btn->e = sub_scrn[4];
-                    msg_pole_btn->f = sub_scrn[5];
-                    msg_pole_btn->g = sub_scrn[6];
-                    msg_pole_btn->h = sub_scrn[7];
-                    msg_pole_btn->i = sub_scrn[8];
-                    msg_pole_btn->j = sub_scrn[9];
-                    msg_pole_btn->k = sub_scrn[10];
-                    _pub_tcp1_scrn->publish(*msg_pole_btn);
-                    _pub_tcp2_scrn->publish(*msg_pole_btn);
-                    _pub_tcp3_scrn->publish(*msg_pole_btn);
-
-                    auto msg_base_btn = std::make_shared<controller_interface_msg::msg::BaseControl>();
-                    msg_base_btn->is_restart = sub_base_control[0];
-                    msg_base_btn->is_emergency = sub_base_control[1];
-                    msg_base_btn->is_wheel_autonomous = sub_base_control[2];
-                    msg_base_btn->is_injection_autonomous = sub_base_control[3];
-                    msg_base_btn->is_injection_m0 = sub_base_control[4];
-                    _pub_tcp1_base_control->publish(*msg_base_btn);
-                    _pub_tcp2_base_control->publish(*msg_base_btn);
-                    //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", msg_pole_btn->a, msg_pole_btn->b, msg_pole_btn->c, msg_pole_btn->d, msg_pole_btn->e, msg_pole_btn->f, msg_pole_btn->g, msg_pole_btn->h, msg_pole_btn->i, msg_pole_btn->j, msg_pole_btn->k);
-                    RCLCPP_INFO(this->get_logger(), "restart:%demergency:%dwheel:%dinjection:%dinjection_m0:%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
-                }
-            );
         }
 
         void CommonProces::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
         {
+            //各コントローラからSubScrnをsub、それを統合してコントローラにSubScrnをpubしている。
             sub_scrn[0] = msg->a;
             sub_scrn[1] = msg->b;
             sub_scrn[2] = msg->c;
@@ -592,12 +567,31 @@ namespace controller_interface
             sub_scrn[8] = msg->i;
             sub_scrn[9] = msg->j;
             sub_scrn[10] = msg->k;
+
+            auto msg_pole_btn = std::make_shared<controller_interface_msg::msg::SubScrn>();
+            msg_pole_btn->a = sub_scrn[0];
+            msg_pole_btn->b = sub_scrn[1];
+            msg_pole_btn->c = sub_scrn[2];
+            msg_pole_btn->d = sub_scrn[3];
+            msg_pole_btn->e = sub_scrn[4];
+            msg_pole_btn->f = sub_scrn[5];
+            msg_pole_btn->g = sub_scrn[6];
+            msg_pole_btn->h = sub_scrn[7];
+            msg_pole_btn->i = sub_scrn[8];
+            msg_pole_btn->j = sub_scrn[9];
+            msg_pole_btn->k = sub_scrn[10];
+            _pub_tcp1_scrn->publish(*msg_pole_btn);
+            _pub_tcp2_scrn->publish(*msg_pole_btn);
+            _pub_tcp3_scrn->publish(*msg_pole_btn);
+            //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", msg_pole_btn->a, msg_pole_btn->b, msg_pole_btn->c, msg_pole_btn->d, msg_pole_btn->e, msg_pole_btn->f, msg_pole_btn->g, msg_pole_btn->h, msg_pole_btn->i, msg_pole_btn->j, msg_pole_btn->k);
             //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", msg->a, msg->b, msg->c, msg->d, msg->e, msg->f, msg->g, msg->h, msg->i, msg->j, msg->k);
             //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", sub_scrn[0], sub_scrn[1], sub_scrn[2], sub_scrn[3], sub_scrn[4], sub_scrn[5], sub_scrn[6], sub_scrn[7], sub_scrn[8], sub_scrn[9], sub_scrn[10]);
         }
 
         void CommonProces::callback_base_contol_ER_main(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
         {
+            //ER_mainのcontroller_intefaceからBaseControlをsubする。
+            //基本的にはリスタート・緊急・足回り手自動だけだが、リスタートのときだけ上物手自動・左右の切り替えに代入する。
             sub_base_control[0] = msg->is_restart;
             sub_base_control[1] = msg->is_emergency;
             sub_base_control[2] = msg->is_wheel_autonomous; 
@@ -605,27 +599,46 @@ namespace controller_interface
             {
                 sub_base_control[3] = msg->is_injection_autonomous;
                 sub_base_control[4] = msg->is_injection_m0;
-            }   
+            }
+            assignment_base_control_ER();
             //RCLCPP_INFO(this->get_logger(), "restart:%demergency:%dwheel:%d", sub_base_control[0], sub_base_control[1], sub_base_control[2]);
         }
 
         void CommonProces::callback_base_contol_ER_sub(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
         {
+            //ER_mainのcontroller_intefaceからBaseControlをsubする。
+            //緊急・上物手自動・左右の切り替えに代入する。
             sub_base_control[1] = msg->is_emergency;
             sub_base_control[3] = msg->is_injection_autonomous;
             sub_base_control[4] = msg->is_injection_m0;
+            assignment_base_control_ER();
             //RCLCPP_INFO(this->get_logger(), "emergency:%dinjection:%dinjection_m0:%d", sub_base_control[1], sub_base_control[3], sub_base_control[4]);
         }
 
         void CommonProces::callback_base_contol_RR(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
         {
-            auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
-            msg_base_control->is_restart = msg->is_restart;
-            msg_base_control->is_emergency = msg->is_emergency;
-            msg_base_control->is_wheel_autonomous = msg->is_wheel_autonomous;
-            msg_base_control->is_injection_autonomous = msg->is_injection_autonomous;
-            msg_base_control->is_injection_m0 = msg->is_injection_m0;
-            _pub_tcp3_base_control->publish(*msg_base_control);
-            //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%d", msg_base_control->is_restart, msg_base_control->is_emergency, msg_base_control->is_wheel_autonomous, msg_base_control->is_injection_autonomous = msg->is_injection_autonomous, msg_base_control->is_injection_m0 = msg->is_injection_m0);
+            //そのまま素通りでBaseControlに代入
+            auto msg_base_btn = std::make_shared<controller_interface_msg::msg::BaseControl>();
+            msg_base_btn->is_restart = msg->is_restart;
+            msg_base_btn->is_emergency = msg->is_emergency;
+            msg_base_btn->is_wheel_autonomous = msg->is_wheel_autonomous;
+            msg_base_btn->is_injection_autonomous = msg->is_injection_autonomous;
+            msg_base_btn->is_injection_m0 = msg->is_injection_m0;
+            _pub_tcp3_base_control->publish(*msg_base_btn);
+            //RCLCPP_INFO(this->get_logger(), "restart():%demergency():%dwheel():%dinjection():%dinjection_m0():%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
+        }
+
+        void CommonProces::assignment_base_control_ER()
+        {
+            //sub_base_control配列に仮置きしていたものをBaseControlに代入。
+            auto msg_base_btn = std::make_shared<controller_interface_msg::msg::BaseControl>();
+            msg_base_btn->is_restart = sub_base_control[0];
+            msg_base_btn->is_emergency = sub_base_control[1];
+            msg_base_btn->is_wheel_autonomous = sub_base_control[2];
+            msg_base_btn->is_injection_autonomous = sub_base_control[3];
+            msg_base_btn->is_injection_m0 = sub_base_control[4];
+            _pub_tcp1_base_control->publish(*msg_base_btn);
+            _pub_tcp2_base_control->publish(*msg_base_btn);
+            //RCLCPP_INFO(this->get_logger(), "restart:%demergency:%dwheel:%dinjection:%dinjection_m0:%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
         }
 }
