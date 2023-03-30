@@ -47,7 +47,9 @@ private:
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void init();
-  void create_elephant_map();
+  void create_ER_map();
+  void create_RR_map();
+  void create_map_line(vector<LaserPoint> &points, const double &start_map_point, const double &end_map_point, const double &static_map_point, const char coordinate);
   void publishers(vector<LaserPoint> &points);
   LaserPoint rotate(LaserPoint point, double theta);
   vector<LaserPoint> transform(const vector<LaserPoint> &points, const Vector3d &pose);
@@ -63,12 +65,14 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr self_pose_publisher;
   geometry_msgs::msg::Vector3 vector_msg;
-  sensor_msgs::msg::PointCloud2 map_cloud;
+  sensor_msgs::msg::PointCloud2 ER_map_cloud;
+  sensor_msgs::msg::PointCloud2 RR_map_cloud;
   nav_msgs::msg::Path path;
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
   rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
-  vector<LaserPoint> map_points;
+  vector<LaserPoint> ER_map_points;
+  vector<LaserPoint> RR_map_points;
   Vector3d init_pose = Vector3d::Zero();
   Vector3d odom = Vector3d::Zero();
   Vector3d last_odom = Vector3d::Zero();

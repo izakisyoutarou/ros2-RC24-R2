@@ -57,7 +57,8 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
     map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "self_localization/map", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
 
-    create_elephant_map();
+    create_ER_map();
+    create_RR_map();
   }
 }
 
@@ -155,63 +156,62 @@ void RANSACLocalization::publishers(vector<LaserPoint> &points){
   // path.header.frame_id = "map";
   // path.poses.push_back(corrent_pose_stamped);
 
-  map_publisher->publish(map_cloud);
+  map_publisher->publish(RR_map_cloud);
   ransaced_publisher->publish(cloud);
   pose_publisher->publish(corrent_pose_stamped);
   // path_publisher->publish(path);
 }
 
 
-void RANSACLocalization::create_elephant_map(){
-  LaserPoint map_point;
+void RANSACLocalization::create_ER_map(){
   //右の垂木
-  for(int i=0; i<=int((map_point_x[3] - map_point_x[0])*1000); i++){
-    map_point.x = static_cast<double>(i)/1000 + map_point_x[0];
-    map_point.y = map_point_y[0];
-    map_points.push_back(map_point);
-  }
+  create_map_line(ER_map_points, ER_map_point_x[0], ER_map_point_x[3], ER_map_point_y[0], 'x');
   //後ろの垂木
-  for(int i=0; i<=int((map_point_y[3] - map_point_y[0])*1000); i++){
-    map_point.x = map_point_x[0];
-    map_point.y = static_cast<double>(i)/1000 + map_point_y[0];
-    map_points.push_back(map_point);
-  }
+  create_map_line(ER_map_points, ER_map_point_y[0], ER_map_point_y[3], ER_map_point_x[0], 'y');
   //左の垂木
-  for(int i=0; i<=int((map_point_x[2] - map_point_x[0])*1000); i++){
-    map_point.x = static_cast<double>(i)/1000 + map_point_x[0];
-    map_point.y = map_point_y[3];
-    map_points.push_back(map_point);
-  }
+  create_map_line(ER_map_points, ER_map_point_x[0], ER_map_point_x[2], ER_map_point_y[3], 'x');
   //右奥正面向きのフェンス
-  for(int i=0; i<=int((map_point_y[1] - map_point_y[0])*1000); i++){
-    map_point.x = map_point_x[3];
-    map_point.y = static_cast<double>(i)/1000 + map_point_y[0];
-    map_points.push_back(map_point);
-  }
+  create_map_line(ER_map_points, ER_map_point_y[0], ER_map_point_y[1], ER_map_point_x[3], 'y');
   //右縦向きのフェンス
-  for(int i=0; i<=int((map_point_x[3]-bridge_width - map_point_x[1])*1000); i++){
-    map_point.x = static_cast<double>(i)/1000 + map_point_x[1];
-    map_point.y = map_point_y[1];
-    map_points.push_back(map_point);
-  }
+  create_map_line(ER_map_points, ER_map_point_x[1], ER_map_point_x[3]-bridge_width, ER_map_point_y[1], 'x');
   //正面のフェンス
-  for(int i=0; i<=int((map_point_y[2] - map_point_y[1])*1000); i++){
-    map_point.x = map_point_x[1];
-    map_point.y = static_cast<double>(i)/1000 + map_point_y[1];
-    map_points.push_back(map_point);
-  }
+  create_map_line(ER_map_points, ER_map_point_y[1], ER_map_point_y[2], ER_map_point_x[1], 'y');
   //左縦向きのフェンス
-  for(int i=0; i<=int((map_point_x[2] - map_point_x[1])*1000); i++){
-    map_point.x = static_cast<double>(i)/1000 + map_point_x[1];
-    map_point.y = map_point_y[2];
-    map_points.push_back(map_point);
+  create_map_line(ER_map_points, ER_map_point_x[1], ER_map_point_x[2], ER_map_point_y[2], 'x');
+  //左奥正面向きのフェンス
+  create_map_line(ER_map_points, ER_map_point_y[2], ER_map_point_y[3], ER_map_point_x[2], 'y');
+  ER_map_cloud = converter.vector_to_PC2(ER_map_points);
+}
+
+void RANSACLocalization::create_RR_map(){
+  //2段目右
+  create_map_line(RR_map_points, RR_map_point[0], RR_map_point[3], RR_map_point[0], 'x');
+  //2段目正面
+  create_map_line(RR_map_points, RR_map_point[0], RR_map_point[3], RR_map_point[0], 'y');
+  //2段目左
+  create_map_line(RR_map_points, RR_map_point[0], RR_map_point[3], RR_map_point[3], 'x');
+  //3段目右
+  create_map_line(RR_map_points, RR_map_point[1], RR_map_point[2], RR_map_point[1], 'x');
+  //3段目正面
+  create_map_line(RR_map_points, RR_map_point[1], RR_map_point[2], RR_map_point[1], 'y');
+  //3段目左
+  create_map_line(RR_map_points, RR_map_point[1], RR_map_point[2], RR_map_point[2], 'x');
+  RR_map_cloud = converter.vector_to_PC2(RR_map_points);
+}
+
+void RANSACLocalization::create_map_line(vector<LaserPoint> &points, const double &start_map_point, const double &end_map_point, const double &static_map_point, const char coordinate){
+  LaserPoint map_point;
+  for(int i=0; i<=int((end_map_point - start_map_point)*1000); i++){
+    if(coordinate == 'x'){
+      map_point.x = static_cast<double>(i)/1000 + start_map_point;
+      map_point.y = static_map_point;
+    }
+    else if(coordinate == 'y'){
+      map_point.x = static_map_point;
+      map_point.y = static_cast<double>(i)/1000 + start_map_point;
+    }
+    points.push_back(map_point);
   }
-  for(int i=0; i<=int((map_point_y[3] - map_point_y[2])*1000); i++){
-    map_point.x = map_point_x[2];
-    map_point.y = static_cast<double>(i)/1000 + map_point_y[2];
-    map_points.push_back(map_point);
-  }
-  map_cloud = converter.vector_to_PC2(map_points);
 }
 
 // 点群を並進・回転させる

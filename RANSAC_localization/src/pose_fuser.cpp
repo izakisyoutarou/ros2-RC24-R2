@@ -43,20 +43,20 @@ CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint
   CorrespondLaserPoint vertical_distance;
   double distance_min = 100.0;
   for(int i=0; i<4; i++){
-    vertical_distance.x = fabs(map_point_x[i] - global.x);
-    vertical_distance.y = fabs(map_point_y[i] - global.y);
+    vertical_distance.x = fabs(ER_map_point_x[i] - global.x);
+    vertical_distance.y = fabs(ER_map_point_y[i] - global.y);
     if(vertical_distance.x < distance_min){
       distance_min = vertical_distance.x;
-      closest.x = map_point_x[i];
+      closest.x = ER_map_point_x[i];
       closest.y = global.y;
     }
     if(vertical_distance.y < distance_min){
       distance_min = vertical_distance.y;
       closest.x = global.x;
-      closest.y = map_point_y[i];
+      closest.y = ER_map_point_y[i];
     }
   }
-  if(closest.x==map_point_x[0] || closest.x==map_point_x[1] || closest.x==map_point_x[2] || closest.x==map_point_x[3]){
+  if(closest.x==ER_map_point_x[0] || closest.x==ER_map_point_x[1] || closest.x==ER_map_point_x[2] || closest.x==ER_map_point_x[3]){
     closest.nx=1.0;
     closest.ny=0.0;
   }

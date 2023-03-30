@@ -37,8 +37,8 @@ void DtectLines::calc_estimated_diff(){
       if(i<4) sum += lines_[i].points[j].y;
       else sum += lines_[i].points[j].x;
     }
-    if(i<4) estimated_diff[1] = map_point_y[i] - sum / lines_[i].points.size();
-    else estimated_diff[0] = map_point_x[i-4] - sum / lines_[i].points.size();
+    if(i<4) estimated_diff[1] = ER_map_point_y[i] - sum / lines_[i].points.size();
+    else estimated_diff[0] = ER_map_point_x[i-4] - sum / lines_[i].points.size();
 
   }
 }
@@ -63,14 +63,14 @@ double DtectLines::calc_diff_angle(){
 
 void DtectLines::devide_points(const vector<LaserPoint> &src_points){
   for(size_t i=0; i<src_points.size(); i++){
-    set_points(lines[0], map_point_x[0], map_point_x[3], map_point_y[0], map_point_y[0], src_points[i]);
-    set_points(lines[1], map_point_x[1], map_point_x[3]-bridge_width-distance_threshold, map_point_y[1], map_point_y[1], src_points[i]);
-    set_points(lines[2], map_point_x[1], map_point_x[2], map_point_y[2], map_point_y[2], src_points[i]);
-    set_points(lines[3], map_point_x[0], map_point_x[2], map_point_y[3], map_point_y[3], src_points[i]);
-    set_points(lines[4], map_point_x[0], map_point_x[0], map_point_y[0], map_point_y[3], src_points[i]);
-    set_points(lines[5], map_point_x[1], map_point_x[1], map_point_y[1], map_point_y[2], src_points[i]);
-    set_points(lines[6], map_point_x[3], map_point_x[3], map_point_y[0], map_point_y[1], src_points[i]);
-    set_points(lines[7], map_point_x[2], map_point_x[2], map_point_y[2], map_point_y[3], src_points[i]);
+    set_points(lines[0], ER_map_point_x[0], ER_map_point_x[3], ER_map_point_y[0], ER_map_point_y[0], src_points[i]);
+    set_points(lines[1], ER_map_point_x[1], ER_map_point_x[3]-bridge_width-distance_threshold, ER_map_point_y[1], ER_map_point_y[1], src_points[i]);
+    set_points(lines[2], ER_map_point_x[1], ER_map_point_x[2], ER_map_point_y[2], ER_map_point_y[2], src_points[i]);
+    set_points(lines[3], ER_map_point_x[0], ER_map_point_x[2], ER_map_point_y[3], ER_map_point_y[3], src_points[i]);
+    set_points(lines[4], ER_map_point_x[0], ER_map_point_x[0], ER_map_point_y[0], ER_map_point_y[3], src_points[i]);
+    set_points(lines[5], ER_map_point_x[1], ER_map_point_x[1], ER_map_point_y[1], ER_map_point_y[2], src_points[i]);
+    set_points(lines[6], ER_map_point_x[3], ER_map_point_x[3], ER_map_point_y[0], ER_map_point_y[1], src_points[i]);
+    set_points(lines[7], ER_map_point_x[2], ER_map_point_x[2], ER_map_point_y[2], ER_map_point_y[3], src_points[i]);
   }
 }
 

@@ -10,8 +10,9 @@ struct LaserPoint{
   double y=0.0;
 };
 
-const double map_point_x[4] = {0.05-6., 1.975-6., 5.9875-6., 6.-6.};
-const double map_point_y[4] = {0.05-6., 1.975-6, 10.025-6., 11.95-6.};
+const double ER_map_point_x[4] = {0.05-6., 1.975-6., 5.9875-6., 6.-6.};
+const double ER_map_point_y[4] = {0.05-6., 1.975-6, 10.025-6., 11.95-6.};
+const double RR_map_point[4] = {2.6-6., 4.5-6., 7.5-6., 9.4-6.};
 const double bridge_width = 0.975;
 constexpr double radToDeg(const double rad){ return rad*180/M_PI; };
 constexpr double normalize_yaw(double yaw){
