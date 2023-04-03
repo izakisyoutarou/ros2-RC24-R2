@@ -7,8 +7,8 @@ namespace controller_interface
     #define BUFSIZE 1024
     using std::string;
     
-    SmartphoneGamepad::SmartphoneGamepad(const rclcpp::NodeOptions &options, const int tcp_endpoint_num, const int udp_port) : SmartphoneGamepad("", options, tcp_endpoint_num, udp_port) {}
-    SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options, const int tcp_endpoint_num, const int udp_port)
+    SmartphoneGamepad::SmartphoneGamepad(const rclcpp::NodeOptions &options, const int udp_port) : SmartphoneGamepad("", options, udp_port) {}
+    SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options, const int udp_port)
         : rclcpp::Node("controller_interface_node", name_space, options),
         limit_linear(DBL_MAX,
         get_parameter("linear_max_vel").as_double(),
@@ -24,7 +24,6 @@ namespace controller_interface
         dtor(get_parameter("injection_max_dec").as_double()) ),
         
         udp_port(udp_port),
-        tcp_endpoint_num(tcp_endpoint_num),
         defalt_pitch(static_cast<float>(get_parameter("defalt_pitch").as_double())),
         manual_linear_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         manual_angular_max_vel(dtor(static_cast<float>(get_parameter("angular_max_vel").as_double()))),
@@ -32,13 +31,14 @@ namespace controller_interface
         defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
         defalt_wheel_autonomous_flag(get_parameter("defalt_wheel_autonomous_flag").as_bool()),
         defalt_injection_autonomous_flag(get_parameter("defalt_injection_autonomous_flag").as_bool()),
-        defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool())
+        defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool()),
+        defalt_injection_m0_flag(get_parameter("defalt_injection_m0_flag").as_bool())
         {  
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
 
             //controllerからsub
             _sub_pad = this->create_subscription<controller_interface_msg::msg::SubPad>(
-                "ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/sub_pad",
+                "sub_pad",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_pad, this, std::placeholders::_1)
             );
@@ -76,16 +76,23 @@ namespace controller_interface
                 std::bind(&SmartphoneGamepad::callback_injection_calculator_rr, this, std::placeholders::_1)
             );
 
+            //common_processからsub
+            _sub_common_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+                "pub_base_control",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_common_base_control, this, std::placeholders::_1)
+            );
+
             //canusbへpub
             _pub_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
 
             //controllerへpub
-            _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/pub_convergence" , _qos);
+            _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("pub_convergence" , _qos);
 
-            _pub_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/sub_scrn" , _qos);
+            _pub_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("sub_scrn" , _qos);
 
             //各nodeへリスタートと手自動の切り替えをpub。
-            _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_" + std::to_string(tcp_endpoint_num) + "/base_control",_qos);
+            _pub_common_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("sub_base_control",_qos);
 
             //test用のpub
             //_pub_test = this->create_publisher<std_msgs::msg::Bool>("is_move_tracking", _qos);
@@ -93,14 +100,16 @@ namespace controller_interface
             //デフォルト値をpub.。各種、boolに初期値を代入。
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = defalt_restart_flag;
+            msg_base_control->is_emergency = defalt_emergency_flag;
             msg_base_control->is_wheel_autonomous = defalt_wheel_autonomous_flag;
             msg_base_control->is_injection_autonomous = defalt_injection_autonomous_flag;
-            msg_base_control->is_emergency = defalt_emergency_flag;
+            msg_base_control->is_injection_m0 = defalt_injection_m0_flag;
             this->is_reset = defalt_restart_flag;
+            this->is_emergency = defalt_emergency_flag;
             this->is_wheel_autonomous = defalt_wheel_autonomous_flag;
             this->is_injection_autonomous = defalt_injection_autonomous_flag;
-            this->is_emergency = defalt_emergency_flag;
-            _pub_base_control->publish(*msg_base_control);
+            this->is_injection_m0 = defalt_injection_m0_flag;
+            _pub_common_base_control->publish(*msg_base_control);
 
             //ハートビート
             _pub_timer = this->create_wall_timer(
@@ -214,13 +223,15 @@ namespace controller_interface
                 msg_sub_scrn->i = false;
                 msg_sub_scrn->j = false;
                 msg_sub_scrn->k = false;
+
                 if(udp_port == 50000 || udp_port == 52000)
                 {
-                robotcontrol_flag = true;
-                flag_restart = true;
-                is_wheel_autonomous = defalt_wheel_autonomous_flag;
-                is_injection_autonomous = defalt_injection_autonomous_flag;
-                is_emergency = defalt_emergency_flag;
+                    robotcontrol_flag = true;
+                    flag_restart = true;
+                    is_wheel_autonomous = defalt_wheel_autonomous_flag;
+                    is_injection_autonomous = defalt_injection_autonomous_flag;
+                    is_emergency = defalt_emergency_flag;
+                    is_injection_m0 = defalt_injection_m0_flag;
                 }
             }
 
@@ -274,7 +285,7 @@ namespace controller_interface
 
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
-            if(robotcontrol_flag)_pub_base_control->publish(*msg_base_control);
+            if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
             if(msg->s)
             {
                 _pub_canusb->publish(*msg_restart);
@@ -283,7 +294,7 @@ namespace controller_interface
             if(flag_restart)
             {
                 msg_base_control->is_restart = false;
-                _pub_base_control->publish(*msg_base_control);
+                _pub_common_base_control->publish(*msg_base_control);
             }
         }
 
@@ -298,20 +309,20 @@ namespace controller_interface
             msg_angular->candlc = 4;
 
             auto msg_l_elevation_velocity = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_linear->canid = 0x130;
-            msg_linear->candlc = 8;
+            msg_l_elevation_velocity->canid = 0x130;
+            msg_l_elevation_velocity->candlc = 8;
 
             auto msg_l_yaw = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_angular->canid = 0x131;
-            msg_angular->candlc = 4;
+            msg_l_yaw->canid = 0x131;
+            msg_l_yaw->candlc = 4;
 
             auto msg_r_elevation_velocity = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_linear->canid = 0x132;
-            msg_linear->candlc = 8;
+            msg_r_elevation_velocity->canid = 0x132;
+            msg_r_elevation_velocity->candlc = 8;
 
             auto msg_r_yaw = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_angular->canid = 0x133;
-            msg_angular->candlc = 4;
+            msg_r_yaw->canid = 0x133;
+            msg_r_yaw->candlc = 4;
 
             uint8_t _candata_joy[8];
 
@@ -353,8 +364,6 @@ namespace controller_interface
                     velPlanner_linear_y.cycle();
                     velPlanner_angular_z.cycle();
 
-                    //RCLCPP_INFO(this->get_logger(), "vel_x:%f", analog_l_y);
-
                     float_to_bytes(_candata_joy, static_cast<float>(velPlanner_linear_x.vel()) * manual_linear_max_vel);
                     float_to_bytes(_candata_joy+4, static_cast<float>(velPlanner_linear_y.vel()) * manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
@@ -367,12 +376,12 @@ namespace controller_interface
 
                     flag_wheel_autonomous = true;
                 }
-                else if(is_injection_autonomous == false && is_wheel_autonomous == true)
+                else if(is_wheel_autonomous == true && is_injection_autonomous == false)
                 {
                     velPlanner_injection_v.vel(static_cast<double>(analog_l_x));
 
                     velPlanner_injection_v.cycle();
-                    
+
                     if(is_injection_m0)
                     {
                         float_to_bytes(_candata_joy, pitch);
@@ -415,12 +424,26 @@ namespace controller_interface
 
                         _pub_canusb->publish(*msg_linear);
                         _pub_canusb->publish(*msg_angular);
+                        _pub_canusb->publish(*msg_l_elevation_velocity);
+                        _pub_canusb->publish(*msg_l_yaw);
+                        _pub_canusb->publish(*msg_r_elevation_velocity);
+                        _pub_canusb->publish(*msg_r_yaw);
 
                         flag_wheel_autonomous = false;
                         flag_injection_autonomous = false;
                     }
                 }
             }
+        }
+
+        void SmartphoneGamepad::callback_common_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
+        {
+            //CommonProsesからのBaseContolをsubしてコントローラとの同期をする
+            is_reset = msg->is_restart;
+            is_emergency = msg->is_emergency;
+            is_wheel_autonomous = msg->is_wheel_autonomous; 
+            is_injection_autonomous = msg->is_injection_autonomous;
+            is_injection_m0 = msg->is_injection_m0;
         }
 
         void SmartphoneGamepad::callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg)
@@ -476,85 +499,145 @@ namespace controller_interface
         {
             const auto pole_btn_ms = this->get_parameter("pole_btn_ms").as_int();
 
+            //コントローラからSubScrnをsub
             _sub_tcp1_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
-                "ros_tcp_endpoint_1/sub_scrn",
+                "sub_scrn",
                 _qos,
-                std::bind(&CommonProces::callback_tcp1_scrn, this, std::placeholders::_1)
+                std::bind(&CommonProces::callback_scrn, this, std::placeholders::_1)
             );
 
             _sub_tcp2_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
                 "ros_tcp_endpoint_2/sub_scrn",
                 _qos,
-                std::bind(&CommonProces::callback_tcp2_scrn, this, std::placeholders::_1)
+                std::bind(&CommonProces::callback_scrn, this, std::placeholders::_1)
             );
 
             _sub_tcp3_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
                 "ros_tcp_endpoint_3/sub_scrn",
                 _qos,
-                std::bind(&CommonProces::callback_tcp3_scrn, this, std::placeholders::_1)
+                std::bind(&CommonProces::callback_scrn, this, std::placeholders::_1)
             );
 
-            _pub_tcp1_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_1/pub_scrn",_qos);
+            //controller_intefaceからBaseConstrolをsub
+            _sub_tcp1_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+                "sub_base_control",
+                _qos,
+                std::bind(&CommonProces::callback_base_contol_ER_main, this, std::placeholders::_1)
+            );
+
+             _sub_tcp2_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+                "ros_tcp_endpoint_2/sub_base_control",
+                _qos,
+                std::bind(&CommonProces::callback_base_contol_ER_sub, this, std::placeholders::_1)
+            );
+
+             _sub_tcp3_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+                "ros_tcp_endpoint_3/sub_base_control",
+                _qos,
+                std::bind(&CommonProces::callback_base_contol_RR, this, std::placeholders::_1)
+            );
+
+            //コントローラにSubScrnをpubする
+            _pub_tcp1_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("pub_scrn",_qos);
 
             _pub_tcp2_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_2/pub_scrn",_qos);
             
             _pub_tcp3_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_3/pub_scrn",_qos);
 
-            _pub_timer = this->create_wall_timer(
-                std::chrono::milliseconds(pole_btn_ms),
-                [this] { 
-                    auto msg_pole_btn = std::make_shared<controller_interface_msg::msg::SubScrn>();
-                    msg_pole_btn->a = sub_scrn_2[0];
-                    msg_pole_btn->b = sub_scrn_2[1];
-                    msg_pole_btn->c = sub_scrn_2[2];
-                    msg_pole_btn->d = sub_scrn_2[3];
-                    msg_pole_btn->e = sub_scrn_2[4];
-                    msg_pole_btn->f = sub_scrn_2[5];
-                    msg_pole_btn->g = sub_scrn_2[6];
-                    msg_pole_btn->h = sub_scrn_2[7];
-                    msg_pole_btn->i = sub_scrn_2[8];
-                    msg_pole_btn->j = sub_scrn_2[9];
-                    msg_pole_btn->k = sub_scrn_2[10];
-                    _pub_tcp1_scrn->publish(*msg_pole_btn);
-                    _pub_tcp2_scrn->publish(*msg_pole_btn);
-                    _pub_tcp3_scrn->publish(*msg_pole_btn);
-                }
-            );
+            //コントローラにBaseControlをpubする
+            _pub_tcp1_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("pub_base_control",_qos);
+
+            _pub_tcp2_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_2/pub_base_control",_qos);
+
+            _pub_tcp3_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_3/pub_base_control",_qos);
         }
 
-        void CommonProces::callback_tcp1_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
+        void CommonProces::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
         {
-            assignment(msg);
+            //各コントローラからSubScrnをsub、それを統合してコントローラにSubScrnをpubしている。
+            sub_scrn[0] = msg->a;
+            sub_scrn[1] = msg->b;
+            sub_scrn[2] = msg->c;
+            sub_scrn[3] = msg->d;
+            sub_scrn[4] = msg->e;
+            sub_scrn[5] = msg->f;
+            sub_scrn[6] = msg->g;
+            sub_scrn[7] = msg->h;
+            sub_scrn[8] = msg->i;
+            sub_scrn[9] = msg->j;
+            sub_scrn[10] = msg->k;
+
+            auto msg_pole_btn = std::make_shared<controller_interface_msg::msg::SubScrn>();
+            msg_pole_btn->a = sub_scrn[0];
+            msg_pole_btn->b = sub_scrn[1];
+            msg_pole_btn->c = sub_scrn[2];
+            msg_pole_btn->d = sub_scrn[3];
+            msg_pole_btn->e = sub_scrn[4];
+            msg_pole_btn->f = sub_scrn[5];
+            msg_pole_btn->g = sub_scrn[6];
+            msg_pole_btn->h = sub_scrn[7];
+            msg_pole_btn->i = sub_scrn[8];
+            msg_pole_btn->j = sub_scrn[9];
+            msg_pole_btn->k = sub_scrn[10];
+            _pub_tcp1_scrn->publish(*msg_pole_btn);
+            _pub_tcp2_scrn->publish(*msg_pole_btn);
+            _pub_tcp3_scrn->publish(*msg_pole_btn);
+            //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", msg_pole_btn->a, msg_pole_btn->b, msg_pole_btn->c, msg_pole_btn->d, msg_pole_btn->e, msg_pole_btn->f, msg_pole_btn->g, msg_pole_btn->h, msg_pole_btn->i, msg_pole_btn->j, msg_pole_btn->k);
+            //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", msg->a, msg->b, msg->c, msg->d, msg->e, msg->f, msg->g, msg->h, msg->i, msg->j, msg->k);
+            //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", sub_scrn[0], sub_scrn[1], sub_scrn[2], sub_scrn[3], sub_scrn[4], sub_scrn[5], sub_scrn[6], sub_scrn[7], sub_scrn[8], sub_scrn[9], sub_scrn[10]);
         }
 
-        void CommonProces::callback_tcp2_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
+        void CommonProces::callback_base_contol_ER_main(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
         {
-            assignment(msg);
-        }
-
-        void CommonProces::callback_tcp3_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
-        {
-            assignment(msg);
-        }
-
-        void CommonProces::assignment(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
-        {
-            sub_scrn_1[0] = msg->a;
-            sub_scrn_1[1] = msg->b;
-            sub_scrn_1[2] = msg->c;
-            sub_scrn_1[3] = msg->d;
-            sub_scrn_1[4] = msg->e;
-            sub_scrn_1[5] = msg->f;
-            sub_scrn_1[6] = msg->g;
-            sub_scrn_1[7] = msg->h;
-            sub_scrn_1[8] = msg->i;
-            sub_scrn_1[9] = msg->j;
-            sub_scrn_1[10] = msg->k;
-            for(int i=0; i<11; i++)
+            //ER_mainのcontroller_intefaceからBaseControlをsubする。
+            //基本的にはリスタート・緊急・足回り手自動だけだが、リスタートのときだけ上物手自動・左右の切り替えに代入する。
+            sub_base_control[0] = msg->is_restart;
+            sub_base_control[1] = msg->is_emergency;
+            sub_base_control[2] = msg->is_wheel_autonomous; 
+            if(msg->is_restart)
             {
-                //if(sub_scrn_2[i] == false)sub_scrn_2[i] = sub_scrn_1[i];
-                sub_scrn_2[i] = sub_scrn_1[i];
+                sub_base_control[3] = msg->is_injection_autonomous;
+                sub_base_control[4] = msg->is_injection_m0;
             }
-            RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", sub_scrn_2[0], sub_scrn_2[1], sub_scrn_2[2], sub_scrn_2[3], sub_scrn_2[4], sub_scrn_2[5], sub_scrn_2[6], sub_scrn_2[7], sub_scrn_2[8], sub_scrn_2[9], sub_scrn_2[10]);
+            assignment_base_control_ER();
+            //RCLCPP_INFO(this->get_logger(), "restart:%demergency:%dwheel:%d", sub_base_control[0], sub_base_control[1], sub_base_control[2]);
+        }
+
+        void CommonProces::callback_base_contol_ER_sub(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
+        {
+            //ER_mainのcontroller_intefaceからBaseControlをsubする。
+            //緊急・上物手自動・左右の切り替えに代入する。
+            sub_base_control[1] = msg->is_emergency;
+            sub_base_control[3] = msg->is_injection_autonomous;
+            sub_base_control[4] = msg->is_injection_m0;
+            assignment_base_control_ER();
+            //RCLCPP_INFO(this->get_logger(), "emergency:%dinjection:%dinjection_m0:%d", sub_base_control[1], sub_base_control[3], sub_base_control[4]);
+        }
+
+        void CommonProces::callback_base_contol_RR(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
+        {
+            //そのまま素通りでBaseControlに代入
+            auto msg_base_btn = std::make_shared<controller_interface_msg::msg::BaseControl>();
+            msg_base_btn->is_restart = msg->is_restart;
+            msg_base_btn->is_emergency = msg->is_emergency;
+            msg_base_btn->is_wheel_autonomous = msg->is_wheel_autonomous;
+            msg_base_btn->is_injection_autonomous = msg->is_injection_autonomous;
+            msg_base_btn->is_injection_m0 = msg->is_injection_m0;
+            _pub_tcp3_base_control->publish(*msg_base_btn);
+            //RCLCPP_INFO(this->get_logger(), "restart():%demergency():%dwheel():%dinjection():%dinjection_m0():%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
+        }
+
+        void CommonProces::assignment_base_control_ER()
+        {
+            //sub_base_control配列に仮置きしていたものをBaseControlに代入。
+            auto msg_base_btn = std::make_shared<controller_interface_msg::msg::BaseControl>();
+            msg_base_btn->is_restart = sub_base_control[0];
+            msg_base_btn->is_emergency = sub_base_control[1];
+            msg_base_btn->is_wheel_autonomous = sub_base_control[2];
+            msg_base_btn->is_injection_autonomous = sub_base_control[3];
+            msg_base_btn->is_injection_m0 = sub_base_control[4];
+            _pub_tcp1_base_control->publish(*msg_base_btn);
+            _pub_tcp2_base_control->publish(*msg_base_btn);
+            //RCLCPP_INFO(this->get_logger(), "restart:%demergency:%dwheel:%dinjection:%dinjection_m0:%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
         }
 }
