@@ -301,7 +301,7 @@ namespace controller_interface
             if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) 
             {
                 _pub_canusb->publish(*msg_btn); 
-                RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
+                //RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
             }
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
@@ -517,23 +517,9 @@ namespace controller_interface
     CommonProces::CommonProces(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_common_proces_node", name_space, options)
         {
-            const auto pole_btn_ms = this->get_parameter("pole_btn_ms").as_int();
-
             //コントローラからSubScrnをsub
             _sub_tcp1_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
                 "sub_scrn",
-                _qos,
-                std::bind(&CommonProces::callback_scrn, this, std::placeholders::_1)
-            );
-
-            _sub_tcp2_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
-                "ros_tcp_endpoint_2/sub_scrn",
-                _qos,
-                std::bind(&CommonProces::callback_scrn, this, std::placeholders::_1)
-            );
-
-            _sub_tcp3_scrn = this->create_subscription<controller_interface_msg::msg::SubScrn>(
-                "ros_tcp_endpoint_3/sub_scrn",
                 _qos,
                 std::bind(&CommonProces::callback_scrn, this, std::placeholders::_1)
             );
@@ -542,10 +528,10 @@ namespace controller_interface
             _sub_tcp1_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
                 "sub_base_control",
                 _qos,
-                std::bind(&CommonProces::callback_base_contol_ER_main, this, std::placeholders::_1)
+                std::bind(&CommonProces::callback_base_contol_RR, this, std::placeholders::_1)
             );
 
-             _sub_tcp2_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+            _sub_tcp2_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
                 "ros_tcp_endpoint_2/sub_base_control",
                 _qos,
                 std::bind(&CommonProces::callback_base_contol_ER_sub, this, std::placeholders::_1)
@@ -559,10 +545,6 @@ namespace controller_interface
 
             //コントローラにSubScrnをpubする
             _pub_tcp1_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("pub_scrn",_qos);
-
-            _pub_tcp2_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_2/pub_scrn",_qos);
-            
-            _pub_tcp3_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("ros_tcp_endpoint_3/pub_scrn",_qos);
 
             //コントローラにBaseControlをpubする
             _pub_tcp1_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("pub_base_control",_qos);
@@ -600,8 +582,6 @@ namespace controller_interface
             msg_pole_btn->j = sub_scrn[9];
             msg_pole_btn->k = sub_scrn[10];
             _pub_tcp1_scrn->publish(*msg_pole_btn);
-            _pub_tcp2_scrn->publish(*msg_pole_btn);
-            _pub_tcp3_scrn->publish(*msg_pole_btn);
             //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", msg_pole_btn->a, msg_pole_btn->b, msg_pole_btn->c, msg_pole_btn->d, msg_pole_btn->e, msg_pole_btn->f, msg_pole_btn->g, msg_pole_btn->h, msg_pole_btn->i, msg_pole_btn->j, msg_pole_btn->k);
             //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", msg->a, msg->b, msg->c, msg->d, msg->e, msg->f, msg->g, msg->h, msg->i, msg->j, msg->k);
             //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", sub_scrn[0], sub_scrn[1], sub_scrn[2], sub_scrn[3], sub_scrn[4], sub_scrn[5], sub_scrn[6], sub_scrn[7], sub_scrn[8], sub_scrn[9], sub_scrn[10]);
