@@ -13,8 +13,10 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
 
     package_name = 'gazebo_simulator'
-    world_file_name = 'office.world'
+    world_file_name = 'NHK23_court.world'
     urdf_file_name = 'rr.urdf'
+    # オイラー角からクオータニオンにする - https://ken3susume.com/archives/12958
+    initial_pose = 'position: {x: -5.5, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}'
 
     # full  path to urdf and world file
 
@@ -33,7 +35,7 @@ def generate_launch_description():
     xml = xml.replace('"', '\\"')
 
     # this is argument format for spwan_entity service
-    spwan_args = '{name: \"rr\", xml: \"'  +  xml + '\" }'
+    spwan_args = '{name: \"er\", xml: \"'  +  xml + '\" , initial_pose: {' + initial_pose + '}}'
 
     # create and return launch description object
     return LaunchDescription([
@@ -43,20 +45,14 @@ def generate_launch_description():
         ExecuteProcess(
             cmd=['gazebo', '--verbose', world, '-s', 'libgazebo_ros_factory.so'],
             output='screen'),
-        # IncludeLaunchDescription(
-        #     PythonLaunchDescriptionSource(
-        #         os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
-        #     ),
-        #     launch_arguments={'world': world}.items(),
-        # ),
-        # IncludeLaunchDescription(
-        #     PythonLaunchDescriptionSource(
-        #         os.path.join(pkg_gazebo_ros, 'launch', 'gzclient.launch.py')
-        #     ),
-        # ),
 
         # tell gazebo to spwan your robot in the world by calling service
         ExecuteProcess(
             cmd=['ros2', 'service', 'call', '/spawn_entity', 'gazebo_msgs/SpawnEntity', spwan_args],
             output='screen'),
+        Node(
+            package='gazebo_simulator',
+            executable='planar_bot_converter',
+            output='screen',
+        ),
     ])
