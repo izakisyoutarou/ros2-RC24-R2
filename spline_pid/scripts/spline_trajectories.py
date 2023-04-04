@@ -56,35 +56,7 @@ class SplineTrajectories(Node):
             self.target_node = msg.data
             # if True:
             try:
-                path = nx.dijkstra_path(self.edgelist, self.current_node, msg.data)
-                length = nx.dijkstra_path_length(self.edgelist, self.current_node, msg.data)
-
-                # 二次スプライン曲線の軌道生成
-                self.get_logger().info('二次スプライン曲線の軌道生成開始')
-                self.get_logger().info('制御点 : '+str(path))
-                self.get_logger().info('距離   : '+str(length))
-                msg_tx = Path()
-                input_x = []
-                input_y = []
-                input_a = []
-
-                for node in path:
-                    x,y,a = self.node_name_2_pose(node)
-                    input_x.append(float(x))
-                    input_y.append(float(y))
-                    input_a.append(math.radians(float(a)))
-                print('角度 : ',input_a)
-
-                trajectories_resolution = self.get_parameter('resolution').get_parameter_value().double_value
-                amount = 1.0/ trajectories_resolution
-                x, y, a ,yaw, k, travel = calc_2d_spline_interpolation(input_x, input_y, input_a, num = int(float(length)*amount))
-
-                msg_tx.x = x
-                msg_tx.y = y
-                msg_tx.angle = a
-                # msg_tx.vel =
-                msg_tx.length = [float(s) for s in travel]
-                msg_tx.curvature = k
+                msg_tx, x,y,a,nodes = self.get_path(self.current_node, msg.data)
 
                 self.publisher_path.publish(msg_tx)
 
@@ -93,6 +65,35 @@ class SplineTrajectories(Node):
 
         else:
             self.get_logger().info('軌道追従中のため終点を設定できません')
+
+    def get_path(self, start_node, end_node):
+        nodes = nx.dijkstra_path(self.edgelist, start_node, end_node)
+        length = nx.dijkstra_path_length(self.edgelist, start_node, end_node)
+
+        # 二次スプライン曲線の軌道生成
+        self.get_logger().info('二次スプライン曲線の軌道生成開始')
+        self.get_logger().info('制御点 : '+str(nodes))
+        self.get_logger().info('距離   : '+str(length))
+        input_x = []
+        input_y = []
+        input_a = []
+
+        for node in nodes:
+            x,y,a = self.node_name_2_pose(node)
+            input_x.append(float(x))
+            input_y.append(float(y))
+            input_a.append(math.radians(float(a)))
+        print('角度 : ',input_a)
+
+        path = Path()
+
+        trajectories_resolution = self.get_parameter('resolution').get_parameter_value().double_value
+        amount = 1.0/ trajectories_resolution
+        path.x, path.y, path.angle ,yaw, path.curvature, travel = calc_2d_spline_interpolation(input_x, input_y, input_a, num = int(float(length)*amount))
+        path.length = [float(s) for s in travel]
+
+        return path, input_x, input_y, input_a, nodes
+
 
     def node_name_2_pose(self, node_name):
         with open(self.nodelist_file_path, 'r', encoding='utf-8') as file:
