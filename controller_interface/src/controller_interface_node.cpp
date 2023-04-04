@@ -121,7 +121,7 @@ namespace controller_interface
                     // _pub_test->publish(*msg_test);
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
-                    msg_heartbeat->candlc = 1;
+                    msg_heartbeat->candlc = 0;
                     //_pub_canusb->publish(*msg_heartbeat);
                 }
             );
@@ -161,9 +161,13 @@ namespace controller_interface
             msg_injection->canid = 0x120;
             msg_injection->candlc = 2;
 
+            auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_btn->canid = 0x140;
+            msg_btn->candlc = 8;
+
             auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
 
-            uint8_t _candata_btn[2];
+            uint8_t _candata_btn[8];
 
             bool robotcontrol_flag = false;//base_control(手自動、緊急、リスタート)が押されたらpubする
             bool flag_restart = false;//resertがtureをpubした後にfalseをpubする
@@ -284,6 +288,22 @@ namespace controller_interface
             _candata_btn[1] = flag_injection1;
             for(int i=0; i<msg_injection->candlc; i++) msg_injection->candata[i] = _candata_btn[i];
 
+            //mainへボタン情報を送る代入
+            _candata_btn[0] = msg->a;
+            _candata_btn[1] = msg->b;
+            _candata_btn[2] = msg->y;
+            _candata_btn[3] = msg->x;
+            _candata_btn[4] = msg->right;
+            _candata_btn[5] = msg->down;
+            _candata_btn[6] = msg->left;
+            _candata_btn[7] = msg->up;
+            for(int i=0; i<msg_btn->candlc; i++) msg_btn->candata[i] = _candata_btn[i];
+
+            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) 
+            {
+                _pub_canusb->publish(*msg_btn); 
+                RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
+            }
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
             if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
