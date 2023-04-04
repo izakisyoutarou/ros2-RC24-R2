@@ -35,17 +35,22 @@ namespace controller_interface
     {
         public:
             CONTROLLER_INTERFACE_PUBLIC
-            explicit SmartphoneGamepad(const rclcpp::NodeOptions& options = rclcpp::NodeOptions(), const int udp_port = 0);
+            explicit SmartphoneGamepad(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
             
             CONTROLLER_INTERFACE_PUBLIC
-            explicit SmartphoneGamepad(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions(), const int udp_port = 0);
+            explicit SmartphoneGamepad(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
         private:
-            //controllerから
-            rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad;
+            //ER_mainのcontrollerから
+            rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_er_main;
+            //ER_subのcontrollerから
+            rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_er_sub;
+            //RRのcontrollerから
+            rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_rr;
 
             //mainボードから
-            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main;
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_injection_possible;
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_injection_complete;
 
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
@@ -77,14 +82,17 @@ namespace controller_interface
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
             //controllerからのcallback
-            void callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg);
-            void callback_udp();
+            void callback_pad_er_main(const controller_interface_msg::msg::SubPad::SharedPtr msg);
+            void callback_pad_er_sub(const controller_interface_msg::msg::SubPad::SharedPtr msg);
+            void callback_pad_rr(const controller_interface_msg::msg::SubPad::SharedPtr msg);
+            void callback_udp(int sockfd);
 
             //common_processからのcallback
             void callback_common_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
 
             //mainからのcallback
             void callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+            void callback_injection_complete(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
 
             //splineからのcallback
             void callback_spline(const std_msgs::msg::Bool::SharedPtr msg);
@@ -113,12 +121,14 @@ namespace controller_interface
             const float manual_angular_max_vel;
             const float manual_injection_max_vel;
             const float defalt_pitch;
-            const int udp_port;
             const bool defalt_restart_flag;
             const bool defalt_wheel_autonomous_flag;
             const bool defalt_injection_autonomous_flag;
             const bool defalt_emergency_flag;
             const bool defalt_injection_m0_flag;
+            const int udp_port_ER_main;
+            const int udp_port_ER_sub;
+            const int udp_port_RR;
 
             //UDP用
             int sockfd, n;
@@ -126,6 +136,18 @@ namespace controller_interface
             char* buffer = new char[16];
             struct sockaddr_in servaddr, cliaddr;
             std::thread udp_thread_;
+
+            int sockfd2, n2;
+            socklen_t clilen2;
+            char* buffer2 = new char[16];
+            struct sockaddr_in servaddr2, cliaddr2;
+            std::thread udp_thread_2;
+
+            int sockfd3, n3;
+            socklen_t clilen3;
+            char* buffer3 = new char[16];
+            struct sockaddr_in servaddr3, cliaddr3;
+            std::thread udp_thread_3;
 
             //計画機
             VelPlanner velPlanner_linear_x;
@@ -151,22 +173,14 @@ namespace controller_interface
         private:
             //controllerから
             rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_tcp1_scrn;
-            rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_tcp2_scrn;
-            rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_tcp3_scrn;
 
             //controller_interfaceから
             rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_tcp1_base_control;
-            rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_tcp2_base_control;
-            rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_tcp3_base_control;
 
             //controllへ
             rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp1_scrn;
-            rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp2_scrn;
-            rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_tcp3_scrn;
 
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_tcp1_base_control;
-            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_tcp2_base_control;
-            rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_tcp3_base_control;
 
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;

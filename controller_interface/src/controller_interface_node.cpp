@@ -7,8 +7,8 @@ namespace controller_interface
     #define BUFSIZE 1024
     using std::string;
     
-    SmartphoneGamepad::SmartphoneGamepad(const rclcpp::NodeOptions &options, const int udp_port) : SmartphoneGamepad("", options, udp_port) {}
-    SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options, const int udp_port)
+    SmartphoneGamepad::SmartphoneGamepad(const rclcpp::NodeOptions &options) : SmartphoneGamepad("", options) {}
+    SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options),
         limit_linear(DBL_MAX,
         get_parameter("linear_max_vel").as_double(),
@@ -23,7 +23,6 @@ namespace controller_interface
         dtor(get_parameter("injection_max_acc").as_double()),
         dtor(get_parameter("injection_max_dec").as_double()) ),
         
-        udp_port(udp_port),
         defalt_pitch(static_cast<float>(get_parameter("defalt_pitch").as_double())),
         manual_linear_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         manual_angular_max_vel(dtor(static_cast<float>(get_parameter("angular_max_vel").as_double()))),
@@ -32,20 +31,41 @@ namespace controller_interface
         defalt_wheel_autonomous_flag(get_parameter("defalt_wheel_autonomous_flag").as_bool()),
         defalt_injection_autonomous_flag(get_parameter("defalt_injection_autonomous_flag").as_bool()),
         defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool()),
-        defalt_injection_m0_flag(get_parameter("defalt_injection_m0_flag").as_bool())
+        defalt_injection_m0_flag(get_parameter("defalt_injection_m0_flag").as_bool()),
+        udp_port_ER_main(get_parameter("udp_port_ER_main").as_int()),
+        udp_port_ER_sub(get_parameter("udp_port_ER_sub").as_int()),
+        udp_port_RR(get_parameter("udp_port_RR").as_int())
         {  
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
 
             //controllerからsub
-            _sub_pad = this->create_subscription<controller_interface_msg::msg::SubPad>(
-                "sub_pad",
+            _sub_pad_er_main = this->create_subscription<controller_interface_msg::msg::SubPad>(
+                "sub_pad_er_main",
                 _qos,
-                std::bind(&SmartphoneGamepad::callback_pad, this, std::placeholders::_1)
+                std::bind(&SmartphoneGamepad::callback_pad_er_main, this, std::placeholders::_1)
+            );
+
+            _sub_pad_er_sub = this->create_subscription<controller_interface_msg::msg::SubPad>(
+                "sub_pad_er_sub",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_pad_er_sub, this, std::placeholders::_1)
+            );
+
+            _sub_pad_rr = this->create_subscription<controller_interface_msg::msg::SubPad>(
+                "sub_pad_rr",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_pad_rr, this, std::placeholders::_1)
             );
 
             //mainからsub
-            _sub_main = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-                "can_rx_121",
+            _sub_main_injection_possible = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+                "can_rx_201",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_main, this, std::placeholders::_1)
+            );
+
+            _sub_main_injection_complete = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+                "can_rx_202",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_main, this, std::placeholders::_1)
             );
@@ -94,9 +114,6 @@ namespace controller_interface
             //各nodeへリスタートと手自動の切り替えをpub。
             _pub_common_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("sub_base_control",_qos);
 
-            //test用のpub
-            //_pub_test = this->create_publisher<std_msgs::msg::Bool>("is_move_tracking", _qos);
-
             //デフォルト値をpub.。各種、boolに初期値を代入。
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = defalt_restart_flag;
@@ -115,9 +132,6 @@ namespace controller_interface
             _pub_timer = this->create_wall_timer(
                 std::chrono::milliseconds(heartbeat_ms),
                 [this] { 
-                    // auto msg_test = std::make_shared<std_msgs::msg::Bool>();
-                    // msg_test->data = true;
-                    // _pub_test->publish(*msg_test);
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 0;
@@ -132,21 +146,127 @@ namespace controller_interface
             velPlanner_injection_v.limit(limit_injection);
 
             //UDP
-            // struct in_addr local_addr;
-            // inet_pton(AF_INET, "192.168.1.4", &local_addr);
             sockfd = socket(AF_INET, SOCK_DGRAM, 0);
             memset(&servaddr, 0, sizeof(servaddr));
             servaddr.sin_family = AF_INET;
-            //servaddr.sin_addr = local_addr;
             servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-            servaddr.sin_port = htons(udp_port);
+            servaddr.sin_port = htons(udp_port_ER_main);
             bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
-            
-            //UDPthread
-            udp_thread_ = std::thread(&SmartphoneGamepad::callback_udp, this);
+            udp_thread_ = std::thread(&SmartphoneGamepad::callback_udp, this, sockfd);
+
+            sockfd2 = socket(AF_INET, SOCK_DGRAM, 0);
+            memset(&servaddr2, 0, sizeof(servaddr2));
+            servaddr2.sin_family = AF_INET;
+            servaddr2.sin_addr.s_addr = htonl(INADDR_ANY);
+            servaddr2.sin_port = htons(udp_port_ER_sub);
+            bind(sockfd2, (struct sockaddr *) &servaddr2, sizeof(servaddr2));
+            udp_thread_2 = std::thread(&SmartphoneGamepad::callback_udp, this, sockfd2);
+
+            sockfd3 = socket(AF_INET, SOCK_DGRAM, 0);
+            memset(&servaddr3, 0, sizeof(servaddr3));
+            servaddr3.sin_family = AF_INET;
+            servaddr3.sin_addr.s_addr = htonl(INADDR_ANY);
+            servaddr3.sin_port = htons(udp_port_RR);
+            bind(sockfd3, (struct sockaddr *) &servaddr3, sizeof(servaddr3));
+            udp_thread_3 = std::thread(&SmartphoneGamepad::callback_udp, this, sockfd3);
         }
 
-        void SmartphoneGamepad::callback_pad(const controller_interface_msg::msg::SubPad::SharedPtr msg)
+        void SmartphoneGamepad::callback_pad_er_main(const controller_interface_msg::msg::SubPad::SharedPtr msg)
+        {
+            auto msg_restart = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_restart->canid = 0x002;
+            msg_restart->candlc = 0;
+
+            auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_emergency->canid = 0x000;
+            msg_emergency->candlc = 1;
+
+            auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_btn->canid = 0x300;
+            msg_btn->candlc = 8;
+
+            auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
+
+            uint8_t _candata_btn[8];
+
+            bool robotcontrol_flag = false;//base_control(手自動、緊急、リスタート)が押されたらpubする
+            bool flag_restart = false;//resertがtureをpubした後にfalseをpubする
+
+            //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
+            //ERの上物の場合は、上物の切り替えに当てている。
+            
+            if(msg->r3)
+            {
+                robotcontrol_flag = true;
+                if(is_wheel_autonomous == false) is_wheel_autonomous = true;
+                else is_wheel_autonomous = false;
+            }
+
+            //gは緊急。is_emergencyを使って、トグルになるようにしてる。
+            if(msg->g)
+            {
+                robotcontrol_flag = true;
+                if(is_emergency == false) is_emergency = true;
+                else is_emergency = false;
+            }
+
+            //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
+            if(msg->s)
+            {
+                robotcontrol_flag = true;
+                flag_restart = true;
+                is_wheel_autonomous = defalt_wheel_autonomous_flag;
+                is_injection_autonomous = defalt_injection_autonomous_flag;
+                is_emergency = defalt_emergency_flag;
+                is_injection_m0 = defalt_injection_m0_flag;
+            }
+
+            is_reset = msg->s;
+
+            //basecontrolへの代入
+            auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
+            msg_base_control->is_restart = is_reset;
+            msg_base_control->is_emergency = is_emergency;
+            msg_base_control->is_wheel_autonomous = is_wheel_autonomous;
+            msg_base_control->is_injection_autonomous = is_injection_autonomous;
+            msg_base_control->is_injection_m0 = is_injection_m0;
+
+            
+            //mainへ緊急を送る代入
+            _candata_btn[0] = is_emergency;
+            for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn[i];
+
+            //mainへボタン情報を送る代入
+            _candata_btn[0] = msg->a;
+            _candata_btn[1] = msg->b;
+            _candata_btn[2] = msg->y;
+            _candata_btn[3] = msg->x;
+            _candata_btn[4] = msg->right;
+            _candata_btn[5] = msg->down;
+            _candata_btn[6] = msg->left;
+            _candata_btn[7] = msg->up;
+            for(int i=0; i<msg_btn->candlc; i++) msg_btn->candata[i] = _candata_btn[i];
+
+            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) 
+            {
+                _pub_canusb->publish(*msg_btn); 
+                //RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
+            }
+            if(msg->g)_pub_canusb->publish(*msg_emergency);
+            if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
+            if(msg->s)
+            {
+                _pub_canusb->publish(*msg_restart);
+                _pub_scrn->publish(*msg_sub_scrn);
+            }
+            if(flag_restart)
+            {
+                msg_base_control->is_restart = false;
+                _pub_common_base_control->publish(*msg_base_control);
+            }
+        }
+
+        void SmartphoneGamepad::callback_pad_er_sub(const controller_interface_msg::msg::SubPad::SharedPtr msg)
         {
             auto msg_restart = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_restart->canid = 0x002;
@@ -157,11 +277,11 @@ namespace controller_interface
             msg_emergency->candlc = 1;
 
             auto msg_injection = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_injection->canid = 0x120;
+            msg_injection->canid = 0x200;
             msg_injection->candlc = 2;
 
             auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_btn->canid = 0x140;
+            msg_btn->canid = 0x300;
             msg_btn->candlc = 8;
 
             auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
@@ -178,30 +298,149 @@ namespace controller_interface
             
             if(msg->r3)
             {
-                if(udp_port == 50000 || udp_port == 52000)
-                {
-                    robotcontrol_flag = true;
-                    if(is_wheel_autonomous == false) is_wheel_autonomous = true;
-                    else is_wheel_autonomous = false;
-                }
-                if(udp_port == 51000)
-                {
-                    robotcontrol_flag = true;
-                    if(is_injection_m0 == false) is_injection_m0 = true;
-                    else is_injection_m0 = false;
-                }
+                robotcontrol_flag = true;
+                if(is_injection_m0 == false) is_injection_m0 = true;
+                else is_injection_m0 = false;
             }
 
             //l3は上物の手自動の切り替え。is_injection_autonomousを使って、トグルになるようにしてる。ERの足回りからもらう必要はない
-            
             if(msg->l3)
             {
-                if(udp_port == 51000 || udp_port == 52000)
-                {
                 robotcontrol_flag = true;
                 if(is_injection_autonomous == false) is_injection_autonomous = true;
                 else is_injection_autonomous = false;
+            }
+
+            //gは緊急。is_emergencyを使って、トグルになるようにしてる。
+            if(msg->g)
+            {
+                robotcontrol_flag = true;
+                if(is_emergency == false) is_emergency = true;
+                else is_emergency = false;
+            }
+
+            //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
+            if(msg->s)
+            {
+                msg_sub_scrn->a = false;
+                msg_sub_scrn->b = false;
+                msg_sub_scrn->c = false;
+                msg_sub_scrn->d = false;
+                msg_sub_scrn->e = false;
+                msg_sub_scrn->f = false;
+                msg_sub_scrn->g = false;
+                msg_sub_scrn->h = false;
+                msg_sub_scrn->i = false;
+                msg_sub_scrn->j = false;
+                msg_sub_scrn->k = false;
+            }
+
+            //l2が左、r2が右の発射機構のトリガー。
+            //それぞれ、発射されたら収束がfalseにするようにしている。
+            if(msg->l2)
+            {
+                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
+                {
+                    flag_injection0 = true;
+                    is_injection0_convergence = false;
+                    is_injection_calculator0_convergence = false;
                 }
+            }
+            
+            if(msg->r2)
+            {
+                if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
+                {
+                    flag_injection1 = true;
+                    is_injection1_convergence = false;
+                    is_injection_calculator1_convergence = false;
+                }
+            }
+
+            is_reset = msg->s;
+
+            //basecontrolへの代入
+            auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
+            msg_base_control->is_restart = is_reset;
+            msg_base_control->is_emergency = is_emergency;
+            msg_base_control->is_wheel_autonomous = is_wheel_autonomous;
+            msg_base_control->is_injection_autonomous = is_injection_autonomous;
+            msg_base_control->is_injection_m0 = is_injection_m0;
+    
+            //mainへ緊急を送る代入
+            _candata_btn[0] = is_emergency;
+            for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn[i];
+
+            //mainへ射出司令を送る代入
+            _candata_btn[0] = flag_injection0;
+            _candata_btn[1] = flag_injection1;
+            for(int i=0; i<msg_injection->candlc; i++) msg_injection->candata[i] = _candata_btn[i];
+
+            //mainへボタン情報を送る代入
+            _candata_btn[0] = msg->a;
+            _candata_btn[1] = msg->b;
+            _candata_btn[2] = msg->y;
+            _candata_btn[3] = msg->x;
+            _candata_btn[4] = msg->right;
+            _candata_btn[5] = msg->down;
+            _candata_btn[6] = msg->left;
+            _candata_btn[7] = msg->up;
+            for(int i=0; i<msg_btn->candlc; i++) msg_btn->candata[i] = _candata_btn[i];
+
+            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) 
+            {
+                _pub_canusb->publish(*msg_btn); 
+            }
+            if(msg->g)_pub_canusb->publish(*msg_emergency);
+            if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
+            if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
+            if(msg->s)
+            {
+                _pub_canusb->publish(*msg_restart);
+                _pub_scrn->publish(*msg_sub_scrn);
+            }
+            if(flag_restart)
+            {
+                msg_base_control->is_restart = false;
+                _pub_common_base_control->publish(*msg_base_control);
+            }
+        }
+
+        void SmartphoneGamepad::callback_pad_rr(const controller_interface_msg::msg::SubPad::SharedPtr msg)
+        {
+            auto msg_restart = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_restart->canid = 0x002;
+            msg_restart->candlc = 0;
+
+            auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_emergency->canid = 0x000;
+            msg_emergency->candlc = 1;
+
+            auto msg_injection = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_injection->canid = 0x200;
+            msg_injection->candlc = 2;
+
+            auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_btn->canid = 0x300;
+            msg_btn->candlc = 8;
+
+            auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
+
+            uint8_t _candata_btn[8];
+
+            bool robotcontrol_flag = false;//base_control(手自動、緊急、リスタート)が押されたらpubする
+            bool flag_restart = false;//resertがtureをpubした後にfalseをpubする
+            bool flag_injection0 = false;//左の発射機構の最終射出許可
+            bool flag_injection1 = false;//右の発射機構の最終射出許可
+
+            //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
+            //ERの上物の場合は、上物の切り替えに当てている。
+            
+            if(msg->r3)
+            {
+                robotcontrol_flag = true;
+                if(is_wheel_autonomous == false) is_wheel_autonomous = true;
+                else is_wheel_autonomous = false;
             }
 
             //gは緊急。is_emergencyを使って、トグルになるようにしてる。
@@ -228,42 +467,23 @@ namespace controller_interface
                 msg_sub_scrn->j = false;
                 msg_sub_scrn->k = false;
 
-                if(udp_port == 50000 || udp_port == 52000)
-                {
-                    robotcontrol_flag = true;
-                    flag_restart = true;
-                    is_wheel_autonomous = defalt_wheel_autonomous_flag;
-                    is_injection_autonomous = defalt_injection_autonomous_flag;
-                    is_emergency = defalt_emergency_flag;
-                    is_injection_m0 = defalt_injection_m0_flag;
-                }
+                robotcontrol_flag = true;
+                flag_restart = true;
+                is_wheel_autonomous = defalt_wheel_autonomous_flag;
+                is_injection_autonomous = defalt_injection_autonomous_flag;
+                is_emergency = defalt_emergency_flag;
+                is_injection_m0 = defalt_injection_m0_flag;
             }
 
             //l2が左、r2が右の発射機構のトリガー。
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(udp_port == 51000)
+                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
-                    if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
-                    {
-                        flag_injection0 = true;
-                        is_injection0_convergence = false;
-                        is_injection_calculator0_convergence = false;
-                    }
-                }
-            }
-            
-            if(msg->r2)
-            {
-                if(udp_port == 51000 || udp_port == 52000)
-                {
-                    if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
-                    {
-                        flag_injection1 = true;
-                        is_injection1_convergence = false;
-                        is_injection_calculator1_convergence = false;
-                    }
+                    flag_injection0 = true;
+                    is_injection0_convergence = false;
+                    is_injection_calculator0_convergence = false;
                 }
             }
 
@@ -277,7 +497,6 @@ namespace controller_interface
             msg_base_control->is_injection_autonomous = is_injection_autonomous;
             msg_base_control->is_injection_m0 = is_injection_m0;
 
-            
             //mainへ緊急を送る代入
             _candata_btn[0] = is_emergency;
             for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn[i];
@@ -301,7 +520,7 @@ namespace controller_interface
             if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) 
             {
                 _pub_canusb->publish(*msg_btn); 
-                //RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
+                RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
             }
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
@@ -318,7 +537,7 @@ namespace controller_interface
             }
         }
 
-        void SmartphoneGamepad::callback_udp()
+        void SmartphoneGamepad::callback_udp(int sockfd)
         {
             auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_linear->canid = 0x100;
@@ -329,19 +548,19 @@ namespace controller_interface
             msg_angular->candlc = 4;
 
             auto msg_l_elevation_velocity = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_l_elevation_velocity->canid = 0x130;
+            msg_l_elevation_velocity->canid = 0x210;
             msg_l_elevation_velocity->candlc = 8;
 
             auto msg_l_yaw = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_l_yaw->canid = 0x131;
+            msg_l_yaw->canid = 0x211;
             msg_l_yaw->candlc = 4;
 
             auto msg_r_elevation_velocity = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_r_elevation_velocity->canid = 0x132;
+            msg_r_elevation_velocity->canid = 0x212;
             msg_r_elevation_velocity->candlc = 8;
 
             auto msg_r_yaw = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_r_yaw->canid = 0x133;
+            msg_r_yaw->canid = 0x213;
             msg_r_yaw->candlc = 4;
 
             uint8_t _candata_joy[8];
@@ -531,27 +750,11 @@ namespace controller_interface
                 std::bind(&CommonProces::callback_base_contol_RR, this, std::placeholders::_1)
             );
 
-            _sub_tcp2_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
-                "ros_tcp_endpoint_2/sub_base_control",
-                _qos,
-                std::bind(&CommonProces::callback_base_contol_ER_sub, this, std::placeholders::_1)
-            );
-
-             _sub_tcp3_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
-                "ros_tcp_endpoint_3/sub_base_control",
-                _qos,
-                std::bind(&CommonProces::callback_base_contol_RR, this, std::placeholders::_1)
-            );
-
             //コントローラにSubScrnをpubする
             _pub_tcp1_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("pub_scrn",_qos);
 
             //コントローラにBaseControlをpubする
             _pub_tcp1_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("pub_base_control",_qos);
-
-            _pub_tcp2_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_2/pub_base_control",_qos);
-
-            _pub_tcp3_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("ros_tcp_endpoint_3/pub_base_control",_qos);
         }
 
         void CommonProces::callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
@@ -587,33 +790,6 @@ namespace controller_interface
             //RCLCPP_INFO(this->get_logger(), "a:%db:%dc:%dd:%de:%df:%dg:%dh:%di:%dj:%dk:%d", sub_scrn[0], sub_scrn[1], sub_scrn[2], sub_scrn[3], sub_scrn[4], sub_scrn[5], sub_scrn[6], sub_scrn[7], sub_scrn[8], sub_scrn[9], sub_scrn[10]);
         }
 
-        void CommonProces::callback_base_contol_ER_main(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
-        {
-            //ER_mainのcontroller_intefaceからBaseControlをsubする。
-            //基本的にはリスタート・緊急・足回り手自動だけだが、リスタートのときだけ上物手自動・左右の切り替えに代入する。
-            sub_base_control[0] = msg->is_restart;
-            sub_base_control[1] = msg->is_emergency;
-            sub_base_control[2] = msg->is_wheel_autonomous; 
-            if(msg->is_restart)
-            {
-                sub_base_control[3] = msg->is_injection_autonomous;
-                sub_base_control[4] = msg->is_injection_m0;
-            }
-            assignment_base_control_ER();
-            //RCLCPP_INFO(this->get_logger(), "restart:%demergency:%dwheel:%d", sub_base_control[0], sub_base_control[1], sub_base_control[2]);
-        }
-
-        void CommonProces::callback_base_contol_ER_sub(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
-        {
-            //ER_mainのcontroller_intefaceからBaseControlをsubする。
-            //緊急・上物手自動・左右の切り替えに代入する。
-            sub_base_control[1] = msg->is_emergency;
-            sub_base_control[3] = msg->is_injection_autonomous;
-            sub_base_control[4] = msg->is_injection_m0;
-            assignment_base_control_ER();
-            //RCLCPP_INFO(this->get_logger(), "emergency:%dinjection:%dinjection_m0:%d", sub_base_control[1], sub_base_control[3], sub_base_control[4]);
-        }
-
         void CommonProces::callback_base_contol_RR(const controller_interface_msg::msg::BaseControl::SharedPtr msg)
         {
             //そのまま素通りでBaseControlに代入
@@ -623,21 +799,7 @@ namespace controller_interface
             msg_base_btn->is_wheel_autonomous = msg->is_wheel_autonomous;
             msg_base_btn->is_injection_autonomous = msg->is_injection_autonomous;
             msg_base_btn->is_injection_m0 = msg->is_injection_m0;
-            _pub_tcp3_base_control->publish(*msg_base_btn);
-            //RCLCPP_INFO(this->get_logger(), "restart():%demergency():%dwheel():%dinjection():%dinjection_m0():%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
-        }
-
-        void CommonProces::assignment_base_control_ER()
-        {
-            //sub_base_control配列に仮置きしていたものをBaseControlに代入。
-            auto msg_base_btn = std::make_shared<controller_interface_msg::msg::BaseControl>();
-            msg_base_btn->is_restart = sub_base_control[0];
-            msg_base_btn->is_emergency = sub_base_control[1];
-            msg_base_btn->is_wheel_autonomous = sub_base_control[2];
-            msg_base_btn->is_injection_autonomous = sub_base_control[3];
-            msg_base_btn->is_injection_m0 = sub_base_control[4];
             _pub_tcp1_base_control->publish(*msg_base_btn);
-            _pub_tcp2_base_control->publish(*msg_base_btn);
-            //RCLCPP_INFO(this->get_logger(), "restart:%demergency:%dwheel:%dinjection:%dinjection_m0:%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
+            //RCLCPP_INFO(this->get_logger(), "restart():%demergency():%dwheel():%dinjection():%dinjection_m0():%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
         }
 }
