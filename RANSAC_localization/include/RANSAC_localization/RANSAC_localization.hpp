@@ -51,8 +51,6 @@ private:
   void create_RR_map();
   void create_map_line(vector<LaserPoint> &points, const double &start_map_point, const double &end_map_point, const double &static_map_point, const char coordinate);
   void publishers(vector<LaserPoint> &points);
-  LaserPoint rotate(LaserPoint point, double theta);
-  vector<LaserPoint> transform(const vector<LaserPoint> &points, const Vector3d &pose);
   Vector3d calc_body_to_sensor(const Vector6d& sensor_pos);
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
@@ -86,5 +84,9 @@ private:
   chrono::system_clock::time_point time_start, time_end;
 
   bool plot_mode_;
+  string robot_type_;
+
+  vector<LaserPoint> temp_points;
+  int count=0;
 };
 }

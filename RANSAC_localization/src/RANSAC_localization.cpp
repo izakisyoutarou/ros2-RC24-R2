@@ -6,6 +6,7 @@ RANSACLocalization::RANSACLocalization(const rclcpp::NodeOptions &options) : RAN
 RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::NodeOptions &options)
 :  rclcpp::Node("RANSAC_localization", name_space, options){
   RCLCPP_INFO(this->get_logger(), "START");
+  robot_type_ = this->get_parameter("robot_type").as_string();
   plot_mode_ = this->get_parameter("plot_mode").as_bool();
   const auto pose_array = this->get_parameter("initial_pose").as_double_array();
   const auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
@@ -36,7 +37,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
     "self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
 
-  detect_lines.setup(voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
+  detect_lines.setup(robot_type_, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
   pose_fuser.setup(laser_weight_, odom_weight_liner_, odom_weight_angler_);
   voxel_grid_filter.setup(voxel_size_);
 
@@ -57,8 +58,8 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
     map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "self_localization/map", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
 
-    create_ER_map();
-    create_RR_map();
+    if(robot_type_ == "ER") create_ER_map();
+    else if(robot_type_ == "RR") create_RR_map();
   }
 }
 
@@ -86,6 +87,10 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   const double y = (double)bytes_to_float(_candata+4);
   odom[0] = x + init_pose[0];
   odom[1] = y + init_pose[1];
+  if(use_simulator){
+    odom[0] = x;
+    odom[1] = y;
+  }
   if(abs(odom[0] - last_odom[0]) / dt_odom > 12) odom[0] = last_odom[0];
   if(abs(odom[1] - last_odom[1]) / dt_odom > 12) odom[1] = last_odom[1];
   last_odom[0] = odom[0];
@@ -102,6 +107,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
   odom[2] = yaw + init_pose[2];
+  if(use_simulator) odom[2] = yaw;
   if(abs(odom[2] - last_odom[2]) / dt_jy > 15.7) odom[2] = last_odom[2];
   last_odom[2] = odom[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
@@ -130,12 +136,24 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d ransac_estimated = current_scan_odom + trans;
   vector<LaserPoint> global_points = transform(line_points, trans);
 
-  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, filtered_points, global_points);
+  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
   est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
 
-  if(plot_mode_) publishers(line_points);
+  count++;
+  if(count==70){
+    count=0;
+    temp_points.clear();
+  }
+  for(int i=0; i<line_points.size(); i++){
+    LaserPoint lp;
+    lp.x = line_points[i].x;
+    lp.y = line_points[i].y;
+    temp_points.push_back(lp);
+  }
+
+  if(plot_mode_) publishers(temp_points);
 
   time_end = chrono::system_clock::now();
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
@@ -156,7 +174,8 @@ void RANSACLocalization::publishers(vector<LaserPoint> &points){
   // path.header.frame_id = "map";
   // path.poses.push_back(corrent_pose_stamped);
 
-  map_publisher->publish(RR_map_cloud);
+  if(robot_type_ == "ER") map_publisher->publish(ER_map_cloud);
+  else if(robot_type_ == "RR") map_publisher->publish(RR_map_cloud);
   ransaced_publisher->publish(cloud);
   pose_publisher->publish(corrent_pose_stamped);
   // path_publisher->publish(path);
@@ -212,28 +231,6 @@ void RANSACLocalization::create_map_line(vector<LaserPoint> &points, const doubl
     }
     points.push_back(map_point);
   }
-}
-
-// 点群を並進・回転させる
-LaserPoint RANSACLocalization::rotate(LaserPoint point, double theta){
-  LaserPoint p;
-  p.x = point.x * cos(theta) - point.y * sin(theta);
-  p.y = point.x * sin(theta) + point.y * cos(theta);
-  return p;
-}
-
-vector<LaserPoint> RANSACLocalization::transform(const vector<LaserPoint> &points, const Vector3d &pose) {
-  vector<LaserPoint> transformed_points;
-  for (const auto& point : points) {
-    // 並進
-    LaserPoint p = point;
-    p.x += pose[0];
-    p.y += pose[1];
-    // 回転
-    p = rotate(p, pose[2]);
-    transformed_points.push_back(p);
-  }
-  return transformed_points;
 }
 
 Vector3d RANSACLocalization::calc_body_to_sensor(const Vector6d& sensor_pos){

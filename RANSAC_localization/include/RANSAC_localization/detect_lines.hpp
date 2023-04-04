@@ -20,7 +20,7 @@ public:
   DtectLines(){};
   ~DtectLines(){};
 
-  void setup(const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold);
+  void setup(const string &robot_type, const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold);
   void init();
   void fuse_inliers(const vector<LaserPoint> &src_points);
 
@@ -52,6 +52,7 @@ private:
   vector<LaserPoint> sum;
   EstimatedLine inlier;
   Vector3d estimated_diff = Vector3d::Zero();
+  string robot_type_;
   double voxel_size_;
   int trial_num_;
   double inlier_dist_threshold_;

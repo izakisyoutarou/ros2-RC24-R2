@@ -1,6 +1,7 @@
 #include "RANSAC_localization/detect_lines.hpp"
 
-void DtectLines::setup(const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold){
+void DtectLines::setup(const string &robot_type, const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold){
+  robot_type_ = robot_type;
   voxel_size_ = voxel_size;
   trial_num_ = trial_num;
   inlier_dist_threshold_ = inlier_dist_threshold;
@@ -16,8 +17,15 @@ void DtectLines::init(){
   }
   lines.clear();
   lines_.clear();
-  lines.resize(8);
-  lines_.resize(8);
+  if(robot_type_ == "ER"){
+    lines.resize(8);
+    lines_.resize(8);
+  }
+  else if(robot_type_ == "RR"){
+    lines.resize(6);
+    lines_.resize(6);
+  }
+
 }
 
 void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points){
@@ -37,9 +45,14 @@ void DtectLines::calc_estimated_diff(){
       if(i<4) sum += lines_[i].points[j].y;
       else sum += lines_[i].points[j].x;
     }
-    if(i<4) estimated_diff[1] = ER_map_point_y[i] - sum / lines_[i].points.size();
-    else estimated_diff[0] = ER_map_point_x[i-4] - sum / lines_[i].points.size();
-
+    if(robot_type_ == "ER"){
+      if(i<4) estimated_diff[1] = ER_map_point_y[i] - sum / lines_[i].points.size();
+      else estimated_diff[0] = ER_map_point_x[i-4] - sum / lines_[i].points.size();
+    }
+    else if(robot_type_ == "RR"){
+      if(i<4) estimated_diff[1] = RR_map_point[i] - sum / lines_[i].points.size();
+      else estimated_diff[0] = RR_map_point[i-4] - sum / lines_[i].points.size();
+    }
   }
 }
 
@@ -63,14 +76,24 @@ double DtectLines::calc_diff_angle(){
 
 void DtectLines::devide_points(const vector<LaserPoint> &src_points){
   for(size_t i=0; i<src_points.size(); i++){
-    set_points(lines[0], ER_map_point_x[0], ER_map_point_x[3], ER_map_point_y[0], ER_map_point_y[0], src_points[i]);
-    set_points(lines[1], ER_map_point_x[1], ER_map_point_x[3]-bridge_width-distance_threshold, ER_map_point_y[1], ER_map_point_y[1], src_points[i]);
-    set_points(lines[2], ER_map_point_x[1], ER_map_point_x[2], ER_map_point_y[2], ER_map_point_y[2], src_points[i]);
-    set_points(lines[3], ER_map_point_x[0], ER_map_point_x[2], ER_map_point_y[3], ER_map_point_y[3], src_points[i]);
-    set_points(lines[4], ER_map_point_x[0], ER_map_point_x[0], ER_map_point_y[0], ER_map_point_y[3], src_points[i]);
-    set_points(lines[5], ER_map_point_x[1], ER_map_point_x[1], ER_map_point_y[1], ER_map_point_y[2], src_points[i]);
-    set_points(lines[6], ER_map_point_x[3], ER_map_point_x[3], ER_map_point_y[0], ER_map_point_y[1], src_points[i]);
-    set_points(lines[7], ER_map_point_x[2], ER_map_point_x[2], ER_map_point_y[2], ER_map_point_y[3], src_points[i]);
+    if(robot_type_ == "ER"){
+      set_points(lines[0], ER_map_point_x[0], ER_map_point_x[3], ER_map_point_y[0], ER_map_point_y[0], src_points[i]);
+      set_points(lines[1], ER_map_point_x[1], ER_map_point_x[3]-bridge_width-distance_threshold, ER_map_point_y[1], ER_map_point_y[1], src_points[i]);
+      set_points(lines[2], ER_map_point_x[1], ER_map_point_x[2], ER_map_point_y[2], ER_map_point_y[2], src_points[i]);
+      set_points(lines[3], ER_map_point_x[0], ER_map_point_x[2], ER_map_point_y[3], ER_map_point_y[3], src_points[i]);
+      set_points(lines[4], ER_map_point_x[0], ER_map_point_x[0], ER_map_point_y[0], ER_map_point_y[3], src_points[i]);
+      set_points(lines[5], ER_map_point_x[1], ER_map_point_x[1], ER_map_point_y[1], ER_map_point_y[2], src_points[i]);
+      set_points(lines[6], ER_map_point_x[3], ER_map_point_x[3], ER_map_point_y[0], ER_map_point_y[1], src_points[i]);
+      set_points(lines[7], ER_map_point_x[2], ER_map_point_x[2], ER_map_point_y[2], ER_map_point_y[3], src_points[i]);
+    }
+    else if(robot_type_ == "RR"){
+      set_points(lines[0], RR_map_point[0], RR_map_point[3], RR_map_point[0], RR_map_point[0], src_points[i]);
+      set_points(lines[1], RR_map_point[1], RR_map_point[2], RR_map_point[1], RR_map_point[1], src_points[i]);
+      set_points(lines[2], RR_map_point[1], RR_map_point[2], RR_map_point[2], RR_map_point[2], src_points[i]);
+      set_points(lines[3], RR_map_point[0], RR_map_point[3], RR_map_point[3], RR_map_point[3], src_points[i]);
+      set_points(lines[4], RR_map_point[0], RR_map_point[0], RR_map_point[0], RR_map_point[3], src_points[i]);
+      set_points(lines[5], RR_map_point[1], RR_map_point[1], RR_map_point[1], RR_map_point[2], src_points[i]);
+    }
   }
 }
 
