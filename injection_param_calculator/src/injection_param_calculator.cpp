@@ -5,12 +5,10 @@
 using namespace std;
 using namespace utils;
 namespace injection_param_calculator{
-    InjectionParamCalculator::InjectionParamCalculator(const rclcpp::NodeOptions &options, const int mech_num) : InjectionParamCalculator("",options,mech_num){}
+    InjectionParamCalculator::InjectionParamCalculator(const rclcpp::NodeOptions &options, const int mech_num) : InjectionParamCalculator("",options, mech_num){}
     InjectionParamCalculator::InjectionParamCalculator(const std::string &name_space, const rclcpp::NodeOptions &options, const int mech_num)
         :rclcpp::Node("injection_param_calculator_node" ,name_space,options),
         mech_num(mech_num),
-        yow_limit(get_parameter("yow_limit_m"+to_string(mech_num)).as_double_array()),
-        pitch_limit(get_parameter("pitch_limit").as_double_array()),
         ring_weight(get_parameter("ring_weight").as_double()),
         gravitational_accelerastion(get_parameter("gravitational_accelerastion").as_double()),
         air_resistance_coefficient(get_parameter("air_resistance_coefficient").as_double()),
@@ -20,7 +18,9 @@ namespace injection_param_calculator{
         velocity_lim_max(get_parameter("velocity_lim_max").as_double()),
         angle_choice(get_parameter("angle_choice").as_double()),
         angle_bounds(get_parameter("angle_bounds").as_double()),
-        max_loop(get_parameter("max_loop").as_int())
+        max_loop(get_parameter("max_loop").as_int()),
+        yow_limit(get_parameter("yow_limit_m"+to_string(mech_num)).as_double_array()),
+        pitch_limit(get_parameter("pitch_limit").as_double_array())
         {
             _sub_injection_command = this->create_subscription<injection_interface_msg::msg::InjectionCommand>(
                 "injcetion_command_m"+to_string(mech_num),
@@ -30,9 +30,11 @@ namespace injection_param_calculator{
 
             _pub_can = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx",_qos);
             //_pub_injection_direction = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx",_qos);
-            _pub_isConvergenced = this->create_publisher<std_msgs::msg::Bool>("is_calculator_convergenced_"+int_to_string(mech_num),_qos);
+            _pub_isConvergenced = this->create_publisher<std_msgs::msg::Bool>("is_calculator_convergenced_"+to_string(mech_num),_qos);
             //_pub_test_injection = this->create_publisher<injection_interface_msg::msg::InjectionCommand>("injcetion_command_m"+to_string(mech_num),_qos);
             RCLCPP_INFO(this->get_logger(),"create injection_"+to_string(mech_num));
+            // RCLCPP_INFO(this->get_logger(),"max_loop: %d ",max_loop);
+            // RCLCPP_INFO(this->get_logger(),"yow_lim_min: %lf yow_lim_max: %lf ",yow_limit[0],yow_limit[1]);
         }
     void InjectionParamCalculator::callback_injection(const injection_interface_msg::msg::InjectionCommand::SharedPtr msg){
         // auto msg_injection_parameter = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
@@ -57,7 +59,7 @@ namespace injection_param_calculator{
         RCLCPP_INFO(this->get_logger(),"mech_num: %d velocity: %lf[m/s] elevation: %lf[rad]",mech_num,velocity, elevation);
         RCLCPP_INFO(this->get_logger(),"mech_num: %d direction: %lf[rad]",mech_num,injection_comand.direction);
 
-        msg_injection->canid = 0x130 + mech_num%2;
+        msg_injection->canid = 0x130 + mech_num;
         msg_injection->candlc = 8;
 
          //送信
@@ -67,7 +69,7 @@ namespace injection_param_calculator{
         for(int i=0; i<msg_injection->candlc; i++) msg_injection->candata[i] = _candata[i];
         // std::copy(std::begin(_candata), std::end(_candata), msg_injection->candata.begin());
 
-        msg_yaw->canid = 0x130 + mech_num%2 + 1;
+        msg_yaw->canid = 0x130 + mech_num + 1;
         msg_yaw->candlc = 4;
         float_to_bytes(_candata, static_cast<float>(direction));
         for(int i=0; i<msg_yaw->candlc; i++) msg_yaw->candata[i] = _candata[i];
@@ -77,19 +79,19 @@ namespace injection_param_calculator{
             _pub_can->publish(*msg_yaw);
         }
     }
-    std::string InjectionParamCalculator::int_to_string(int mech_num){
-        std::string side;
-        switch (mech_num)
-        {
-        case 0:
-            side = "left";
-            break;
+    // std::string InjectionParamCalculator::int_to_string(int mech_num){
+    //     std::string side;
+    //     switch (mech_num)
+    //     {
+    //     case 0:
+    //         side = "left";
+    //         break;
         
-        case 1:
-            side = "right";
-        }
-        return side;
-    }
+    //     case 1:
+    //         side = "right";
+    //     }
+    //     return side;
+    // }
     void InjectionParamCalculator::calculateElevation(){
         double pitch = atan2(injection_comand.height,injection_comand.distance);
         if(dtor(angle_bounds) > pitch){
@@ -122,6 +124,7 @@ namespace injection_param_calculator{
             }
             old_velocity = new_velocity;
             num_loop++;
+            
             if(num_loop>max_loop){
                 isAiming=false;
                 //isConvergenced->data = false;
