@@ -98,12 +98,13 @@ namespace socketcan_interface {
         struct can_frame frame{};
 
         frame.can_id = msg->canid;
-        if ((msg->candlc > 0) and (msg->candlc <= 9)) {
+        if ((msg->candlc >= 0) and (msg->candlc <= 8)) {
             frame.can_dlc = msg->candlc;
         } else {
-            frame.can_dlc = 8;
+            frame.can_dlc = 0;
         }
         std::string can_data_print;
+        // std::move(msg->candata.begin(), msg->candata.end(), std::begin(frame.data));
         for (int i = 0; i < frame.can_dlc; ++i) {
             frame.data[i] = msg->candata[i];
 

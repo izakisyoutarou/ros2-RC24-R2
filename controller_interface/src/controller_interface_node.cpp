@@ -18,10 +18,10 @@ namespace controller_interface
         dtor(get_parameter("angular_max_vel").as_double()),
         dtor(get_parameter("angular_max_acc").as_double()),
         dtor(get_parameter("angular_max_dec").as_double()) ),
-        
+
         manual_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
-        defalt_autonomous_flag(get_parameter("defalt_autonomous_flag").as_bool()),
+        defalt_autonomous_flag(get_parameter("defalt_wheel_autonomous_flag").as_bool()),
         defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool())
         {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
@@ -57,7 +57,7 @@ namespace controller_interface
             //ハートビート
             _pub_timer = this->create_wall_timer(
                 std::chrono::milliseconds(heartbeat_ms),
-                [this] { 
+                [this] {
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 1;
@@ -80,7 +80,7 @@ namespace controller_interface
             servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
             servaddr.sin_port = htons(5000);
             bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
-            
+
             //UDPthread
             udp_thread_ = std::thread(&SmartphoneGamepad::callback_udp, this);
         }
@@ -157,7 +157,7 @@ namespace controller_interface
 
             uint8_t _candata_joy[8];
 
-            bool flag_autonomous = false;   
+            bool flag_autonomous = false;
 
             while(rclcpp::ok())
             {
@@ -200,7 +200,7 @@ namespace controller_interface
 
                     flag_autonomous = true;
                 }
-                else 
+                else
                 {
                     if(flag_autonomous == true)
                     {
@@ -213,8 +213,8 @@ namespace controller_interface
 
                         _pub_canusb->publish(*msg_linear);
                         _pub_canusb->publish(*msg_angular);
-                     
-                        flag_autonomous = false; 
+
+                        flag_autonomous = false;
                     }
                 }
             }
@@ -227,7 +227,7 @@ namespace controller_interface
             double b = std::stod(a);//stringをdoubeに変換
             return b;
         }
-    
+
     DualSense::DualSense(const rclcpp::NodeOptions &options) : DualSense("", options) {}
     DualSense::DualSense(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options)

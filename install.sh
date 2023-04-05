@@ -13,5 +13,6 @@ rosdep install -r -y -i --from-paths .
 #追加パッケージ
 sudo apt install ros-foxy-xacro -y
 sudo apt install ros-foxy-gazebo-ros-pkgs -y
+sudo apt install python3-pip -y
 
-sudo pip3 install networkx -y
+sudo pip3 install networkx pyqt5
