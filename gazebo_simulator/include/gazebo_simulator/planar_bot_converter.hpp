@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -23,6 +24,7 @@ private:
     rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
 
     double yaw;
+    std::vector<double> pose_array;
 
     void callback_velocity(const geometry_msgs::msg::Twist::SharedPtr msg);
     void callback_odom(const nav_msgs::msg::Odometry::SharedPtr msg);
