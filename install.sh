@@ -8,6 +8,7 @@ sudo apt-get update -y
 sudo apt install python3-rosdep2 -y
 sudo rosdep init
 rosdep update
+sudo rosdep fix-permissions
 rosdep install -r -y -i --from-paths .
 
 #追加パッケージ

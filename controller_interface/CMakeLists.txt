@@ -20,6 +20,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(utilities REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(socketcan_interface_msg REQUIRED)
 find_package(controller_interface_msg REQUIRED)
 
@@ -37,6 +39,8 @@ ament_target_dependencies(controller_interface_node
   rclcpp
   utilities
   std_msgs
+  sensor_msgs
+  geometry_msgs
   socketcan_interface_msg
   controller_interface_msg
 )
@@ -84,6 +88,8 @@ ament_export_dependencies(
   rclcpp
   utilities
   std_msgs
+  sensor_msgs
+  geometry_msgs
   socketcan_interface_msg
   controller_interface_msg
 )
