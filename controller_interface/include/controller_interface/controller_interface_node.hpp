@@ -85,7 +85,9 @@ namespace controller_interface
             void callback_pad_er_main(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_er_sub(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_rr(const controller_interface_msg::msg::SubPad::SharedPtr msg);
-            void callback_udp(int sockfd);
+            void callback_udp_er_main(int sockfd);
+            void callback_udp_er_sub(int sockfd);
+            void callback_udp_rr(int sockfd);
 
             //common_processからのcallback
             void callback_common_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
