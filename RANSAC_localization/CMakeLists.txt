@@ -41,6 +41,7 @@ add_library(RANSAC_localization
   src/RANSAC_localization.cpp
   src/pose_fuser.cpp
   src/detect_lines.cpp
+  src/detect_circles.cpp
 )
 target_compile_definitions(RANSAC_localization
   PRIVATE "RANSAC_LOCALIZATION_LIBRARY"

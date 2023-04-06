@@ -19,6 +19,7 @@
 #include "RANSAC_localization/config.hpp"
 #include "RANSAC_localization/pose_fuser.hpp"
 #include "RANSAC_localization/detect_lines.hpp"
+#include "RANSAC_localization/detect_circles.hpp"
 #include "RANSAC_localization/converter.hpp"
 #include "RANSAC_localization/voxel_grid_filter.hpp"
 
@@ -40,6 +41,7 @@ public:
 private:
   PoseFuser pose_fuser;  // センサ融合器
   DtectLines detect_lines;
+  DetectCircles detect_circles;
   Converter converter;
   VoxelGridFilter voxel_grid_filter;
   void callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
@@ -49,6 +51,8 @@ private:
   void init();
   void create_ER_map();
   void create_RR_map();
+  double semi_circle(const double &x, const double &r){return sqrt(r * r - x * x);}
+  void generate_circle(vector<LaserPoint> &points, const Circle &circle, int num_points);
   void create_map_line(vector<LaserPoint> &points, const double &start_map_point, const double &end_map_point, const double &static_map_point, const char coordinate);
   void publishers(vector<LaserPoint> &points);
   Vector3d calc_body_to_sensor(const Vector6d& sensor_pos);
@@ -85,8 +89,5 @@ private:
 
   bool plot_mode_;
   string robot_type_;
-
-  vector<LaserPoint> temp_points;
-  int count=0;
 };
 }

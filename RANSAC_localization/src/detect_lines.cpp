@@ -25,7 +25,6 @@ void DtectLines::init(){
     lines.resize(6);
     lines_.resize(6);
   }
-
 }
 
 void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points){

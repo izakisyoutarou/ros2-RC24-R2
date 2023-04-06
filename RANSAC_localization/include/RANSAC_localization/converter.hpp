@@ -16,10 +16,10 @@ public:
       if(msg->ranges[i] > 14 || msg->ranges[i] < 0.5) continue;
       src_point.x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i - laser[2]) + laser[0];
       src_point.y = -msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i - laser[2]) + laser[1];
-      if(use_simulator){
-        src_point.x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i + laser[2]) + laser[0];
-        src_point.y = msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i + laser[2]) + laser[1];
-      }
+      // if(use_simulator){
+      //   src_point.x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i + laser[2]) + laser[0];
+      //   src_point.y = msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i + laser[2]) + laser[1];
+      // }
       src_points.push_back(src_point);
     }
     return src_points;

@@ -87,10 +87,6 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   const double y = (double)bytes_to_float(_candata+4);
   odom[0] = x + init_pose[0];
   odom[1] = y + init_pose[1];
-  if(use_simulator){
-    odom[0] = x;
-    odom[1] = y;
-  }
   if(abs(odom[0] - last_odom[0]) / dt_odom > 12) odom[0] = last_odom[0];
   if(abs(odom[1] - last_odom[1]) / dt_odom > 12) odom[1] = last_odom[1];
   last_odom[0] = odom[0];
@@ -107,7 +103,6 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
   odom[2] = yaw + init_pose[2];
-  if(use_simulator) odom[2] = yaw;
   if(abs(odom[2] - last_odom[2]) / dt_jy > 15.7) odom[2] = last_odom[2];
   last_odom[2] = odom[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
@@ -129,6 +124,10 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
   vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(laser, src_points);
 
+  /////////////////////////////////////////////////////////////////////////
+  detect_circles.calc_pose(filtered_points);
+  /////////////////////////////////////////////////////////////////////////
+
   detect_lines.fuse_inliers(filtered_points);
   vector<LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
@@ -138,22 +137,10 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
 
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
-  est_diff_sum += estimated - current_scan_odom;
+  // est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
 
-  count++;
-  if(count==70){
-    count=0;
-    temp_points.clear();
-  }
-  for(int i=0; i<line_points.size(); i++){
-    LaserPoint lp;
-    lp.x = line_points[i].x;
-    lp.y = line_points[i].y;
-    temp_points.push_back(lp);
-  }
-
-  if(plot_mode_) publishers(temp_points);
+  if(plot_mode_) publishers(filtered_points);
 
   time_end = chrono::system_clock::now();
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
@@ -215,8 +202,26 @@ void RANSACLocalization::create_RR_map(){
   create_map_line(RR_map_points, RR_map_point[1], RR_map_point[2], RR_map_point[1], 'y');
   //3段目左
   create_map_line(RR_map_points, RR_map_point[1], RR_map_point[2], RR_map_point[2], 'x');
+  generate_circle(RR_map_points, circle_self_right, 2000);
+  generate_circle(RR_map_points, circle_self_center, 2000);
+  generate_circle(RR_map_points, circle_self_left, 2000);
+  generate_circle(RR_map_points, circle_opponent_right, 2000);
+  generate_circle(RR_map_points, circle_opponent_left, 2000);
   RR_map_cloud = converter.vector_to_PC2(RR_map_points);
 }
+
+void RANSACLocalization::generate_circle(vector<LaserPoint> &points, const Circle &circle, int num_points){
+  // 半円上の点を生成
+  for (int i = 0; i < num_points / 2; ++i){
+    LaserPoint point;
+    double theta = static_cast<double>(i) / static_cast<double>(num_points / 2 - 1) * M_PI;
+    point.x = circle.x + circle.r * cos(theta);
+    point.y = circle.y + semi_circle(point.x - circle.x, circle.r);
+    if(i%2==0) point.y = -point.y;
+    points.push_back(point);
+  }
+}
+
 
 void RANSACLocalization::create_map_line(vector<LaserPoint> &points, const double &start_map_point, const double &end_map_point, const double &static_map_point, const char coordinate){
   LaserPoint map_point;
