@@ -135,7 +135,7 @@ namespace controller_interface
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 0;
-                    //_pub_canusb->publish(*msg_heartbeat);
+                    _pub_canusb->publish(*msg_heartbeat);
                 }
             );
 
@@ -396,7 +396,6 @@ namespace controller_interface
             if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
             if(msg->s)
             {
-                _pub_canusb->publish(*msg_restart);
                 _pub_scrn->publish(*msg_sub_scrn);
             }
             if(flag_restart)
@@ -577,8 +576,8 @@ namespace controller_interface
                 if(is_wheel_autonomous == false)
                 {
                     velPlanner_linear_x.vel(static_cast<double>(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
-                    velPlanner_linear_y.vel(static_cast<double>(analog_l_x));
-                    velPlanner_angular_z.vel(static_cast<double>(analog_r_x));
+                    velPlanner_linear_y.vel(static_cast<double>(-analog_l_x));
+                    velPlanner_angular_z.vel(static_cast<double>(-analog_r_x));
 
                     velPlanner_linear_x.cycle();
                     velPlanner_linear_y.cycle();
