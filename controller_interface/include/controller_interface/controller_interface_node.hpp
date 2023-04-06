@@ -107,7 +107,7 @@ namespace controller_interface
             //base_control用
             bool is_reset = false;
             bool is_emergency = false;
-            bool is_wheel_autonomous = false;
+            bool is_move_autonomous = false;
             bool is_injection_autonomous = false;
             bool is_injection_m0 = false;
 
@@ -124,7 +124,7 @@ namespace controller_interface
             const float manual_injection_max_vel;
             const float defalt_pitch;
             const bool defalt_restart_flag;
-            const bool defalt_wheel_autonomous_flag;
+            const bool defalt_move_autonomous_flag;
             const bool defalt_injection_autonomous_flag;
             const bool defalt_emergency_flag;
             const bool defalt_injection_m0_flag;
