@@ -1,4 +1,5 @@
 import os
+import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -11,12 +12,21 @@ from launch.substitutions import LaunchConfiguration
 # this is the function launch  system will look for
 
 def generate_launch_description():
-
     package_name = 'gazebo_simulator'
     world_file_name = 'NHK23_court.world'
     urdf_file_name = 'rr.urdf'
+
+    config_file_path = os.path.join(
+        get_package_share_directory('main_executor'),
+        'config',
+        'main_params.yaml'
+    )
+
+    with open(config_file_path, 'r') as file:
+        initial_pose = yaml.safe_load(file)['/**']['ros__parameters']['initial_pose']
+
     # オイラー角からクオータニオンにする - https://ken3susume.com/archives/12958
-    initial_pose = 'position: {x: -5.5, y: 0.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}'
+    initial_pose_ = 'position: {{x: {:.2f}, y: {:.2f}, z: {:.2f}}}, orientation: {{x: 0.0, y: 0.0, z: 0.0, w: 1.0}}'.format(initial_pose[0], initial_pose[1], initial_pose[2])
 
     # full  path to urdf and world file
 
@@ -35,7 +45,7 @@ def generate_launch_description():
     xml = xml.replace('"', '\\"')
 
     # this is argument format for spwan_entity service
-    spwan_args = '{name: \"er\", xml: \"'  +  xml + '\" , initial_pose: {' + initial_pose + '}}'
+    spwan_args = '{name: \"er\", xml: \"'  +  xml + '\" , initial_pose: {' + initial_pose_ + '}}'
 
     # create and return launch description object
     return LaunchDescription([
@@ -54,5 +64,6 @@ def generate_launch_description():
             package='gazebo_simulator',
             executable='planar_bot_converter',
             output='screen',
+            parameters=[config_file_path]
         ),
     ])
