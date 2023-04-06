@@ -28,7 +28,7 @@ namespace controller_interface
         manual_angular_max_vel(dtor(static_cast<float>(get_parameter("angular_max_vel").as_double()))),
         manual_injection_max_vel(dtor(static_cast<float>(get_parameter("injection_max_vel").as_double()))),
         defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
-        defalt_move_autonomous_flag(get_parameter("defalt_move_autonomous_flag").as_bool()),
+        defalt_wheel_autonomous_flag(get_parameter("defalt_wheel_autonomous_flag").as_bool()),
         defalt_injection_autonomous_flag(get_parameter("defalt_injection_autonomous_flag").as_bool()),
         defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool()),
         defalt_injection_m0_flag(get_parameter("defalt_injection_m0_flag").as_bool()),
@@ -72,7 +72,7 @@ namespace controller_interface
 
             //spline_pidからsub
             _sub_spline = this->create_subscription<std_msgs::msg::Bool>(
-                "is_move_tracking",
+                "is_wheel_tracking",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_spline, this, std::placeholders::_1)
             );
@@ -118,12 +118,12 @@ namespace controller_interface
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = defalt_restart_flag;
             msg_base_control->is_emergency = defalt_emergency_flag;
-            msg_base_control->is_move_autonomous = defalt_move_autonomous_flag;
+            msg_base_control->is_wheel_autonomous = defalt_wheel_autonomous_flag;
             msg_base_control->is_injection_autonomous = defalt_injection_autonomous_flag;
             msg_base_control->is_injection_m0 = defalt_injection_m0_flag;
             this->is_reset = defalt_restart_flag;
             this->is_emergency = defalt_emergency_flag;
-            this->is_move_autonomous = defalt_move_autonomous_flag;
+            this->is_wheel_autonomous = defalt_wheel_autonomous_flag;
             this->is_injection_autonomous = defalt_injection_autonomous_flag;
             this->is_injection_m0 = defalt_injection_m0_flag;
             _pub_common_base_control->publish(*msg_base_control);
@@ -197,14 +197,14 @@ namespace controller_interface
             bool robotcontrol_flag = false;//base_control(手自動、緊急、リスタート)が押されたらpubする
             bool flag_restart = false;//resertがtureをpubした後にfalseをpubする
 
-            //r3は足回りの手自動の切り替え。is_move_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
+            //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
             
             if(msg->r3)
             {
                 robotcontrol_flag = true;
-                if(is_move_autonomous == false) is_move_autonomous = true;
-                else is_move_autonomous = false;
+                if(is_wheel_autonomous == false) is_wheel_autonomous = true;
+                else is_wheel_autonomous = false;
             }
 
             //gは緊急。is_emergencyを使って、トグルになるようにしてる。
@@ -220,7 +220,7 @@ namespace controller_interface
             {
                 robotcontrol_flag = true;
                 flag_restart = true;
-                is_move_autonomous = defalt_move_autonomous_flag;
+                is_wheel_autonomous = defalt_wheel_autonomous_flag;
                 is_injection_autonomous = defalt_injection_autonomous_flag;
                 is_emergency = defalt_emergency_flag;
                 is_injection_m0 = defalt_injection_m0_flag;
@@ -232,7 +232,7 @@ namespace controller_interface
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = is_reset;
             msg_base_control->is_emergency = is_emergency;
-            msg_base_control->is_move_autonomous = is_move_autonomous;
+            msg_base_control->is_wheel_autonomous = is_wheel_autonomous;
             msg_base_control->is_injection_autonomous = is_injection_autonomous;
             msg_base_control->is_injection_m0 = is_injection_m0;
 
@@ -298,7 +298,7 @@ namespace controller_interface
             bool flag_injection0 = false;//左の発射機構の最終射出許可
             bool flag_injection1 = false;//右の発射機構の最終射出許可
 
-            //r3は足回りの手自動の切り替え。is_move_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
+            //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
             
             if(msg->r3)
@@ -368,7 +368,7 @@ namespace controller_interface
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = is_reset;
             msg_base_control->is_emergency = is_emergency;
-            msg_base_control->is_move_autonomous = is_move_autonomous;
+            msg_base_control->is_wheel_autonomous = is_wheel_autonomous;
             msg_base_control->is_injection_autonomous = is_injection_autonomous;
             msg_base_control->is_injection_m0 = is_injection_m0;
     
@@ -437,14 +437,14 @@ namespace controller_interface
             bool flag_injection0 = false;//左の発射機構の最終射出許可
             bool flag_injection1 = false;//右の発射機構の最終射出許可
 
-            //r3は足回りの手自動の切り替え。is_move_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
+            //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
             
             if(msg->r3)
             {
                 robotcontrol_flag = true;
-                if(is_move_autonomous == false) is_move_autonomous = true;
-                else is_move_autonomous = false;
+                if(is_wheel_autonomous == false) is_wheel_autonomous = true;
+                else is_wheel_autonomous = false;
             }
 
             //gは緊急。is_emergencyを使って、トグルになるようにしてる。
@@ -473,7 +473,7 @@ namespace controller_interface
 
                 robotcontrol_flag = true;
                 flag_restart = true;
-                is_move_autonomous = defalt_move_autonomous_flag;
+                is_wheel_autonomous = defalt_wheel_autonomous_flag;
                 is_injection_autonomous = defalt_injection_autonomous_flag;
                 is_emergency = defalt_emergency_flag;
                 is_injection_m0 = defalt_injection_m0_flag;
@@ -497,7 +497,7 @@ namespace controller_interface
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_control->is_restart = is_reset;
             msg_base_control->is_emergency = is_emergency;
-            msg_base_control->is_move_autonomous = is_move_autonomous;
+            msg_base_control->is_wheel_autonomous = is_wheel_autonomous;
             msg_base_control->is_injection_autonomous = is_injection_autonomous;
             msg_base_control->is_injection_m0 = is_injection_m0;
 
@@ -553,7 +553,7 @@ namespace controller_interface
 
             uint8_t _candata_joy[8];
 
-            bool flag_move_autonomous = false;
+            bool flag_wheel_autonomous = false;
 
             float analog_l_x = 0.0f;
             float analog_l_y = 0.0f;
@@ -578,7 +578,7 @@ namespace controller_interface
                 std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
                 std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
 
-                if(is_move_autonomous == false)
+                if(is_wheel_autonomous == false)
                 {
                     velPlanner_linear_x.vel(static_cast<double>(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
                     velPlanner_linear_y.vel(static_cast<double>(-analog_l_x));
@@ -598,12 +598,12 @@ namespace controller_interface
                     _pub_canusb->publish(*msg_linear);
                     _pub_canusb->publish(*msg_angular);
 
-                    flag_move_autonomous = true;
+                    flag_wheel_autonomous = true;
                 }
                 else 
                 {
                     //手動から自動になったときに、一回だけ速度指令値に0を代入してpubする。
-                    if(flag_move_autonomous == true)
+                    if(flag_wheel_autonomous == true)
                     {
                         float_to_bytes(_candata_joy, 0);
                         for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
@@ -612,7 +612,7 @@ namespace controller_interface
                         _pub_canusb->publish(*msg_linear);
                         _pub_canusb->publish(*msg_angular);
 
-                        flag_move_autonomous = false;
+                        flag_wheel_autonomous = false;
                     }
                 }
             }
@@ -740,7 +740,7 @@ namespace controller_interface
 
             uint8_t _candata_joy[8];
 
-            bool flag_move_autonomous = false;
+            bool flag_wheel_autonomous = false;
             bool flag_injection_autonomous = false;
 
             float analog_l_x = 0.0f;
@@ -768,7 +768,7 @@ namespace controller_interface
                 std::memcpy(&analog_r_x, &buffer[8], sizeof(analog_r_x));
                 std::memcpy(&analog_r_y, &buffer[12], sizeof(analog_r_y));
 
-                if(is_move_autonomous == false && is_injection_autonomous == true)
+                if(is_wheel_autonomous == false && is_injection_autonomous == true)
                 {
                     velPlanner_linear_x.vel(static_cast<double>(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
                     velPlanner_linear_y.vel(static_cast<double>(-analog_l_x));
@@ -788,9 +788,9 @@ namespace controller_interface
                     _pub_canusb->publish(*msg_linear);
                     _pub_canusb->publish(*msg_angular);
 
-                    flag_move_autonomous = true;
+                    flag_wheel_autonomous = true;
                 }
-                else if(is_move_autonomous == true && is_injection_autonomous == false)
+                else if(is_wheel_autonomous == true && is_injection_autonomous == false)
                 {
                     velPlanner_injection_v.vel(static_cast<double>(-analog_l_x));
                     velPlanner_angular_z.vel(static_cast<double>(-analog_r_x));
@@ -813,7 +813,7 @@ namespace controller_interface
                 else 
                 {
                     //手動から自動になったときに、一回だけ速度指令値に0を代入してpubする。
-                    if(flag_move_autonomous == true || flag_injection_autonomous == true)
+                    if(flag_wheel_autonomous == true || flag_injection_autonomous == true)
                     {
                         float_to_bytes(_candata_joy, 0);
                         for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
@@ -826,7 +826,7 @@ namespace controller_interface
                         _pub_canusb->publish(*msg_l_elevation_velocity);
                         _pub_canusb->publish(*msg_l_yaw);
 
-                        flag_move_autonomous = false;
+                        flag_wheel_autonomous = false;
                         flag_injection_autonomous = false;
                     }
                 }
@@ -838,7 +838,7 @@ namespace controller_interface
             //CommonProsesからのBaseContolをsubしてコントローラとの同期をする
             is_reset = msg->is_restart;
             is_emergency = msg->is_emergency;
-            is_move_autonomous = msg->is_move_autonomous; 
+            is_wheel_autonomous = msg->is_wheel_autonomous; 
             is_injection_autonomous = msg->is_injection_autonomous;
             is_injection_m0 = msg->is_injection_m0;
         }
@@ -954,10 +954,10 @@ namespace controller_interface
             auto msg_base_btn = std::make_shared<controller_interface_msg::msg::BaseControl>();
             msg_base_btn->is_restart = msg->is_restart;
             msg_base_btn->is_emergency = msg->is_emergency;
-            msg_base_btn->is_move_autonomous = msg->is_move_autonomous;
+            msg_base_btn->is_wheel_autonomous = msg->is_wheel_autonomous;
             msg_base_btn->is_injection_autonomous = msg->is_injection_autonomous;
             msg_base_btn->is_injection_m0 = msg->is_injection_m0;
             _pub_tcp1_base_control->publish(*msg_base_btn);
-            //RCLCPP_INFO(this->get_logger(), "restart():%demergency():%dmove():%dinjection():%dinjection_m0():%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_move_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
+            //RCLCPP_INFO(this->get_logger(), "restart():%demergency():%dwheel():%dinjection():%dinjection_m0():%d", msg_base_btn->is_restart, msg_base_btn->is_emergency, msg_base_btn->is_wheel_autonomous, msg_base_btn->is_injection_autonomous, msg_base_btn->is_injection_m0);
         }
 }
