@@ -1,3 +1,5 @@
 bool is_restart
-bool is_autonomous
 bool is_emergency
+bool is_wheel_autonomous
+bool is_injection_autonomous
+bool is_injection_m0

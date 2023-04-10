@@ -27,6 +27,7 @@ set(msg_files
   "msg/SubPad.msg"
   "msg/SubScrn.msg"
   "msg/BaseControl.msg"
+  "msg/Convergence.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
