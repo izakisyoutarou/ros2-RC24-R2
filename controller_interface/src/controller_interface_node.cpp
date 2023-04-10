@@ -6,7 +6,7 @@ namespace controller_interface
 {
     #define BUFSIZE 1024
     using std::string;
-    
+
     SmartphoneGamepad::SmartphoneGamepad(const rclcpp::NodeOptions &options) : SmartphoneGamepad("", options) {}
     SmartphoneGamepad::SmartphoneGamepad(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_interface_node", name_space, options),
@@ -22,7 +22,7 @@ namespace controller_interface
         dtor(get_parameter("injection_max_vel").as_double()),
         dtor(get_parameter("injection_max_acc").as_double()),
         dtor(get_parameter("injection_max_dec").as_double()) ),
-        
+
         defalt_pitch(static_cast<float>(get_parameter("defalt_pitch").as_double())),
         manual_linear_max_vel(static_cast<float>(get_parameter("linear_max_vel").as_double())),
         manual_angular_max_vel(dtor(static_cast<float>(get_parameter("angular_max_vel").as_double()))),
@@ -35,7 +35,7 @@ namespace controller_interface
         udp_port_ER_main(get_parameter("udp_port_ER_main").as_int()),
         udp_port_ER_sub(get_parameter("udp_port_ER_sub").as_int()),
         udp_port_RR(get_parameter("udp_port_RR").as_int())
-        {  
+        {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
 
             //controllerからsub
@@ -136,7 +136,7 @@ namespace controller_interface
             //ハートビート
             _pub_timer = this->create_wall_timer(
                 std::chrono::milliseconds(heartbeat_ms),
-                [this] { 
+                [this] {
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 0;
@@ -199,7 +199,7 @@ namespace controller_interface
 
             //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
-            
+
             if(msg->r3)
             {
                 robotcontrol_flag = true;
@@ -236,7 +236,7 @@ namespace controller_interface
             msg_base_control->is_injection_autonomous = is_injection_autonomous;
             msg_base_control->is_injection_m0 = is_injection_m0;
 
-            
+
             //mainへ緊急を送る代入
             _candata_btn[0] = is_emergency;
             for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn[i];
@@ -252,9 +252,9 @@ namespace controller_interface
             _candata_btn[7] = msg->up;
             for(int i=0; i<msg_btn->candlc; i++) msg_btn->candata[i] = _candata_btn[i];
 
-            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) 
+            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up)
             {
-                _pub_canusb->publish(*msg_btn); 
+                _pub_canusb->publish(*msg_btn);
                 //RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
             }
             if(msg->g)_pub_canusb->publish(*msg_emergency);
@@ -300,7 +300,7 @@ namespace controller_interface
 
             //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
-            
+
             if(msg->r3)
             {
                 robotcontrol_flag = true;
@@ -351,7 +351,7 @@ namespace controller_interface
                     is_injection_calculator0_convergence = false;
                 }
             }
-            
+
             if(msg->r2)
             {
                 if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
@@ -371,7 +371,7 @@ namespace controller_interface
             msg_base_control->is_wheel_autonomous = is_wheel_autonomous;
             msg_base_control->is_injection_autonomous = is_injection_autonomous;
             msg_base_control->is_injection_m0 = is_injection_m0;
-    
+
             //mainへ緊急を送る代入
             _candata_btn[0] = is_emergency;
             for(int i=0; i<msg_emergency->candlc; i++) msg_emergency->candata[i] = _candata_btn[i];
@@ -392,15 +392,15 @@ namespace controller_interface
             _candata_btn[7] = msg->up;
             for(int i=0; i<msg_btn->candlc; i++) msg_btn->candata[i] = _candata_btn[i];
 
-            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) 
+            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up)
             {
-                _pub_canusb->publish(*msg_btn); 
+                _pub_canusb->publish(*msg_btn);
             }
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
             if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
             if(msg->s)
-            { 
+            {
                 _pub_scrn->publish(*msg_sub_scrn);
             }
             if(flag_restart)
@@ -439,7 +439,7 @@ namespace controller_interface
 
             //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
-            
+
             if(msg->r3)
             {
                 robotcontrol_flag = true;
@@ -456,7 +456,7 @@ namespace controller_interface
             }
 
             //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
-            
+
             if(msg->s)
             {
                 msg_sub_scrn->a = false;
@@ -521,9 +521,9 @@ namespace controller_interface
             _candata_btn[7] = msg->up;
             for(int i=0; i<msg_btn->candlc; i++) msg_btn->candata[i] = _candata_btn[i];
 
-            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) 
+            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up)
             {
-                _pub_canusb->publish(*msg_btn); 
+                _pub_canusb->publish(*msg_btn);
                 RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
             }
             if(msg->g)_pub_canusb->publish(*msg_emergency);
@@ -563,14 +563,14 @@ namespace controller_interface
             while(rclcpp::ok())
             {
                 clilen = sizeof(cliaddr);
-                    
+
                 // bufferに受信したデータが格納されている
                 n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
-                    
+
                 if (n < 0)
                 {
                     perror("recvfrom");
-                    exit(1);
+                    RCLCPP_INFO(this->get_logger(), "error");
                 }
 
                 std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
@@ -600,7 +600,7 @@ namespace controller_interface
 
                     flag_wheel_autonomous = true;
                 }
-                else 
+                else
                 {
                     //手動から自動になったときに、一回だけ速度指令値に0を代入してpubする。
                     if(flag_wheel_autonomous == true)
@@ -650,10 +650,10 @@ namespace controller_interface
             while(rclcpp::ok())
             {
                 clilen = sizeof(cliaddr);
-                    
+
                 // bufferに受信したデータが格納されている
                 n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
-                    
+
                 if (n < 0)
                 {
                     perror("recvfrom");
@@ -698,7 +698,7 @@ namespace controller_interface
 
                     flag_injection_autonomous = true;
                 }
-                else 
+                else
                 {
                     //手動から自動になったときに、一回だけ速度指令値に0を代入してpubする。
                     if(flag_injection_autonomous == true)
@@ -753,10 +753,10 @@ namespace controller_interface
             while(rclcpp::ok())
             {
                 clilen = sizeof(cliaddr);
-                    
+
                 // bufferに受信したデータが格納されている
                 n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
-                    
+
                 if (n < 0)
                 {
                     perror("recvfrom");
@@ -810,7 +810,7 @@ namespace controller_interface
 
                     flag_injection_autonomous = true;
                 }
-                else 
+                else
                 {
                     //手動から自動になったときに、一回だけ速度指令値に0を代入してpubする。
                     if(flag_wheel_autonomous == true || flag_injection_autonomous == true)
@@ -838,7 +838,7 @@ namespace controller_interface
             //CommonProsesからのBaseContolをsubしてコントローラとの同期をする
             is_reset = msg->is_restart;
             is_emergency = msg->is_emergency;
-            is_wheel_autonomous = msg->is_wheel_autonomous; 
+            is_wheel_autonomous = msg->is_wheel_autonomous;
             is_injection_autonomous = msg->is_injection_autonomous;
             is_injection_m0 = msg->is_injection_m0;
         }
@@ -889,7 +889,7 @@ namespace controller_interface
             // msg_injection_calculator1_convergence->injection_calculator1 = is_injection_calculator1_convergence;
             // _pub_convergence->publish(*msg_injection_calculator1_convergence);
         }
-    
+
     CommonProces::CommonProces(const rclcpp::NodeOptions &options) : CommonProces("", options) {}
     CommonProces::CommonProces(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("controller_common_proces_node", name_space, options)

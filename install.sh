@@ -16,4 +16,4 @@ sudo apt install ros-foxy-xacro -y
 sudo apt install ros-foxy-gazebo-ros-pkgs -y
 sudo apt install python3-pip -y
 
-sudo pip3 install networkx pyqt5 
+sudo pip3 install networkx pyqt5
