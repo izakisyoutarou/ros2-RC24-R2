@@ -124,10 +124,6 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
   vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(laser, src_points);
 
-  /////////////////////////////////////////////////////////////////////////
-  detect_circles.calc_pose(filtered_points);
-  /////////////////////////////////////////////////////////////////////////
-
   detect_lines.fuse_inliers(filtered_points);
   vector<LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
@@ -137,7 +133,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
 
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
-  // est_diff_sum += estimated - current_scan_odom;
+  est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
 
   if(plot_mode_) publishers(filtered_points);
