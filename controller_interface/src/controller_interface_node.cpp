@@ -565,7 +565,7 @@ namespace controller_interface
                 if (n < 0)
                 {
                     perror("recvfrom");
-                    exit(1);
+                    RCLCPP_INFO(this->get_logger(), "error");
                 }
 
                 std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
