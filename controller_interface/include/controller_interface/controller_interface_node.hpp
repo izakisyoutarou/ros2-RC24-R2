@@ -131,6 +131,7 @@ namespace controller_interface
             const int udp_port_ER_main;
             const int udp_port_ER_sub;
             const int udp_port_RR;
+            const int udp_timeout;
 
             //UDP用
             int sockfd, n;

@@ -4,6 +4,7 @@ using namespace utils;
 
 namespace controller_interface
 {
+    #define BUFFER_NUM 3
     #define BUFSIZE 1024
     using std::string;
 
@@ -34,7 +35,8 @@ namespace controller_interface
         defalt_injection_m0_flag(get_parameter("defalt_injection_m0_flag").as_bool()),
         udp_port_ER_main(get_parameter("udp_port_ER_main").as_int()),
         udp_port_ER_sub(get_parameter("udp_port_ER_sub").as_int()),
-        udp_port_RR(get_parameter("udp_port_RR").as_int())
+        udp_port_RR(get_parameter("udp_port_RR").as_int()),
+        udp_timeout(get_parameter("udp_timeout").as_int())
         {
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
 
@@ -559,6 +561,9 @@ namespace controller_interface
             float analog_l_y = 0.0f;
             float analog_r_x = 0.0f;
             float analog_r_y = 0.0f;
+
+            int buf_index = 0;
+            char buffer[2][BUFSIZE];
 
             while(rclcpp::ok())
             {
