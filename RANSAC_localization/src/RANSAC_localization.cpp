@@ -19,7 +19,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   const auto inlier_length_threshold_ = this->get_parameter("inlier_length_threshold").as_double();
 
   restart_subscriber = this->create_subscription<controller_interface_msg::msg::BaseControl>(
-    "base_control",_qos,
+    "pub_base_control",_qos,
     bind(&RANSACLocalization::callback_restart, this, placeholders::_1));
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
