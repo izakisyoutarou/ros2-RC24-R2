@@ -216,7 +216,7 @@
 
   <!-- 地面からセンサ:0.1711 - シャーシからタイヤ:0.05 + タイヤ半径:0.05 = 0.0711 -->
   <joint type="fixed" name="hokuyo_joint">
-    <origin xyz="0.1975 0 0.0711" rpy="0 0 0"/>
+    <origin xyz="0.1975 0 0.0711" rpy="3.14159 0 0"/>
     <child link="hokuyo"/>
     <parent link="chassis"/>
     <axis xyz="0 1 0" rpy="0 0 0"/>
