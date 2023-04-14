@@ -19,7 +19,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   const auto inlier_length_threshold_ = this->get_parameter("inlier_length_threshold").as_double();
 
   restart_subscriber = this->create_subscription<controller_interface_msg::msg::BaseControl>(
-    "base_control",_qos,
+    "pub_base_control",_qos,
     bind(&RANSACLocalization::callback_restart, this, placeholders::_1));
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -237,7 +237,7 @@ void RANSACLocalization::create_map_line(vector<LaserPoint> &points, const doubl
 Vector3d RANSACLocalization::calc_body_to_sensor(const Vector6d& sensor_pos){
   // yaw, pitch, rollから回転行列を計算
   Vector3d sensor_pos_;
-  sensor_pos_ << sensor_pos[0], sensor_pos[1], sensor_pos[2];
+  sensor_pos_ << sensor_pos[0], -sensor_pos[1], sensor_pos[2];
   const double s_r = sin(sensor_pos[3]);
   const double s_p = sin(sensor_pos[4]);
   const double s_y = sin(sensor_pos[5]);

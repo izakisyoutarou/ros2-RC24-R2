@@ -26,6 +26,7 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(path_msg REQUIRED)
 find_package(socketcan_interface_msg REQUIRED)
+find_package(controller_interface_msg REQUIRED)
 find_package(utilities REQUIRED)
 
 add_library(spline_pid_node src/spline_pid_node.cpp)
@@ -38,6 +39,7 @@ ament_target_dependencies(spline_pid_node
   geometry_msgs
   path_msg
   socketcan_interface_msg
+  controller_interface_msg
   utilities
 )
 
@@ -80,6 +82,7 @@ ament_export_targets(
 ament_export_dependencies(
     rclcpp
     path_msg
+    controller_interface_msg
 )
 
 #-- for Python
