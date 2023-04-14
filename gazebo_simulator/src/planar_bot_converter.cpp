@@ -56,8 +56,8 @@ void PlanarBotConverter::callback_odom(const nav_msgs::msg::Odometry::SharedPtr 
 
 
     uint8_t _candata[8];
-    float_to_bytes(_candata, (float)(msg->pose.pose.position.x - pose_array[0]));
-    float_to_bytes(_candata+4, (float)(msg->pose.pose.position.y - pose_array[1]));
+    float_to_bytes(_candata, static_cast<float>(msg->pose.pose.position.x - pose_array[0]));
+    float_to_bytes(_candata+4, static_cast<float>(msg->pose.pose.position.y - pose_array[1]));
     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata[i];
 
     // クオータニオンからオイラー角に変換
@@ -71,7 +71,7 @@ void PlanarBotConverter::callback_odom(const nav_msgs::msg::Odometry::SharedPtr 
     m.getRPY(roll, pitch, yaw);
     // yaw角だけ使用
     this->yaw = yaw;    //速度指令に使う方向角を抽出
-    float_to_bytes(_candata, (float)(yaw - pose_array[2]));
+    float_to_bytes(_candata, static_cast<float>(yaw - pose_array[2]));
     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
 
     publisher_odom_linear->publish(*msg_linear);

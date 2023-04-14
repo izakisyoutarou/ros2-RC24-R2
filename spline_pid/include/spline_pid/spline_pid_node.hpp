@@ -6,6 +6,7 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include "path_msg/msg/path.hpp"
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
+#include "controller_interface_msg/msg/base_control.hpp"
 #include "trapezoidal_velocity_planner.hpp"
 
 #include "spline_pid/visibility_control.h"
@@ -25,12 +26,14 @@ public:
 
 private:
     rclcpp::Subscription<path_msg::msg::Path>::SharedPtr _subscription_path;
+    rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _subscription_base_control;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_self_pose;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_target_angle;
 
     void _subscriber_callback_path(const path_msg::msg::Path::SharedPtr msg);
+    void _subscriber_callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
     void _subscriber_callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
-    void _subscriber_callback_target_angle(const geometry_msgs::msg::Vector3::SharedPtr msg);
+    void _subscriber_callback_target_angle_diff(const geometry_msgs::msg::Vector3::SharedPtr msg);
 
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_velocity;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr publisher_is_tracking;

@@ -45,15 +45,20 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
         _qos,
         std::bind(&SplinePid::_subscriber_callback_path, this, std::placeholders::_1)
     );
+    _subscription_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+        "pub_base_control",
+        _qos,
+        std::bind(&SplinePid::_subscriber_callback_base_control, this, std::placeholders::_1)
+    );
     _subscription_self_pose = this->create_subscription<geometry_msgs::msg::Vector3>(
         "self_pose",
         _qos,
         std::bind(&SplinePid::_subscriber_callback_self_pose, this, std::placeholders::_1)
     );
     _subscription_target_angle = this->create_subscription<geometry_msgs::msg::Vector3>(
-        "move_target_angle",
+        "move_target_angle_diff",
         _qos,
-        std::bind(&SplinePid::_subscriber_callback_target_angle, this, std::placeholders::_1)
+        std::bind(&SplinePid::_subscriber_callback_target_angle_diff, this, std::placeholders::_1)
     );
     _pub_timer = this->create_wall_timer(
         std::chrono::milliseconds(interval_ms),
@@ -75,8 +80,6 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
 }
 
 void SplinePid::_publisher_callback(){
-    if(max_trajectories>0){
-
     auto cmd_velocity = std::make_shared<geometry_msgs::msg::Twist>();
     auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
     msg_linear->canid = 0x110;
@@ -84,6 +87,8 @@ void SplinePid::_publisher_callback(){
     auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
     msg_angular->canid = 0x111;
     msg_angular->candlc = 4;
+
+    if(max_trajectories>0){ //追従時
 
     // 曲率考慮
     // VelPlannerLimit current_limit_linear = limit_linear;
@@ -162,7 +167,7 @@ void SplinePid::_publisher_callback(){
         publish_is_tracking(true);
     }
 
-    //送信
+    //CANメッセージのパック
     uint8_t _candata[8];
     float_to_bytes(_candata, static_cast<float>(cmd_velocity->linear.x));
     float_to_bytes(_candata+4, static_cast<float>(cmd_velocity->linear.y));
@@ -171,10 +176,6 @@ void SplinePid::_publisher_callback(){
     float_to_bytes(_candata, static_cast<float>(cmd_velocity->angular.z));
     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata[i];
 
-    publisher_velocity->publish(*cmd_velocity); //出版
-
-    publisher_linear->publish(*msg_linear);
-    publisher_angular->publish(*msg_angular);
 
     //前回値の更新
     last_target_position.x = path->x.at(current_count);
@@ -182,6 +183,12 @@ void SplinePid::_publisher_callback(){
     last_target_position.z = path->angle.at(current_count);
 
     }
+
+    //出版
+    publisher_velocity->publish(*cmd_velocity); //シミュレータ用コマンド
+
+    publisher_linear->publish(*msg_linear);
+    publisher_angular->publish(*msg_angular);
 }
 
 void SplinePid::_subscriber_callback_path(const path_msg::msg::Path::SharedPtr msg){
@@ -224,14 +231,21 @@ void SplinePid::_subscriber_callback_path(const path_msg::msg::Path::SharedPtr m
     }
 }
 
+void SplinePid::_subscriber_callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
+    if(msg->is_restart){
+        max_trajectories = 0;
+        RCLCPP_INFO(this->get_logger(), "経路追従を停止しました");
+    }
+}
+
 void SplinePid::_subscriber_callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg){
     this->self_pose.x = msg->x;
     this->self_pose.y = msg->y;
     this->self_pose.z = msg->z;
 }
-void SplinePid::_subscriber_callback_target_angle(const geometry_msgs::msg::Vector3::SharedPtr msg){
+void SplinePid::_subscriber_callback_target_angle_diff(const geometry_msgs::msg::Vector3::SharedPtr msg){
     if(max_trajectories>0){
-    velPlanner_angular.pos(msg->z,velPlanner_angular.vel());
+    velPlanner_angular.pos(msg->z,velPlanner_angular.vel() + self_pose.z);
     }
 }
 

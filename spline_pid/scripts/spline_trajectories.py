@@ -8,6 +8,7 @@ from ament_index_python.packages import get_package_share_directory
 from std_msgs.msg import String
 from std_msgs.msg import Bool
 from path_msg.msg import Path
+from controller_interface_msg.msg import BaseControl
 import math
 import networkx as nx
 from pycubicspline import *
@@ -26,8 +27,14 @@ class SplineTrajectories(Node):
             'is_move_tracking',
             self.is_tracking_callback,
             1)
+        self.subscription_base_control = self.create_subscription(
+            BaseControl,
+            'pub_base_control',
+            self.base_control_callback,
+            1)
         self.subscription_node  # 未使用変数の警告を防ぐ
         self.subscription_is_tracking
+        self.subscription_base_control
 
         self.publisher_path = self.create_publisher(Path, 'spline_path', 1)
 
@@ -35,17 +42,18 @@ class SplineTrajectories(Node):
         get_package_share_directory('main_executor'),
         'config',
         'spline_pid',
-        'edgelist.txt')
+        'edgelist.cfg')
         self.edgelist = nx.read_weighted_edgelist(edgelist_file_path)
 
         self.nodelist_file_path = os.path.join(
         get_package_share_directory('main_executor'),
         'config',
         'spline_pid',
-        'nodelist.txt')
+        'nodelist.cfg')
 
         # パラメータの宣言
         self.declare_parameter('resolution', 0.01)
+        self.declare_parameter('initial_pose', [-5.5, 0.0 ,0.0])
 
         self.current_node = 'O'
         self.target_node = 'O'
@@ -96,6 +104,9 @@ class SplineTrajectories(Node):
 
 
     def node_name_2_pose(self, node_name):
+        if node_name == 'O':
+            return self.get_parameter('initial_pose').get_parameter_value().double_array_value    #x,y,yaw
+
         with open(self.nodelist_file_path, 'r', encoding='utf-8') as file:
                 lines = file.read().splitlines()
                 for line in lines:
@@ -107,6 +118,13 @@ class SplineTrajectories(Node):
         self.is_tracking = msg.data
         if(msg.data is False):
             self.current_node = self.target_node
+
+    def base_control_callback(self, msg):
+        if (msg.is_restart is True):
+            self.current_node = 'O'
+            self.target_node = 'O'
+            self.is_tracking = False
+            self.get_logger().info('現状態と目標のノードを初期位置に戻しました')
 
 
 def main(args=None):
