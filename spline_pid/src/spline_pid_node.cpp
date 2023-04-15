@@ -62,7 +62,7 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
     );
     _pub_timer = this->create_wall_timer(
         std::chrono::milliseconds(interval_ms),
-        [this] { _publisher_callback(); }
+        [this] { if(is_running)_publisher_callback(); }
     );
 
     publisher_velocity = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
@@ -82,10 +82,10 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
 void SplinePid::_publisher_callback(){
     auto cmd_velocity = std::make_shared<geometry_msgs::msg::Twist>();
     auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_linear->canid = 0x110;
+    msg_linear->canid = 0x100;
     msg_linear->candlc = 8;
     auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_angular->canid = 0x111;
+    msg_angular->canid = 0x101;
     msg_angular->candlc = 4;
 
     if(max_trajectories>0){ //追従時
@@ -234,7 +234,18 @@ void SplinePid::_subscriber_callback_path(const path_msg::msg::Path::SharedPtr m
 void SplinePid::_subscriber_callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
     if(msg->is_restart){
         max_trajectories = 0;
+        velPlanner_linear.current(0.0, 0.0, 0.0);
+        velPlanner_angular.current(self_pose.z, 0.0, 0.0);
+        publish_is_tracking(false);
         RCLCPP_INFO(this->get_logger(), "経路追従を停止しました");
+    }
+    if(msg->is_wheel_autonomous){
+        is_running = true;
+        RCLCPP_INFO(this->get_logger(), "起動");
+    }
+    else if(!msg->is_wheel_autonomous){
+        is_running = false;
+        RCLCPP_INFO(this->get_logger(), "停止");
     }
 }
 
