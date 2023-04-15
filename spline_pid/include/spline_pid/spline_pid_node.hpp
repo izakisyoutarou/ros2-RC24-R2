@@ -48,6 +48,8 @@ private:
 
     rclcpp::QoS _qos = rclcpp::QoS(10);
 
+    bool is_running = false;
+
     // path_msg::msg::Path path;  //経路
     std::shared_ptr<path_msg::msg::Path> path;
 
