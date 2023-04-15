@@ -36,7 +36,7 @@ namespace controller_interface
         public:
             CONTROLLER_INTERFACE_PUBLIC
             explicit SmartphoneGamepad(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
-            
+
             CONTROLLER_INTERFACE_PUBLIC
             explicit SmartphoneGamepad(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
@@ -103,7 +103,7 @@ namespace controller_interface
             void callback_injection_calculator_er_left(const std_msgs::msg::Bool::SharedPtr msg);
             void callback_injection_calculator_er_right(const std_msgs::msg::Bool::SharedPtr msg);
             void callback_injection_calculator_rr(const std_msgs::msg::Bool::SharedPtr msg);
-            
+
             //base_control用
             bool is_reset = false;
             bool is_emergency = false;
@@ -131,6 +131,7 @@ namespace controller_interface
             const int udp_port_ER_main;
             const int udp_port_ER_sub;
             const int udp_port_RR;
+            const int udp_timeout_ms = 20;
 
             //UDP用
             int sockfd, n;
@@ -186,7 +187,7 @@ namespace controller_interface
 
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;
-            
+
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
             void callback_scrn(const controller_interface_msg::msg::SubScrn::SharedPtr msg);

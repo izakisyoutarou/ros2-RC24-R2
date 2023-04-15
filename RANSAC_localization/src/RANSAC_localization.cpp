@@ -237,7 +237,7 @@ void RANSACLocalization::create_map_line(vector<LaserPoint> &points, const doubl
 Vector3d RANSACLocalization::calc_body_to_sensor(const Vector6d& sensor_pos){
   // yaw, pitch, rollから回転行列を計算
   Vector3d sensor_pos_;
-  sensor_pos_ << sensor_pos[0], sensor_pos[1], sensor_pos[2];
+  sensor_pos_ << sensor_pos[0], -sensor_pos[1], sensor_pos[2];
   const double s_r = sin(sensor_pos[3]);
   const double s_p = sin(sensor_pos[4]);
   const double s_y = sin(sensor_pos[5]);

@@ -1,4 +1,6 @@
 #include "controller_interface/controller_interface_node.hpp"
+#include <sys/time.h>
+#include <sys/types.h>
 
 using namespace utils;
 
@@ -555,6 +557,9 @@ namespace controller_interface
             float analog_r_x = 0.0f;
             float analog_r_y = 0.0f;
 
+            // struct timeval tv;
+            // tv.tv_usec = udp_timeout_ms;
+
             while(rclcpp::ok())
             {
                 clilen = sizeof(cliaddr);
@@ -562,10 +567,17 @@ namespace controller_interface
                 // bufferに受信したデータが格納されている
                 n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
 
+                // if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0)
+                // {
+                //     perror("setsockopt");
+                //     return;
+                // }
+
                 if (n < 0)
                 {
                     perror("recvfrom");
-                    exit(1);
+                    RCLCPP_INFO(this->get_logger(), "error");
+                    continue;
                 }
 
                 std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
