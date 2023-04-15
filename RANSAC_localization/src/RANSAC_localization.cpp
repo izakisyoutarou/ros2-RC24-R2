@@ -27,11 +27,11 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   bind(&RANSACLocalization::callback_scan, this, placeholders::_1));
 
   odom_linear_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_rx_100",_qos,
+    "can_rx_110",_qos,
     bind(&RANSACLocalization::callback_odom_linear, this, placeholders::_1));
 
   odom_angular_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_rx_101",_qos,
+    "can_rx_111",_qos,
     bind(&RANSACLocalization::callback_odom_angular, this, placeholders::_1));
 
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
@@ -114,7 +114,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
-  if (dt_scan > 0.03 /* [sec] */) RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
+  // if (dt_scan > 0.03 /* [sec] */) RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
 
   Vector3d current_scan_odom = odom + est_diff_sum;
   Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
