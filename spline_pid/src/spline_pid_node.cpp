@@ -240,7 +240,12 @@ void SplinePid::_subscriber_callback_base_control(const controller_interface_msg
         RCLCPP_INFO(this->get_logger(), "経路追従を停止しました");
     }
     if(msg->is_wheel_autonomous){
-        is_running = msg->is_wheel_autonomous;
+        is_running = true;
+        RCLCPP_INFO(this->get_logger(), "起動");
+    }
+    else if(!msg->is_wheel_autonomous){
+        is_running = false;
+        RCLCPP_INFO(this->get_logger(), "停止");
     }
 }
 
