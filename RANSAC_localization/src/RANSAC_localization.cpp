@@ -34,8 +34,11 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
     "can_rx_111",_qos,
     bind(&RANSACLocalization::callback_odom_angular, this, placeholders::_1));
 
+  init_angle_publisher = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>(
+    "can_tx_120",_qos);
+
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
-    "self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
+    "self_pose", _qos);
 
   detect_lines.setup(robot_type_, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
   pose_fuser.setup(laser_weight_, odom_weight_liner_, odom_weight_angler_);
@@ -74,7 +77,18 @@ void RANSACLocalization::init(){
 
 void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
   RCLCPP_INFO(this->get_logger(), "RESTART");
-  if(msg->is_restart) init();
+  if(msg->is_restart){
+    init();
+
+    // 初期角度をpublish
+    uint8_t _candata[8];
+    auto msg_angle = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+    msg_angle->canid = 0x120;
+    msg_angle->candlc = 4;
+    float_to_bytes(_candata, static_cast<float>(init_pose[2]));
+    for(int i=0; i<msg_angle->candlc; i++) msg_angle->candata[i] = _candata[i];
+    init_angle_publisher->publish(*msg_angle);
+  }
 }
 
 void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -127,13 +141,27 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   detect_lines.fuse_inliers(filtered_points);
   vector<LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
-
   Vector3d ransac_estimated = current_scan_odom + trans;
   vector<LaserPoint> global_points = transform(line_points, trans);
 
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
-  est_diff_sum += estimated - current_scan_odom;
+    if(robot_type_ == "RR"){
+      double wt = abs(scan_odom_motion[2]/dt_scan);
+      if(wt < 1 ){
+        Vector3d trans_circle = current_scan_odom + detect_circles.calc_diff_pose(filtered_points);
+        if(trans[0]==0 && trans_circle[0] - current_scan_odom[0]>0){
+          RCLCPP_INFO(this->get_logger(), "TRANS X> %f", trans_circle[0] - current_scan_odom[0]);
+          estimated[0]=trans_circle[0];
+          }
+        if(trans[1]==0 && trans_circle[1] - current_scan_odom[1]>0){
+          RCLCPP_INFO(this->get_logger(), "TRANS Y> %f", trans_circle[1] - current_scan_odom[1]);
+          estimated[1]=trans_circle[1];
+        }
+      }
+    }
+
+  // est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
 
   if(plot_mode_) publishers(filtered_points);
@@ -206,13 +234,13 @@ void RANSACLocalization::create_RR_map(){
   RR_map_cloud = converter.vector_to_PC2(RR_map_points);
 }
 
-void RANSACLocalization::generate_circle(vector<LaserPoint> &points, const Circle &circle, int num_points){
+void RANSACLocalization::generate_circle(vector<LaserPoint> &points, const Vector3d &circle, int num_points){
   // 半円上の点を生成
   for (int i = 0; i < num_points / 2; ++i){
     LaserPoint point;
     double theta = static_cast<double>(i) / static_cast<double>(num_points / 2 - 1) * M_PI;
-    point.x = circle.x + circle.r * cos(theta);
-    point.y = circle.y + semi_circle(point.x - circle.x, circle.r);
+    point.x = circle[0] + circle[2] * cos(theta);
+    point.y = circle[1] + semi_circle(point.x - circle[0], circle[2]);
     if(i%2==0) point.y = -point.y;
     points.push_back(point);
   }

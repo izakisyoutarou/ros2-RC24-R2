@@ -12,23 +12,19 @@ struct LaserPoint{
   double y=0.0;
 };
 
-struct Circle{
-  double x=0.0;   // 中心座標x
-  double y=0.0;   // 中心座標y
-  double r=0.0;   // 半径
-  double rate=0.0;//検出した円の範囲に対するvoxel内の占有率
-};
-
-const double R = 0.1016/2;
-const Circle circle_self_right = {2.8-6., 2.8-6., R};
-const Circle circle_self_center = {2.8-6., 6.-6., R};
-const Circle circle_self_left = {2.8-6., 9.2-6, R};
-const Circle circle_opponent_right = {9.2-6., 2.8-6., R};
-const Circle circle_opponent_left = {9.2-6., 9.2-6, R};
+const double type_1_r = 0.1016/2;
+const Vector3d circle_self_right(2.8-6., 2.8-6., type_1_r);
+const Vector3d circle_self_center(2.8-6., 6.-6., type_1_r);
+const Vector3d circle_self_left(2.8-6., 9.2-6, type_1_r);
+const Vector3d circle_opponent_right(9.2-6., 2.8-6., type_1_r);
+const Vector3d circle_opponent_left(9.2-6., 9.2-6, type_1_r);
 const double ER_map_point_x[4] = {0.05-6., 1.975-6., 5.9875-6., 6.-6.};
 const double ER_map_point_y[4] = {0.05-6., 1.975-6, 10.025-6., 11.95-6.};
 const double RR_map_point[4] = {2.6-6., 4.5-6., 7.5-6., 9.4-6.};
 const double bridge_width = 0.975;
+
+inline bool detect_circles_flag{false};
+
 constexpr double radToDeg(const double rad){ return rad*180/M_PI; };
 constexpr double normalize_yaw(double yaw){
   if (yaw < -M_PI) yaw += 2*M_PI;
