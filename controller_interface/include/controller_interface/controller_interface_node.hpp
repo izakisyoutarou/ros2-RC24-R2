@@ -45,6 +45,7 @@ namespace controller_interface
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_er_main;
             //ER_subのcontrollerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_er_sub;
+            rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_scrn_er_sub;
             //RRのcontrollerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_rr;
 
@@ -77,6 +78,7 @@ namespace controller_interface
 
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;
+            rclcpp::TimerBase::SharedPtr _pub_timer_convergence;
 
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -85,6 +87,7 @@ namespace controller_interface
             void callback_pad_er_main(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_er_sub(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_rr(const controller_interface_msg::msg::SubPad::SharedPtr msg);
+            void callback_scrn_er_sub(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
             void callback_udp_er_main(int sockfd);
             void callback_udp_er_sub(int sockfd);
             void callback_udp_rr(int sockfd);
@@ -132,6 +135,8 @@ namespace controller_interface
             const int udp_port_ER_sub;
             const int udp_port_RR;
             const int udp_timeout_ms = 20;
+
+            int convergence_ms = 100;
 
             //UDP用
             int sockfd, n;

@@ -59,6 +59,12 @@ namespace controller_interface
                 std::bind(&SmartphoneGamepad::callback_pad_rr, this, std::placeholders::_1)
             );
 
+            _sub_scrn_er_sub = this->create_subscription<controller_interface_msg::msg::SubScrn>(
+                "sub_scrn",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_scrn_er_sub, this, std::placeholders::_1)
+            );
+
             //mainからsub
             _sub_main_injection_possible = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
                 "can_rx_201",
@@ -138,6 +144,20 @@ namespace controller_interface
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 0;
                     _pub_canusb->publish(*msg_heartbeat);
+                }
+            );
+
+            //convergence
+            _pub_timer_convergence = this->create_wall_timer(
+                std::chrono::milliseconds(convergence_ms),
+                [this] {
+                    auto msg_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
+                    msg_convergence->spline_convergence = is_spline_convergence;
+                    msg_convergence->injection_calculator0 = is_injection_calculator0_convergence;
+                    msg_convergence->injection_calculator1 = is_injection_calculator1_convergence;
+                    msg_convergence->injection0 = is_injection0_convergence;
+                    msg_convergence->injection1 = is_injection1_convergence;
+                    _pub_convergence->publish(*msg_convergence);
                 }
             );
 
@@ -341,21 +361,21 @@ namespace controller_interface
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(convergence[0] && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
                     is_injection0_convergence = false;
-                    is_injection_calculator0_convergence = false;
+                    //is_injection_calculator0_convergence = false;
                 }
             }
 
             if(msg->r2)
             {
-                if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
+                if(convergence[0] && is_injection1_convergence && is_injection_calculator1_convergence)
                 {
                     flag_injection1 = true;
                     is_injection1_convergence = false;
-                    is_injection_calculator1_convergence = false;
+                    //is_injection_calculator1_convergence = false;
                 }
             }
 
@@ -480,7 +500,7 @@ namespace controller_interface
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(convergence[0] && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
                     is_injection0_convergence = false;
@@ -536,6 +556,14 @@ namespace controller_interface
                 msg_base_control->is_restart = false;
                 _pub_common_base_control->publish(*msg_base_control);
             }
+        }
+
+        void SmartphoneGamepad::callback_scrn_er_sub(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
+        {
+            // if(msg->a || msg->b || msg->c || msg->d || msg->e || msg->f || msg->g || msg->h || msg->i || msg->j || msg->k)
+            // {
+            //     is_injection_calculator0_convergence = false;
+            // }
         }
 
         void SmartphoneGamepad::callback_udp_er_main(int sockfd)
@@ -852,40 +880,27 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg)
         {
-            //mainから射出可能司令のsub。それぞれをconvergenceの適当なところに入れてpub。上物の収束状況。
-            auto msg_injectioncommnd = std::make_shared<controller_interface_msg::msg::Convergence>();
-            uint8_t _candata[2];
-            for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
-            msg_injectioncommnd->injection0 = static_cast<bool>(_candata[0]);
-            msg_injectioncommnd->injection1 = static_cast<bool>(_candata[1]);
-            _pub_convergence->publish(*msg_injectioncommnd);
+            //mainから射出可能司令のsub。上物の収束状況。
+            is_injection0_convergence = static_cast<bool>(msg->candata[0]);
+            is_injection1_convergence = static_cast<bool>(msg->candata[1]);
         }
 
         void SmartphoneGamepad::callback_spline(const std_msgs::msg::Bool::SharedPtr msg)
         {
-            //spline_pidから足回り収束のsub。onvergenceの適当なところに入れてpub。足回りの収束状況。
-            auto msg_spline_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
+            //spline_pidから足回り収束のsub。足回りの収束状況。
             is_spline_convergence = msg->data;
-            msg_spline_convergence->spline_convergence = is_spline_convergence;
-            _pub_convergence->publish(*msg_spline_convergence);
         }
 
         void SmartphoneGamepad::callback_injection_calculator_er_left(const std_msgs::msg::Bool::SharedPtr msg)
         {
-            //injection_calculatorから上モノ指令値計算収束のsub。onvergenceの適当なところに入れてpub。上物の指令値の収束情報。
-            auto msg_injection_calculator0_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
+            //injection_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
             is_injection_calculator0_convergence = msg->data;
-            msg_injection_calculator0_convergence->injection_calculator0 = is_injection_calculator0_convergence;
-            _pub_convergence->publish(*msg_injection_calculator0_convergence);
         }
 
         void SmartphoneGamepad::callback_injection_calculator_er_right(const std_msgs::msg::Bool::SharedPtr msg)
         {
-            //injection_calculatorから上モノ指令値計算収束のsub。onvergenceの適当なところに入れてpub。上物の指令値の収束情報。7
-            auto msg_injection_calculator1_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
+            //injection_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
             is_injection_calculator1_convergence = msg->data;
-            msg_injection_calculator1_convergence->injection_calculator1 = is_injection_calculator1_convergence;
-            _pub_convergence->publish(*msg_injection_calculator1_convergence);
         }
 
          void SmartphoneGamepad::callback_injection_calculator_rr(const std_msgs::msg::Bool::SharedPtr msg)
