@@ -129,6 +129,13 @@ namespace controller_interface
             this->is_injection_autonomous = defalt_injection_autonomous_flag;
             this->is_injection_m0 = defalt_injection_m0_flag;
             _pub_common_base_control->publish(*msg_base_control);
+            
+            //電源のデフォルト値をmainにpub
+            auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_emergency->canid = 0x000;
+            msg_emergency->candlc = 1;
+            msg_emergency->candata[0] = defalt_emergency_flag;
+            _pub_canusb->publish(*msg_emergency);
 
             //ハートビート
             _pub_timer = this->create_wall_timer(
@@ -137,7 +144,7 @@ namespace controller_interface
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 0;
-                    _pub_canusb->publish(*msg_heartbeat);
+                    //_pub_canusb->publish(*msg_heartbeat);
                 }
             );
 
