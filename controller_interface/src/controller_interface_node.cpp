@@ -98,12 +98,6 @@ namespace controller_interface
                 std::bind(&SmartphoneGamepad::callback_injection_calculator_er_right, this, std::placeholders::_1)
             );
 
-            _sub_injection_calculator_rr = this->create_subscription<std_msgs::msg::Bool>(
-                "is_calculator_convergenced_right",
-                _qos,
-                std::bind(&SmartphoneGamepad::callback_injection_calculator_rr, this, std::placeholders::_1)
-            );
-
             //common_processからsub
             _sub_common_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
                 "pub_base_control",
@@ -361,21 +355,19 @@ namespace controller_interface
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(convergence[0] && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
                     is_injection0_convergence = false;
-                    //is_injection_calculator0_convergence = false;
                 }
             }
 
             if(msg->r2)
             {
-                if(convergence[0] && is_injection1_convergence && is_injection_calculator1_convergence)
+                if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
                 {
                     flag_injection1 = true;
                     is_injection1_convergence = false;
-                    //is_injection_calculator1_convergence = false;
                 }
             }
 
@@ -442,7 +434,7 @@ namespace controller_interface
             msg_injection->candlc = 2;
 
             auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_btn->canid = 0x300;
+            msg_btn->canid = 0x301;
             msg_btn->candlc = 8;
 
             auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
@@ -456,6 +448,13 @@ namespace controller_interface
 
             //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
+
+            if(msg->l3)
+            {
+                robotcontrol_flag = true;
+                if(is_injection_autonomous == false) is_injection_autonomous = true;
+                else is_injection_autonomous = false;
+            }
 
             if(msg->r3)
             {
@@ -500,7 +499,7 @@ namespace controller_interface
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(convergence[0] && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
                     is_injection0_convergence = false;
@@ -538,11 +537,7 @@ namespace controller_interface
             _candata_btn[7] = msg->up;
             for(int i=0; i<msg_btn->candlc; i++) msg_btn->candata[i] = _candata_btn[i];
 
-            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up)
-            {
-                _pub_canusb->publish(*msg_btn);
-                RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
-            }
+            if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) _pub_canusb->publish(*msg_btn);
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
             if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
@@ -560,10 +555,11 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_scrn_er_sub(const controller_interface_msg::msg::SubScrn::SharedPtr msg)
         {
-            // if(msg->a || msg->b || msg->c || msg->d || msg->e || msg->f || msg->g || msg->h || msg->i || msg->j || msg->k)
-            // {
-            //     is_injection_calculator0_convergence = false;
-            // }
+            if(msg->a || msg->b || msg->c || msg->d || msg->e || msg->f || msg->g || msg->h || msg->i || msg->j || msg->k)
+            {
+                if(msg->injection_mec == 0) is_injection_calculator0_convergence = false;
+                if(msg->injection_mec == 1) is_injection_calculator1_convergence = false;
+            }
         }
 
         void SmartphoneGamepad::callback_udp_er_main(int sockfd)
@@ -585,21 +581,12 @@ namespace controller_interface
             float analog_r_x = 0.0f;
             float analog_r_y = 0.0f;
 
-            // struct timeval tv;
-            // tv.tv_usec = udp_timeout_ms;
-
             while(rclcpp::ok())
             {
                 clilen = sizeof(cliaddr);
 
                 // bufferに受信したデータが格納されている
                 n = recvfrom(sockfd, buffer, BUFSIZE, 0, (struct sockaddr *) &cliaddr, &clilen);
-
-                // if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0)
-                // {
-                //     perror("setsockopt");
-                //     return;
-                // }
 
                 if (n < 0)
                 {
@@ -901,15 +888,6 @@ namespace controller_interface
         {
             //injection_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
             is_injection_calculator1_convergence = msg->data;
-        }
-
-         void SmartphoneGamepad::callback_injection_calculator_rr(const std_msgs::msg::Bool::SharedPtr msg)
-        {
-            //injection_calculatorから上モノ指令値計算収束のsub。onvergenceの適当なところに入れてpub。上物の指令値の収束情報。
-            // auto msg_injection_calculator1_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
-            // is_injection_calculator1_convergence = msg->data;
-            // msg_injection_calculator1_convergence->injection_calculator1 = is_injection_calculator1_convergence;
-            // _pub_convergence->publish(*msg_injection_calculator1_convergence);
         }
 
     CommonProces::CommonProces(const rclcpp::NodeOptions &options) : CommonProces("", options) {}
