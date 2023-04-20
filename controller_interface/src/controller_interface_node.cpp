@@ -361,7 +361,7 @@ namespace controller_interface
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(convergence[0] && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
                     is_injection0_convergence = false;
@@ -371,7 +371,7 @@ namespace controller_interface
 
             if(msg->r2)
             {
-                if(convergence[0] && is_injection1_convergence && is_injection_calculator1_convergence)
+                if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
                 {
                     flag_injection1 = true;
                     is_injection1_convergence = false;
@@ -500,7 +500,7 @@ namespace controller_interface
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(convergence[0] && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
                     is_injection0_convergence = false;
