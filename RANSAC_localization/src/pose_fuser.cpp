@@ -1,10 +1,11 @@
 #include "RANSAC_localization/pose_fuser.hpp"
 
 
-void PoseFuser::setup(const double laser_weight, const double odom_weight_liner, const double odom_weight_angler){
+void PoseFuser::setup(const string &robot_type, const double laser_weight, const double odom_weight_liner, const double odom_weight_angler){
   laser_weight_ = laser_weight;
   odom_weight_liner_ = odom_weight_liner;
   odom_weight_angler_ = odom_weight_angler;
+  robot_type_ = robot_type;
 }
 
 void PoseFuser::init(){
@@ -42,21 +43,31 @@ CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint
   CorrespondLaserPoint closest;
   CorrespondLaserPoint vertical_distance;
   double distance_min = 100.0;
+  const double *map_point_x = nullptr;
+  const double *map_point_y = nullptr;
+  if(robot_type_ == "ER"){
+    map_point_x = ER_map_point_x;
+    map_point_y = ER_map_point_y;
+  }
+  else if(robot_type_ == "RR"){
+    map_point_x = RR_map_point;
+    map_point_y = RR_map_point;
+  }
   for(int i=0; i<4; i++){
-    vertical_distance.x = fabs(ER_map_point_x[i] - global.x);
-    vertical_distance.y = fabs(ER_map_point_y[i] - global.y);
+    vertical_distance.x = fabs(map_point_x[i] - global.x);
+    vertical_distance.y = fabs(map_point_y[i] - global.y);
     if(vertical_distance.x < distance_min){
       distance_min = vertical_distance.x;
-      closest.x = ER_map_point_x[i];
+      closest.x = map_point_x[i];
       closest.y = global.y;
     }
     if(vertical_distance.y < distance_min){
       distance_min = vertical_distance.y;
       closest.x = global.x;
-      closest.y = ER_map_point_y[i];
+      closest.y = map_point_y[i];
     }
   }
-  if(closest.x==ER_map_point_x[0] || closest.x==ER_map_point_x[1] || closest.x==ER_map_point_x[2] || closest.x==ER_map_point_x[3]){
+  if(closest.x==map_point_x[0] || closest.x==map_point_x[1] || closest.x==map_point_x[2] || closest.x==map_point_x[3]){
     closest.nx=1.0;
     closest.ny=0.0;
   }
@@ -110,14 +121,14 @@ double PoseFuser::calc_vertical_distance(const CorrespondLaserPoint current, con
 Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const double dt){
   double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt;
   double wt = abs(scan_odom_motion[2]/dt);
-  const double thre = 0.1;                   // 静止時にlidarを信頼しすぎないための下限値
+  const double thre = 1.0;                   // 低速時、分散を大きくしないための閾値
   if (vt < thre) vt = thre;
   if (wt < thre) wt = thre;
   Matrix3d C1;
   C1.setZero();
-  C1(0,0) = 1*odom_weight_liner_/(vt*vt);                 // 並進成分x
-  C1(1,1) = 1*odom_weight_liner_/(vt*vt);                 // 並進成分y
-  C1(2,2) = 1*odom_weight_angler_/(wt*wt);                 // 回転成分
+  C1(0,0) = odom_weight_liner_/(vt*vt);                 // 並進成分x
+  C1(1,1) = odom_weight_liner_/(vt*vt);                 // 並進成分y
+  C1(2,2) = odom_weight_angler_/(wt*wt*wt*wt);                 // 回転成分
 
   return C1;
 }
