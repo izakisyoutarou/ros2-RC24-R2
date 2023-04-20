@@ -59,7 +59,6 @@ namespace controller_interface
             //injection_param_calculatorから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_er_left;
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_er_right;
-            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_rr;
 
             //common_processから
             rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_common_base_control;
@@ -105,7 +104,6 @@ namespace controller_interface
             //injection_param_calculatorからのcallback
             void callback_injection_calculator_er_left(const std_msgs::msg::Bool::SharedPtr msg);
             void callback_injection_calculator_er_right(const std_msgs::msg::Bool::SharedPtr msg);
-            void callback_injection_calculator_rr(const std_msgs::msg::Bool::SharedPtr msg);
 
             //base_control用
             bool is_reset = false;

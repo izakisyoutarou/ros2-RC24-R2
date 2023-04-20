@@ -9,3 +9,4 @@ bool h
 bool i
 bool j
 bool k
+int8 injection_mec
