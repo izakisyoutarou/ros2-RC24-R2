@@ -135,6 +135,7 @@ namespace controller_interface
             const int udp_timeout_ms = 20;
 
             int convergence_ms = 100;
+            int s_num = 1;
 
             //UDP用
             int sockfd, n;

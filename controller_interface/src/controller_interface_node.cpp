@@ -228,9 +228,13 @@ namespace controller_interface
             //gは緊急。is_emergencyを使って、トグルになるようにしてる。
             if(msg->g)
             {
-                robotcontrol_flag = true;
-                if(is_emergency == false) is_emergency = true;
-                else is_emergency = false;
+                if(s_num = 1)
+                {
+                    robotcontrol_flag = true;
+                    if(is_emergency == false) is_emergency = true;
+                    else is_emergency = false;
+                    s_num = 0;
+                }
             }
 
             //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
@@ -242,6 +246,7 @@ namespace controller_interface
                 is_injection_autonomous = defalt_injection_autonomous_flag;
                 is_emergency = defalt_emergency_flag;
                 is_injection_m0 = defalt_injection_m0_flag;
+                s_num = 1;
             }
 
             is_reset = msg->s;
@@ -337,9 +342,13 @@ namespace controller_interface
             //gは緊急。is_emergencyを使って、トグルになるようにしてる。
             if(msg->g)
             {
-                robotcontrol_flag = true;
-                if(is_emergency == false) is_emergency = true;
-                else is_emergency = false;
+                if(s_num == 1)
+                {
+                    robotcontrol_flag = true;
+                    if(is_emergency == false) is_emergency = true;
+                    else is_emergency = false;
+                    s_num = 0;
+                }
             }
 
             //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
