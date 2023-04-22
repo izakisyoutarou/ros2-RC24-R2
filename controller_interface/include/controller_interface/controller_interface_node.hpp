@@ -11,6 +11,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/string.hpp"
 //他のpkg
 #include "utilities/can_utils.hpp"
 #include "utilities/utils.hpp"
@@ -43,9 +44,12 @@ namespace controller_interface
         private:
             //ER_mainのcontrollerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_er_main;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_move_node;
             //ER_subのcontrollerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_er_sub;
             rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_scrn_er_sub;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_injection_pole_m0;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_injection_pole_m1;
             //RRのcontrollerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_rr;
 
@@ -69,6 +73,7 @@ namespace controller_interface
             //controllerへ
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
             rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_scrn;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_pole;
             //各nodeへリスタートと手自動の切り替えをpub
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_common_base_control;
 
@@ -82,10 +87,15 @@ namespace controller_interface
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
+            //共有のやつ
+            std_msgs::msg::String pole_data;
+
             //controllerからのcallback
             void callback_pad_er_main(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_er_sub(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_rr(const controller_interface_msg::msg::SubPad::SharedPtr msg);
+            void callback_move_node(const std_msgs::msg::String::SharedPtr msg);
+            void callback_pole_node(const std_msgs::msg::String::SharedPtr msg);
             void callback_scrn_er_sub(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
             void callback_udp_er_main(int sockfd);
             void callback_udp_er_sub(int sockfd);
@@ -136,6 +146,7 @@ namespace controller_interface
 
             int convergence_ms = 100;
             int s_num = 1;
+            std::string move_node;
 
             //UDP用
             int sockfd, n;
