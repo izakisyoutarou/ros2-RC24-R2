@@ -129,7 +129,7 @@ namespace controller_interface
             this->is_injection_autonomous = defalt_injection_autonomous_flag;
             this->is_injection_m0 = defalt_injection_m0_flag;
             _pub_common_base_control->publish(*msg_base_control);
-            
+
             //電源のデフォルト値をmainにpub
             auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_emergency->canid = 0x000;
@@ -205,7 +205,7 @@ namespace controller_interface
             msg_emergency->candlc = 1;
 
             auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_btn->canid = 0x300;
+            msg_btn->canid = 0x220;
             msg_btn->candlc = 8;
 
             auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
@@ -304,7 +304,7 @@ namespace controller_interface
             msg_injection->candlc = 2;
 
             auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_btn->canid = 0x300;
+            msg_btn->canid = 0x221;
             msg_btn->candlc = 8;
 
             auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
@@ -362,7 +362,7 @@ namespace controller_interface
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(is_spline_convergence == false && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
                     is_injection0_convergence = false;
@@ -371,7 +371,7 @@ namespace controller_interface
 
             if(msg->r2)
             {
-                if(is_spline_convergence && is_injection1_convergence && is_injection_calculator1_convergence)
+                if(is_spline_convergence == false && is_injection1_convergence && is_injection_calculator1_convergence)
                 {
                     flag_injection1 = true;
                     is_injection1_convergence = false;
