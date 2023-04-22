@@ -93,7 +93,7 @@ void InjectionInterface::_subscriber_callback_pole(const std_msgs::msg::String::
     TwoVector diff = target_pos - injection_pos;
 
     injection_command->distance = diff.length() - pole_diameter;
-    injection_command->direction = diff.angle();
+    injection_command->direction = diff.angle() - self_pose.z;
     injection_command->height = pole_height;
     publisher_injection->publish(*injection_command);
 }
