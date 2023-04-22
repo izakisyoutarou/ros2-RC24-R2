@@ -365,7 +365,6 @@ namespace controller_interface
                 if(is_spline_convergence == false && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
-                    is_injection0_convergence = false;
                 }
             }
 
@@ -374,7 +373,6 @@ namespace controller_interface
                 if(is_spline_convergence == false && is_injection1_convergence && is_injection_calculator1_convergence)
                 {
                     flag_injection1 = true;
-                    is_injection1_convergence = false;
                 }
             }
 
@@ -564,8 +562,16 @@ namespace controller_interface
         {
             if(msg->a || msg->b || msg->c || msg->d || msg->e || msg->f || msg->g || msg->h || msg->i || msg->j || msg->k)
             {
-                if(msg->injection_mec == 0) is_injection_calculator0_convergence = false;
-                if(msg->injection_mec == 1) is_injection_calculator1_convergence = false;
+                if(msg->injection_mec == 0) 
+                {
+                    is_injection_calculator0_convergence = false;
+                    is_injection0_convergence = false;
+                }
+                if(msg->injection_mec == 1)
+                {
+                    is_injection_calculator1_convergence = false;
+                    is_injection1_convergence = false;
+                }
             }
         }
 
