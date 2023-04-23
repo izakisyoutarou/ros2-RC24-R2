@@ -73,9 +73,12 @@ namespace controller_interface
             //controllerへ
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
             rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_scrn;
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_pole;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_injection_pole_m0;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_injection_pole_m1;
             //各nodeへリスタートと手自動の切り替えをpub
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_common_base_control;
+
+            //
 
             //test用のpub
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_test;
@@ -88,15 +91,19 @@ namespace controller_interface
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
             //共有のやつ
-            std_msgs::msg::String pole_data;
+            std_msgs::msg::String::SharedPtr pole_m0_data;
+            std_msgs::msg::String::SharedPtr pole_m1_data;
 
             //controllerからのcallback
             void callback_pad_er_main(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_er_sub(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_rr(const controller_interface_msg::msg::SubPad::SharedPtr msg);
+
             void callback_move_node(const std_msgs::msg::String::SharedPtr msg);
-            void callback_pole_node(const std_msgs::msg::String::SharedPtr msg);
+            void callback_injection_pole_m0(const std_msgs::msg::String::SharedPtr msg);
+            void callback_injection_pole_m1(const std_msgs::msg::String::SharedPtr msg);
             void callback_scrn_er_sub(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
+
             void callback_udp_er_main(int sockfd);
             void callback_udp_er_sub(int sockfd);
             void callback_udp_rr(int sockfd);
@@ -148,6 +155,8 @@ namespace controller_interface
             int s_num = 1;
             bool emergency_flag;
             std::string move_node;
+            std::string pole_data_m0;
+            std::string pole_data_m1;
 
             //UDP用
             int sockfd, n;

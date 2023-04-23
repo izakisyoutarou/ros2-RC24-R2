@@ -71,16 +71,16 @@ namespace controller_interface
                 std::bind(&SmartphoneGamepad::callback_scrn_er_sub, this, std::placeholders::_1)
             );
 
-            _sub_injection_pole_m0 = this->create_subscription<controller_interface_msg::msg::SubScrn>(
+            _sub_injection_pole_m0 = this->create_subscription<std_msgs::msg::String>(
                 "injection_pole_m0",
                 _qos,
-                std::bind(&SmartphoneGamepad::callback_pole_node, this, std::placeholders::_1)
+                std::bind(&SmartphoneGamepad::callback_injection_pole_m0, this, std::placeholders::_1)
             );
 
-            _sub_injection_pole_m1 = this->create_subscription<controller_interface_msg::msg::SubScrn>(
+            _sub_injection_pole_m1 = this->create_subscription<std_msgs::msg::String>(
                 "injection_pole_m1",
                 _qos,
-                std::bind(&SmartphoneGamepad::callback_pole_node, this, std::placeholders::_1)
+                std::bind(&SmartphoneGamepad::callback_injection_pole_m1, this, std::placeholders::_1)
             );
 
             //mainからsub
@@ -131,7 +131,9 @@ namespace controller_interface
 
             _pub_scrn = this->create_publisher<controller_interface_msg::msg::SubScrn>("sub_scrn" , _qos);
 
-            _pub_pole = this->create_publisher<std_msgs::msg::String>("injection_pole" , _qos);
+            _pub_injection_pole_m0 = this->create_publisher<std_msgs::msg::String>("injection_pole_m0" , _qos);
+
+            _pub_injection_pole_m1 = this->create_publisher<std_msgs::msg::String>("injection_pole_m1" , _qos);
 
             //各nodeへリスタートと手自動の切り替えをpub。
             _pub_common_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("sub_base_control",_qos);
@@ -234,6 +236,7 @@ namespace controller_interface
 
             bool robotcontrol_flag = false;//base_control(手自動、緊急、リスタート)が押されたらpubする
             bool flag_restart = false;//resertがtureをpubした後にfalseをpubする
+            bool flag_emergency = false;
 
             //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
@@ -251,18 +254,18 @@ namespace controller_interface
                 robotcontrol_flag = true;
                 if(s_num == 0)
                 {
-                     if(is_emergency == false) 
-                     {
+                    if(is_emergency == false) 
+                    {
                         is_emergency = true;
-                        emergency_flag = true;
-                     }
+                        flag_emergency = true;
+                    }
                 }
                 if(s_num == 1)
                 {
                     if(is_emergency == true) 
                     {
                         is_emergency =false;
-                        emergency_flag = true;
+                        flag_emergency = true;
                     }
                     s_num = 0;
                 }
@@ -311,7 +314,7 @@ namespace controller_interface
                 _pub_canusb->publish(*msg_btn);
                 //RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
             }
-            if(msg->g && emergency_flag)_pub_canusb->publish(*msg_emergency);
+            if(msg->g && flag_emergency)_pub_canusb->publish(*msg_emergency);
             if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
             if(msg->s)
             {
@@ -608,6 +611,9 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_move_node(const std_msgs::msg::String::SharedPtr msg)
         {
+            bool num_m0 = false;
+            bool num_m1 = false;
+
             auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_btn->canid = 0x301;
             msg_btn->candlc = 8;
@@ -626,16 +632,47 @@ namespace controller_interface
                 _pub_canusb->publish(*msg_btn);
             }
 
-            // if(is_spline_convergence == fasle)
-            // {
 
-            // }
+            if(!pole_data_m0.empty())
+            {
+                RCLCPP_INFO(this->get_logger(), "hello");
+                //DとEのときはしない
+                if(move_node == "A" || move_node == "B" || move_node == "C" || move_node == "F" || move_node == "G" || move_node == "H" || move_node == "I")
+                {
+                    if(num_m0 == false)
+                    {
+                        _pub_injection_pole_m0->publish(*pole_m0_data);
+                        num_m0 = true;
+                    }
+                }
+            }
+
+            if(!pole_data_m1.empty())
+            {
+                //DとEのときはしない
+                if(move_node == "A" || move_node == "B" || move_node == "C" || move_node == "F" || move_node == "G" || move_node == "H" || move_node == "I")
+                {
+                    if(num_m1 == false)
+                    {
+                        _pub_injection_pole_m1->publish(*pole_m1_data);
+                        num_m1 = true;
+                    }
+                }
+            }
 
         }
 
-        void SmartphoneGamepad::callback_pole_node(const std_msgs::msg::String::SharedPtr msg)
+        void SmartphoneGamepad::callback_injection_pole_m0(const std_msgs::msg::String::SharedPtr msg)
         {
-            pole_data.data = msg->data;
+            pole_data_m0 = msg->data;
+            pole_m0_data = msg;
+            //_pub_pole->publish(pole_data);
+        }
+
+        void SmartphoneGamepad::callback_injection_pole_m1(const std_msgs::msg::String::SharedPtr msg)
+        {
+            pole_data_m1 = msg->data;
+            pole_m1_data = msg;
             //_pub_pole->publish(pole_data);
         }
 
