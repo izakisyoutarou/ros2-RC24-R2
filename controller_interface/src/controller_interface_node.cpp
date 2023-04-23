@@ -164,7 +164,7 @@ namespace controller_interface
                     auto msg_heartbeat = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                     msg_heartbeat->canid = 0x001;
                     msg_heartbeat->candlc = 0;
-                   // _pub_canusb->publish(*msg_heartbeat);
+                    _pub_canusb->publish(*msg_heartbeat);
                 }
             );
 
@@ -251,11 +251,19 @@ namespace controller_interface
                 robotcontrol_flag = true;
                 if(s_num == 0)
                 {
-                     if(is_emergency == false) is_emergency = true;
+                     if(is_emergency == false) 
+                     {
+                        is_emergency = true;
+                        emergency_flag = true;
+                     }
                 }
                 if(s_num == 1)
                 {
-                    if(is_emergency == true) is_emergency =false;
+                    if(is_emergency == true) 
+                    {
+                        is_emergency =false;
+                        emergency_flag = true;
+                    }
                     s_num = 0;
                 }
             }
@@ -303,7 +311,7 @@ namespace controller_interface
                 _pub_canusb->publish(*msg_btn);
                 //RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
             }
-            if(msg->g && is_emergency)_pub_canusb->publish(*msg_emergency);
+            if(msg->g && emergency_flag)_pub_canusb->publish(*msg_emergency);
             if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
             if(msg->s)
             {
@@ -368,11 +376,19 @@ namespace controller_interface
                 robotcontrol_flag = true;
                 if(s_num == 0)
                 {
-                     if(is_emergency == false) is_emergency = true;
+                     if(is_emergency == false) 
+                     {
+                        is_emergency = true;
+                        emergency_flag = true;
+                     }
                 }
                 if(s_num == 1)
                 {
-                    if(is_emergency == true) is_emergency =false;
+                    if(is_emergency == true) 
+                    {
+                        is_emergency =false;
+                        emergency_flag = true;
+                    }
                     s_num = 0;
                 }
             }
@@ -442,7 +458,7 @@ namespace controller_interface
             for(int i=0; i<msg_btn->candlc; i++) msg_btn->candata[i] = _candata_btn[i];
 
             if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) _pub_canusb->publish(*msg_btn);
-            if(msg->g)_pub_canusb->publish(*msg_emergency);
+            if(msg->g && emergency_flag)_pub_canusb->publish(*msg_emergency);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
             if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
             if(msg->s)

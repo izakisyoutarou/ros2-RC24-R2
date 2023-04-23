@@ -146,6 +146,7 @@ namespace controller_interface
 
             int convergence_ms = 100;
             int s_num = 1;
+            bool emergency_flag;
             std::string move_node;
 
             //UDP用
