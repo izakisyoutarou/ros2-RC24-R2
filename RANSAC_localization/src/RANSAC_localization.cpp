@@ -35,7 +35,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
     bind(&RANSACLocalization::callback_odom_angular, this, placeholders::_1));
 
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
-    "self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
+    "self_pose", _qos);
 
   detect_lines.setup(robot_type_, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
   pose_fuser.setup(laser_weight_, odom_weight_liner_, odom_weight_angler_);
@@ -138,7 +138,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   if(abs(scan_odom_motion[2]) > 0.01) est_diff_sum[2] += estimated[2] - current_scan_odom[2];
   last_estimated = estimated;
 
-  if(plot_mode_) publishers(filtered_points);
+  if(plot_mode_) publishers(line_points);
 
   time_end = chrono::system_clock::now();
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
