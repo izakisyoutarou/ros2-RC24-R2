@@ -133,7 +133,9 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
 
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
-  est_diff_sum += estimated - current_scan_odom;
+  if(abs(scan_odom_motion[0]) > 0.015) est_diff_sum[0] += estimated[0] - current_scan_odom[0];
+  if(abs(scan_odom_motion[1]) > 0.015) est_diff_sum[1] += estimated[1] - current_scan_odom[1];
+  if(abs(scan_odom_motion[2]) > 0.01) est_diff_sum[2] += estimated[2] - current_scan_odom[2];
   last_estimated = estimated;
 
   if(plot_mode_) publishers(filtered_points);
