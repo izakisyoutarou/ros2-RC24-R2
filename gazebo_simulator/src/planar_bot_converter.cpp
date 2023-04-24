@@ -22,8 +22,8 @@ PlanarBotConverter::PlanarBotConverter(const std::string &name_space, const rclc
     );
 
     publisher_velocity = this->create_publisher<geometry_msgs::msg::Twist>("gazebo_simulator/cmd_vel", _qos);
-    publisher_odom_linear = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_rx_100", _qos);
-    publisher_odom_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_rx_101", _qos);
+    publisher_odom_linear = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_rx_110", _qos);
+    publisher_odom_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_rx_111", _qos);
     this->declare_parameter<std::vector<double>>("initial_pose", {0.0, 0.0, 0.0});
     pose_array = this->get_parameter("initial_pose").as_double_array();
 }
@@ -46,11 +46,11 @@ void PlanarBotConverter::callback_velocity(const geometry_msgs::msg::Twist::Shar
 //オドメトリをオイラー角にしてCANメッセージで名前空間なしで発行
 void PlanarBotConverter::callback_odom(const nav_msgs::msg::Odometry::SharedPtr msg){
     auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_linear->canid = 0x100;
+    msg_linear->canid = 0x110;
     msg_linear->candlc = 8;
     msg_linear->header = msg->header;
     auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_angular->canid = 0x101;
+    msg_angular->canid = 0x111;
     msg_angular->candlc = 4;
     msg_angular->header = msg->header;
 
