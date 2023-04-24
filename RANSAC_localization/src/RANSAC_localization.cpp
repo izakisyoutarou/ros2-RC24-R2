@@ -65,8 +65,8 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
 
 void RANSACLocalization::init(){
   est_diff_sum = init_pose;
-  // odom = init_pose;
-  // last_odom = init_pose;
+  odom = Vector3d::Zero();
+  last_odom = Vector3d::Zero();
   last_estimated = init_pose;
   pose_fuser.init();
   detect_lines.init();
@@ -83,7 +83,7 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   last_odom_received_time = odom_received_time;
   uint8_t _candata[8];
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
-  double x = (double)bytes_to_float(_candata);
+  const double x = (double)bytes_to_float(_candata);
   const double y = (double)bytes_to_float(_candata+4);
   Vector3d diff_odom = Vector3d::Zero();
   diff_odom[0] = x - last_odom[0];
