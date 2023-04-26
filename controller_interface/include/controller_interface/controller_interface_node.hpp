@@ -153,6 +153,7 @@ namespace controller_interface
 
             int convergence_ms = 100;
             int s_num = 1;
+            int s_num_rr = 1;
             std::string move_node;
             std::string pole_data_m0;
             std::string pole_data_m1;

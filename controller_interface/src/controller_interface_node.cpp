@@ -479,10 +479,10 @@ namespace controller_interface
 
             auto msg_injection = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_injection->canid = 0x200;
-            msg_injection->candlc = 2;
+            msg_injection->candlc = 1;
 
             auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_btn->canid = 0x301;
+            msg_btn->canid = 0x220;
             msg_btn->candlc = 8;
 
             auto msg_sub_scrn = std::make_shared<controller_interface_msg::msg::SubScrn>();
@@ -492,7 +492,6 @@ namespace controller_interface
             bool robotcontrol_flag = false;//base_control(手自動、緊急、リスタート)が押されたらpubする
             bool flag_restart = false;//resertがtureをpubした後にfalseをpubする
             bool flag_injection0 = false;//左の発射機構の最終射出許可
-            bool flag_injection1 = false;//右の発射機構の最終射出許可
 
             //r3は足回りの手自動の切り替え。is_wheel_autonomousを使って、トグルになるようにしてる。ERの上物からもらう必要はない。
             //ERの上物の場合は、上物の切り替えに当てている。
@@ -515,8 +514,15 @@ namespace controller_interface
             if(msg->g)
             {
                 robotcontrol_flag = true;
-                if(is_emergency == false) is_emergency = true;
-                else is_emergency = false;
+                if(s_num_rr == 0)
+                {
+                     if(is_emergency == false) is_emergency = true;
+                }
+                if(s_num_rr == 1)
+                {
+                    if(is_emergency == true) is_emergency =false;
+                    s_num_rr = 0;
+                }
             }
 
             //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
@@ -540,18 +546,16 @@ namespace controller_interface
                 is_wheel_autonomous = defalt_wheel_autonomous_flag;
                 is_injection_autonomous = defalt_injection_autonomous_flag;
                 is_emergency = defalt_emergency_flag;
-                is_injection_m0 = defalt_injection_m0_flag;
+                s_num_rr = 1;
             }
 
             //l2が左、r2が右の発射機構のトリガー。
             //それぞれ、発射されたら収束がfalseにするようにしている。
             if(msg->l2)
             {
-                if(is_spline_convergence && is_injection0_convergence && is_injection_calculator0_convergence)
+                if(is_spline_convergence == false && is_injection0_convergence && is_injection_calculator0_convergence)
                 {
                     flag_injection0 = true;
-                    is_injection0_convergence = false;
-                    is_injection_calculator0_convergence = false;
                 }
             }
 
@@ -571,7 +575,6 @@ namespace controller_interface
 
             //mainへ射出司令を送る代入
             _candata_btn[0] = flag_injection0;
-            _candata_btn[1] = flag_injection1;
             for(int i=0; i<msg_injection->candlc; i++) msg_injection->candata[i] = _candata_btn[i];
 
             //mainへボタン情報を送る代入
@@ -587,7 +590,7 @@ namespace controller_interface
 
             if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up) _pub_canusb->publish(*msg_btn);
             if(msg->g)_pub_canusb->publish(*msg_emergency);
-            if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
+            if(flag_injection0)_pub_canusb->publish(*msg_injection);
             if(robotcontrol_flag)_pub_common_base_control->publish(*msg_base_control);
             if(msg->s)
             {
