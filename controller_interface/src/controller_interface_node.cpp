@@ -444,6 +444,13 @@ namespace controller_interface
                 else is_wheel_autonomous = false;
             }
 
+            if(msg->l3)
+            {
+                robotcontrol_flag = true;
+                if(is_injection_autonomous == false) is_injection_autonomous = true;
+                else is_injection_autonomous = false;
+            }
+
             //gは緊急。is_emergencyを使って、トグルになるようにしてる。
             if(msg->g)
             {
@@ -521,7 +528,7 @@ namespace controller_interface
             if(msg->a || msg->b || msg->y || msg->x || msg->right || msg->down || msg->left || msg->up)
             {
                 _pub_canusb->publish(*msg_btn);
-                RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
+                //RCLCPP_INFO(this->get_logger(), "a:%db:%dy:%dx:%dright:%ddown:%dleft:%dup:%d", msg->a, msg->b, msg->y, msg->x, msg->right, msg->down, msg->left, msg->up);
             }
             if(msg->g)_pub_canusb->publish(*msg_emergency);
             if(flag_injection0 || flag_injection1)_pub_canusb->publish(*msg_injection);
@@ -664,7 +671,7 @@ namespace controller_interface
                 if (n < 0)
                 {
                     perror("recvfrom");
-                    exit(1);
+                    continue;
                 }
 
                 std::memcpy(&analog_l_x, &buffer[0], sizeof(analog_l_x));
@@ -778,8 +785,8 @@ namespace controller_interface
                 if(is_wheel_autonomous == false && is_injection_autonomous == true)
                 {
                     velPlanner_linear_x.vel(static_cast<double>(analog_l_y));//unityとロボットにおける。xとyが違うので逆にしている。
-                    velPlanner_linear_y.vel(static_cast<double>(analog_l_x));
-                    velPlanner_angular_z.vel(static_cast<double>(analog_r_x));
+                    velPlanner_linear_y.vel(static_cast<double>(-analog_l_x));
+                    velPlanner_angular_z.vel(static_cast<double>(-analog_r_x));
 
                     velPlanner_linear_x.cycle();
                     velPlanner_linear_y.cycle();
