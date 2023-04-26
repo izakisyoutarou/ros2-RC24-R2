@@ -74,6 +74,8 @@ private:
   nav_msgs::msg::Path path;
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
   rclcpp::QoS _qos = rclcpp::QoS(rclcpp::KeepLast(10));
+  rclcpp::QoS fast_qos = rclcpp::QoS(rclcpp::KeepLast(1));
+
 
   vector<LaserPoint> ER_map_points;
   vector<LaserPoint> RR_map_points;
@@ -91,5 +93,6 @@ private:
 
   bool plot_mode_;
   string robot_type_;
+  int count=0;
 };
 }

@@ -41,7 +41,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
     "self_pose", _qos);
 
   detect_lines.setup(robot_type_, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
-  pose_fuser.setup(laser_weight_, odom_weight_liner_, odom_weight_angler_);
+  pose_fuser.setup(robot_type_, laser_weight_, odom_weight_liner_, odom_weight_angler_);
   voxel_grid_filter.setup(voxel_size_);
 
   tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
@@ -50,16 +50,16 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
 
   if(plot_mode_){
     ransaced_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "self_localization/ransac",rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
+      "self_localization/ransac",fast_qos);
 
     path_publisher = this->create_publisher<nav_msgs::msg::Path>(
-      "self_localization/path",rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
+      "self_localization/path",fast_qos);
 
     pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-      "self_localization/pose", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
+      "self_localization/pose", fast_qos);
 
     map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-      "self_localization/map", rclcpp::QoS(rclcpp::KeepLast(0)).transient_local().reliable());
+      "self_localization/map", fast_qos);
 
     if(robot_type_ == "ER") create_ER_map();
     else if(robot_type_ == "RR") create_RR_map();
@@ -67,9 +67,9 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
 }
 
 void RANSACLocalization::init(){
-  est_diff_sum = Vector3d::Zero();
-  odom = init_pose;
-  last_odom = init_pose;
+  est_diff_sum = init_pose;
+  odom = Vector3d::Zero();
+  last_odom = Vector3d::Zero();
   last_estimated = init_pose;
   pose_fuser.init();
   detect_lines.init();
@@ -99,12 +99,20 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double x = (double)bytes_to_float(_candata);
   const double y = (double)bytes_to_float(_candata+4);
-  odom[0] = x + init_pose[0];
-  odom[1] = y + init_pose[1];
-  if(abs(odom[0] - last_odom[0]) / dt_odom > 12) odom[0] = last_odom[0];
-  if(abs(odom[1] - last_odom[1]) / dt_odom > 12) odom[1] = last_odom[1];
-  last_odom[0] = odom[0];
-  last_odom[1] = odom[1];
+  Vector3d diff_odom = Vector3d::Zero();
+  diff_odom[0] = x - last_odom[0];
+  diff_odom[1] = y - last_odom[1];
+
+  if(abs(diff_odom[0]) / dt_odom > 4 || abs(diff_odom[1]) / dt_odom > 4){
+    diff_odom[0] = 0.0;
+    diff_odom[1] = 0.0;
+  }
+  odom[0] += diff_odom[0];
+  odom[1] += diff_odom[1];
+
+  last_odom[0] = x;
+  last_odom[1] = y;
+
   vector_msg.x = odom[0] + est_diff_sum[0];
   vector_msg.y = odom[1] + est_diff_sum[1];
 }
@@ -117,7 +125,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
   odom[2] = yaw + init_pose[2];
-  if(abs(odom[2] - last_odom[2]) / dt_jy > 15.7) odom[2] = last_odom[2];
+  if(abs(odom[2] - last_odom[2]) / dt_jy > M_PI/2) odom[2] = last_odom[2];
   last_odom[2] = odom[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
   self_pose_publisher->publish(vector_msg);
@@ -132,7 +140,11 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
 
   Vector3d current_scan_odom = odom + est_diff_sum;
   Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
+  if (scan_odom_motion[2] > M_PI) last_estimated[2] += 2*M_PI;
+  else if (scan_odom_motion[2] < -M_PI) last_estimated[2] -= 2*M_PI;
+  scan_odom_motion[2] = current_scan_odom[2] - last_estimated[2];
   tf_laser2robot[5] = current_scan_odom[2];
+
   Vector3d laser = current_scan_odom + calc_body_to_sensor(tf_laser2robot);
 
   vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
@@ -146,25 +158,10 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
 
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
-    if(robot_type_ == "RR"){
-      double wt = abs(scan_odom_motion[2]/dt_scan);
-      if(wt < 1 ){
-        Vector3d trans_circle = current_scan_odom + detect_circles.calc_diff_pose(filtered_points);
-        if(trans[0]==0 && trans_circle[0] - current_scan_odom[0]>0){
-          RCLCPP_INFO(this->get_logger(), "TRANS X> %f", trans_circle[0] - current_scan_odom[0]);
-          estimated[0]=trans_circle[0];
-          }
-        if(trans[1]==0 && trans_circle[1] - current_scan_odom[1]>0){
-          RCLCPP_INFO(this->get_logger(), "TRANS Y> %f", trans_circle[1] - current_scan_odom[1]);
-          estimated[1]=trans_circle[1];
-        }
-      }
-    }
-
-  // est_diff_sum += estimated - current_scan_odom;
+  est_diff_sum += estimated - current_scan_odom;
   last_estimated = estimated;
 
-  if(plot_mode_) publishers(filtered_points);
+  if(plot_mode_) publishers(src_points);
 
   time_end = chrono::system_clock::now();
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
@@ -279,5 +276,4 @@ Vector3d RANSACLocalization::calc_body_to_sensor(const Vector6d& sensor_pos){
   // センサの座標を回転行列で機体座標系に変換する
   return R * sensor_pos_;
 }
-
 }

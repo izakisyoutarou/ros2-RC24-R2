@@ -13,7 +13,7 @@ void PoseFuser::init(){
   reference_points.clear();
 }
 
-Vector3d PoseFuser::fuse_pose(const Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points){
+Vector3d PoseFuser::fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points){
   init();
   if(global_points.size()==0) return current_scan_odom;
   find_correspondence(src_points, global_points, current_points, reference_points);
@@ -176,7 +176,7 @@ Matrix3d PoseFuser::rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_o
   return J*scan_odom_motion_cov*JT;  // 回転変換
 }
 
-Vector3d PoseFuser::fuse(const Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov){
+Vector3d PoseFuser::fuse(Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov){
   // 共分散行列の融合
   Matrix3d IC1 = svdInverse(laser_cov);
   Matrix3d IC2 = svdInverse(rotate_scan_odom_motion_cov);
@@ -184,10 +184,9 @@ Vector3d PoseFuser::fuse(const Vector3d &laser_estimated, const Matrix3d &laser_
   Matrix3d fused_cov = svdInverse(IC);
 
   //角度を連続に保つ
-  Vector3d laser_estimated_ = laser_estimated;
   double da = current_scan_odom[2] - laser_estimated[2];
-  if (da > M_PI) laser_estimated_[2] += 2*M_PI;
-  else if (da < -M_PI) laser_estimated_[2] -= 2*M_PI;
+  if (da > M_PI) laser_estimated[2] += 2*M_PI;
+  else if (da < -M_PI) laser_estimated[2] -= 2*M_PI;
 
   // 平均を算出
   Vector3d nu1 = IC1*laser_estimated;

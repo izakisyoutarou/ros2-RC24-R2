@@ -31,7 +31,7 @@ void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points){
   init();
   devide_points(src_points);
   get_inliers();
-  if(robot_type_ == "RR" && lines_[1].points.size()>0) detect_circles_flag=false;
+  if(robot_type_ == "RR" && lines_[1].points.size()>0) detect_circles_flag=true;
   calc_estimated_diff();
 }
 

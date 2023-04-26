@@ -64,6 +64,7 @@ private:
     const double linear_planner_vel_limit_gain;
     const double linear_planner_gain;
     const double linear_pos_gain;
+    const double linear_pos_diff_gain;
     const double linear_pos_integral_gain;
 
     const double angular_planner_gain;
@@ -83,11 +84,16 @@ private:
     geometry_msgs::msg::Vector3 last_target_position;   //最後に参照した目標位置
     double x_diff = 1.0;
     double y_diff = 1.0;    //0での除算を防ぐため1を入れておく
-    //積分
+
     double sampling_time = 0.0;
+    //積分
     double error_x_integral = 0.0;
     double error_y_integral = 0.0;
     double error_a_integral = 0.0;
+    //過去偏差
+    double last_error_x = 0.0;
+    double last_error_y = 0.0;
+    double last_error_a = 0.0;
 };
 
 }  // namespace spline_pid
