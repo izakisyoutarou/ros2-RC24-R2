@@ -1,4 +1,5 @@
 bool is_restart
+string initial_state
 bool is_emergency
 bool is_wheel_autonomous
 bool is_injection_autonomous
