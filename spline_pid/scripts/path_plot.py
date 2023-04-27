@@ -111,11 +111,17 @@ class PathPlotter(qtw.QWidget):
         axis.plot([0, -6], [6, 6],color="green")
         axis.plot([-6, -6], [6, -6],color="green")
         axis.plot([-6, 0], [-6, -6],color="green")
-        axis.plot([0, 0], [6, 4],color="green")
         axis.plot([0, -4], [4, 4],color="green")
         axis.plot([-4, -4], [4, -4],color="green")
         axis.plot([-4, -1], [-4, -4],color="green")
-        axis.plot([0, 0], [-6, -4],color="green")
+        axis.plot([0, 0], [-6, 6],color="green")
+        axis.plot([-3.4, -1], [-3.4, -3.4],color="green")
+        axis.plot([-3.4, 0], [3.4, 3.4],color="green")
+        axis.plot([-3.4, -3.4], [-3.4, 3.4],color="green")
+        axis.plot([-1.5, 0], [-1.5, -1.5],color="green")
+        axis.plot([-1.5, 0], [1.5, 1.5],color="green")
+        axis.plot([-1.5, -1.5], [-1.5, 1.5],color="green")
+        axis.plot([-1, -1], [-3.4, -4],color="green")
 
 
         axis = self.axis_ang
