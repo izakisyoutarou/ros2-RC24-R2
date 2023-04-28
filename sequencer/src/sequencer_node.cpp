@@ -16,6 +16,10 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
 : rclcpp::Node("sequencer_node", name_space, options),
 can_movable_id(get_parameter("canid.movable").as_int()),
 can_digital_button_id(get_parameter("canid.sub_digital_button").as_int()),
+can_inject_id(get_parameter("canid.inject").as_int()),
+
+socket_robot_state(get_parameter("port.robot_state").as_int()),
+socket_pole_state(get_parameter("port.pole_state").as_int()),
 
 pole_priorityA_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"pole_priority_A.cfg"),
 pole_priorityB_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"pole_priority_B.cfg"),
@@ -36,6 +40,11 @@ pole_priorityC_file_path(ament_index_cpp::get_package_share_directory("main_exec
         "can_rx_"+ (boost::format("%x") % can_movable_id).str(),
         _qos,
         std::bind(&Sequencer::_subscriber_callback_movable, this, std::placeholders::_1)
+    );
+
+    _socket_timer = this->create_wall_timer(
+        std::chrono::milliseconds(this->get_parameter("interval_ms").as_int()),
+        [this] { _recv_callback(); }
     );
 
     publisher_can = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
@@ -94,6 +103,17 @@ void Sequencer::_subscriber_callback_movable(const socketcan_interface_msg::msg:
         msg_move_node->data = current_inject_state;
         publisher_move_node->publish(*msg_move_node);
 
+    }
+}
+
+void Sequencer::_recv_callback(){
+    if(socket_robot_state.is_recved()){
+        unsigned char data[2];
+        _recv_robot_state(socket_robot_state.data(data));
+    }
+    if(socket_pole_state.is_recved()){
+        unsigned char data[11];
+        _recv_pole_state(socket_pole_state.data(data));
     }
 }
 

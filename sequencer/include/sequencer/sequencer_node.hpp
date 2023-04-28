@@ -5,6 +5,7 @@
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "controller_interface_msg/msg/convergence.hpp"
+#include "socket_udp.hpp"
 
 #include "sequencer/visibility_control.h"
 
@@ -26,6 +27,7 @@ private:
     void _subscriber_callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
     void _subscriber_callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg);
     void _subscriber_callback_movable(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+    void _recv_callback();
     void _recv_robot_state(const unsigned char data[2]);
     void _recv_pole_state(const unsigned char data[11]);
 
@@ -33,6 +35,11 @@ private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_pole_m0;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_pole_m1;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_move_node;
+
+    rclcpp::TimerBase::SharedPtr _socket_timer;
+
+    RecvUDP socket_robot_state;
+    RecvUDP socket_pole_state;
 
     rclcpp::QoS _qos = rclcpp::QoS(10);
 
