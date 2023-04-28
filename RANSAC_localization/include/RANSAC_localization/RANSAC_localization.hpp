@@ -89,5 +89,6 @@ private:
 
   bool plot_mode_;
   string robot_type_;
+  int count=0;
 };
 }

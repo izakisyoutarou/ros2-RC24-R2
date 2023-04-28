@@ -58,6 +58,6 @@ private:
   double inlier_dist_threshold_;
   double points_num_threshold;
   double detect_length = 0.0;
-  const double distance_threshold=0.8;
+  const double distance_threshold=1.0;
   double last_lpf=0;
 };

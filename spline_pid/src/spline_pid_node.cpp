@@ -26,6 +26,7 @@ linear_planner_vel_limit_gain(get_parameter("linear_planner_vel_limit_gain").as_
 
 linear_planner_gain(get_parameter("linear_planner_gain").as_double()),
 linear_pos_gain(get_parameter("linear_pos_gain").as_double()),
+linear_pos_diff_gain(get_parameter("linear_pos_diff_gain").as_double()),
 linear_pos_integral_gain(get_parameter("linear_pos_integral_gain").as_double()),
 
 angular_planner_gain(get_parameter("angular_planner_gain").as_double()),
@@ -127,9 +128,17 @@ void SplinePid::_publisher_callback(){
     const double error_a = velPlanner_angular.pos() - self_pose.z;
     error_a_integral += error_a * sampling_time;
 
+    const double error_x_diff = (error_x - last_error_x) / sampling_time;
+    const double error_y_diff = (error_y - last_error_y) / sampling_time;
+    const double error_a_diff = (error_a - last_error_a) / sampling_time;
+
+    last_error_x = error_x;
+    last_error_y = error_y;
+    last_error_a = error_a;
+
     //並進速度処理
-    cmd_velocity->linear.x = velPlanner_linear.vel() * (x_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_x*linear_pos_gain + error_x_integral*linear_pos_integral_gain;
-    cmd_velocity->linear.y = velPlanner_linear.vel() * (y_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_y*linear_pos_gain + error_y_integral*linear_pos_integral_gain;
+    cmd_velocity->linear.x = velPlanner_linear.vel() * (x_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_x*linear_pos_gain + error_x_diff*linear_pos_diff_gain +error_x_integral*linear_pos_integral_gain;
+    cmd_velocity->linear.y = velPlanner_linear.vel() * (y_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_y*linear_pos_gain + error_y_diff*linear_pos_diff_gain +error_y_integral*linear_pos_integral_gain;
     const double vel_length = std::sqrt(cmd_velocity->linear.x*cmd_velocity->linear.x + cmd_velocity->linear.y*cmd_velocity->linear.y);
     if(vel_length > limit_linear.vel){
         cmd_velocity->linear.x *= limit_linear.vel / vel_length;

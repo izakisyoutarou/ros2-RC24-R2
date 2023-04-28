@@ -11,6 +11,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/string.hpp"
 //他のpkg
 #include "utilities/can_utils.hpp"
 #include "utilities/utils.hpp"
@@ -43,8 +44,12 @@ namespace controller_interface
         private:
             //ER_mainのcontrollerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_er_main;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_move_node;
             //ER_subのcontrollerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_er_sub;
+            rclcpp::Subscription<controller_interface_msg::msg::SubScrn>::SharedPtr _sub_scrn_er_sub;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_injection_pole_m0;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_injection_pole_m1;
             //RRのcontrollerから
             rclcpp::Subscription<controller_interface_msg::msg::SubPad>::SharedPtr _sub_pad_rr;
 
@@ -58,7 +63,6 @@ namespace controller_interface
             //injection_param_calculatorから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_er_left;
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_er_right;
-            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator_rr;
 
             //common_processから
             rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_common_base_control;
@@ -69,22 +73,37 @@ namespace controller_interface
             //controllerへ
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
             rclcpp::Publisher<controller_interface_msg::msg::SubScrn>::SharedPtr _pub_scrn;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_injection_pole_m0;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_injection_pole_m1;
             //各nodeへリスタートと手自動の切り替えをpub
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_common_base_control;
+
+            //
 
             //test用のpub
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_test;
 
             //timer
             rclcpp::TimerBase::SharedPtr _pub_timer;
+            rclcpp::TimerBase::SharedPtr _pub_timer_convergence;
 
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
+
+            //共有のやつ
+            std_msgs::msg::String::SharedPtr pole_m0_data;
+            std_msgs::msg::String::SharedPtr pole_m1_data;
 
             //controllerからのcallback
             void callback_pad_er_main(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_er_sub(const controller_interface_msg::msg::SubPad::SharedPtr msg);
             void callback_pad_rr(const controller_interface_msg::msg::SubPad::SharedPtr msg);
+
+            void callback_move_node(const std_msgs::msg::String::SharedPtr msg);
+            void callback_injection_pole_m0(const std_msgs::msg::String::SharedPtr msg);
+            void callback_injection_pole_m1(const std_msgs::msg::String::SharedPtr msg);
+            void callback_scrn_er_sub(const controller_interface_msg::msg::SubScrn::SharedPtr msg);
+
             void callback_udp_er_main(int sockfd);
             void callback_udp_er_sub(int sockfd);
             void callback_udp_rr(int sockfd);
@@ -102,7 +121,6 @@ namespace controller_interface
             //injection_param_calculatorからのcallback
             void callback_injection_calculator_er_left(const std_msgs::msg::Bool::SharedPtr msg);
             void callback_injection_calculator_er_right(const std_msgs::msg::Bool::SharedPtr msg);
-            void callback_injection_calculator_rr(const std_msgs::msg::Bool::SharedPtr msg);
 
             //base_control用
             bool is_reset = false;
@@ -132,6 +150,13 @@ namespace controller_interface
             const int udp_port_ER_sub;
             const int udp_port_RR;
             const int udp_timeout_ms = 20;
+
+            int convergence_ms = 100;
+            int s_num = 1;
+            int s_num_rr = 1;
+            std::string move_node;
+            std::string pole_data_m0;
+            std::string pole_data_m1;
 
             //UDP用
             int sockfd, n;
