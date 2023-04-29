@@ -24,8 +24,8 @@ find_package(ament_cmake REQUIRED)
 #独自メッセージ
 find_package(rosidl_default_generators REQUIRED)
 set(msg_files
-  "msg/Scrn.msg"
-  "msg/SubPad.msg"
+  "msg/Pole.msg"
+  "msg/Pad.msg"
   "msg/BaseControl.msg"
   "msg/Convergence.msg"
 )
