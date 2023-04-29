@@ -125,7 +125,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
   odom[2] = yaw + init_pose[2];
-  if(abs(odom[2] - last_odom[2]) / dt_jy > M_PI/2) odom[2] = last_odom[2];
+  if(abs(odom[2] - last_odom[2]) / dt_jy > M_PI) odom[2] = last_odom[2];
   last_odom[2] = odom[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
   self_pose_publisher->publish(vector_msg);
@@ -148,17 +148,17 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d laser = current_scan_odom + calc_body_to_sensor(tf_laser2robot);
 
   vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
-  vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(laser, src_points);
+  vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points);
 
   detect_lines.fuse_inliers(filtered_points);
   vector<LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
   Vector3d ransac_estimated = current_scan_odom + trans;
   vector<LaserPoint> global_points = transform(line_points, trans);
-
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
-
-  est_diff_sum += estimated - current_scan_odom;
+  if(abs(scan_odom_motion[0]) > 0.01) est_diff_sum[0] += estimated[0] - current_scan_odom[0];
+  if(abs(scan_odom_motion[1]) > 0.01) est_diff_sum[1] += estimated[1] - current_scan_odom[1];
+  if(abs(scan_odom_motion[2]) > 0.01) est_diff_sum[2] += estimated[2] - current_scan_odom[2];
   last_estimated = estimated;
 
   if(plot_mode_) publishers(src_points);

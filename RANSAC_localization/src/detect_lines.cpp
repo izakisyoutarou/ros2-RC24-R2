@@ -53,6 +53,10 @@ void DtectLines::calc_estimated_diff(){
   // 垂木だけを読むことでリング回収時の自己位置精度を高める
   if(robot_type_ == "ER"){
     check_tracking();
+    if(is_tracking_rafter_right && is_tracking_rafter_left){
+      if(lines_[0].points.size()<lines_[3].points.size()) is_tracking_rafter_right=false;
+      else is_tracking_rafter_left=true;
+    }
     if(is_tracking_rafter_right) calc_tracking_diff(0);
     if(is_tracking_rafter_left) calc_tracking_diff(3);
   }
@@ -61,11 +65,11 @@ void DtectLines::calc_estimated_diff(){
 void DtectLines::calc_tracking_diff(const int &num){
       if(!lines_[num].points.size()==0){
         estimated_diff[1] = ER_map_point_y[num] - calc_average(num);
-        estimated_diff[2] = lines_[num].angle;
+        // estimated_diff[2] = lines_[num].angle;
       }
       else {
         estimated_diff[1]=0.0;
-        estimated_diff[2]=0.0;
+        // estimated_diff[2]=0.0;
       }
 }
 

@@ -123,12 +123,13 @@ Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const doub
   double wt = abs(scan_odom_motion[2]/dt);
   const double thre = 1.0;                   // 低速時、分散を大きくしないための閾値
   if (vt < thre) vt = thre;
-  if (wt < thre) wt = thre;
+  // if (wt < thre) wt = thre;
   Matrix3d C1;
   C1.setZero();
-  C1(0,0) = odom_weight_liner_/(vt*vt);                 // 並進成分x
-  C1(1,1) = odom_weight_liner_/(vt*vt);                 // 並進成分y
-  C1(2,2) = odom_weight_angler_/(wt*wt*wt*wt);                 // 回転成分
+  C1(0,0) = odom_weight_liner_/(vt);                 // 並進成分x
+  C1(1,1) = odom_weight_liner_/(vt);                 // 並進成分y
+  wt+=1;  //lidarが回転に弱いため、回転時オドメトリの信頼度を上げる。
+  C1(2,2) = odom_weight_angler_/(wt*wt);                 // 回転成分
 
   return C1;
 }

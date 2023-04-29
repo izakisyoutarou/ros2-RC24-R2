@@ -13,7 +13,7 @@ public:
     vector<LaserPoint> src_points;
     for(size_t i=0; i< msg->ranges.size(); ++i) {
       LaserPoint src_point;
-      if(msg->ranges[i] > 14 || msg->ranges[i] < 0.5) continue;
+      if(msg->ranges[i] > 6 || msg->ranges[i] < 0.5) continue;
         double x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i);
         double y = -msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i);
         src_point.x = x * cos(laser[2]) - y * sin(laser[2]) + laser[0];
