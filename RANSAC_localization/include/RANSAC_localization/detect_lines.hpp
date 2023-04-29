@@ -37,6 +37,9 @@ private:
   double calc_diff_angle();
   double LPF(const double &raw);
   void calc_estimated_diff();
+  void calc_tracking_diff(const int &num);
+  double check_tracking();
+  double calc_average(const int &num);
 
   vector<vector<LaserPoint>> lines;
   /* linesの順番
@@ -60,4 +63,8 @@ private:
   double detect_length = 0.0;
   const double distance_threshold=1.0;
   double last_lpf=0;
+  bool is_tracking_rafter_left{false};
+  bool is_tracking_rafter_right{false};
+
+  chrono::system_clock::time_point detect_rafter_left_time, detect_rafter_right_time;
 };
