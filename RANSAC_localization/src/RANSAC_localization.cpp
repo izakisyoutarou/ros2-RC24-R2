@@ -27,15 +27,15 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   bind(&RANSACLocalization::callback_scan, this, placeholders::_1));
 
   odom_linear_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_rx_100",_qos,
+    "can_rx_110",_qos,
     bind(&RANSACLocalization::callback_odom_linear, this, placeholders::_1));
 
   odom_angular_subscriber = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_rx_101",_qos,
+    "can_rx_111",_qos,
     bind(&RANSACLocalization::callback_odom_angular, this, placeholders::_1));
 
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
-    "self_pose", _qos.reliable());  //メモリの使用量多すぎで安定しなくなる可能性。
+    "self_pose", _qos);
 
   detect_lines.setup(robot_type_, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
   pose_fuser.setup(laser_weight_, odom_weight_liner_, odom_weight_angler_);
@@ -64,9 +64,9 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
 }
 
 void RANSACLocalization::init(){
-  est_diff_sum = Vector3d::Zero();
-  odom = init_pose;
-  last_odom = init_pose;
+  est_diff_sum = init_pose;
+  odom = Vector3d::Zero();
+  last_odom = Vector3d::Zero();
   last_estimated = init_pose;
   pose_fuser.init();
   detect_lines.init();
@@ -85,12 +85,20 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double x = (double)bytes_to_float(_candata);
   const double y = (double)bytes_to_float(_candata+4);
-  odom[0] = x + init_pose[0];
-  odom[1] = y + init_pose[1];
-  if(abs(odom[0] - last_odom[0]) / dt_odom > 12) odom[0] = last_odom[0];
-  if(abs(odom[1] - last_odom[1]) / dt_odom > 12) odom[1] = last_odom[1];
-  last_odom[0] = odom[0];
-  last_odom[1] = odom[1];
+  Vector3d diff_odom = Vector3d::Zero();
+  diff_odom[0] = x - last_odom[0];
+  diff_odom[1] = y - last_odom[1];
+
+  if(abs(diff_odom[0]) / dt_odom > 4 || abs(diff_odom[1]) / dt_odom > 4){
+    diff_odom[0] = 0.0;
+    diff_odom[1] = 0.0;
+  }
+  odom[0] += diff_odom[0];
+  odom[1] += diff_odom[1];
+
+  last_odom[0] = x;
+  last_odom[1] = y;
+
   vector_msg.x = odom[0] + est_diff_sum[0];
   vector_msg.y = odom[1] + est_diff_sum[1];
 }
@@ -103,7 +111,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
   odom[2] = yaw + init_pose[2];
-  if(abs(odom[2] - last_odom[2]) / dt_jy > 15.7) odom[2] = last_odom[2];
+  if(abs(odom[2] - last_odom[2]) / dt_jy > M_PI/2) odom[2] = last_odom[2];
   last_odom[2] = odom[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
   self_pose_publisher->publish(vector_msg);
@@ -114,7 +122,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
-  if (dt_scan > 0.03 /* [sec] */) RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
+  // if (dt_scan > 0.03 /* [sec] */) RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
 
   Vector3d current_scan_odom = odom + est_diff_sum;
   Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
@@ -133,10 +141,12 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
 
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
-  est_diff_sum += estimated - current_scan_odom;
+  if(abs(scan_odom_motion[0]) > 0.015) est_diff_sum[0] += estimated[0] - current_scan_odom[0];
+  if(abs(scan_odom_motion[1]) > 0.015) est_diff_sum[1] += estimated[1] - current_scan_odom[1];
+  if(abs(scan_odom_motion[2]) > 0.01) est_diff_sum[2] += estimated[2] - current_scan_odom[2];
   last_estimated = estimated;
 
-  if(plot_mode_) publishers(filtered_points);
+  if(plot_mode_) publishers(line_points);
 
   time_end = chrono::system_clock::now();
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));

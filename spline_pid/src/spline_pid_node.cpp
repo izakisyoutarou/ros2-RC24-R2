@@ -26,6 +26,7 @@ linear_planner_vel_limit_gain(get_parameter("linear_planner_vel_limit_gain").as_
 
 linear_planner_gain(get_parameter("linear_planner_gain").as_double()),
 linear_pos_gain(get_parameter("linear_pos_gain").as_double()),
+linear_pos_diff_gain(get_parameter("linear_pos_diff_gain").as_double()),
 linear_pos_integral_gain(get_parameter("linear_pos_integral_gain").as_double()),
 
 angular_planner_gain(get_parameter("angular_planner_gain").as_double()),
@@ -62,7 +63,7 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
     );
     _pub_timer = this->create_wall_timer(
         std::chrono::milliseconds(interval_ms),
-        [this] { _publisher_callback(); }
+        [this] { if(is_running)_publisher_callback(); }
     );
 
     publisher_velocity = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
@@ -82,10 +83,10 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
 void SplinePid::_publisher_callback(){
     auto cmd_velocity = std::make_shared<geometry_msgs::msg::Twist>();
     auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_linear->canid = 0x110;
+    msg_linear->canid = 0x100;
     msg_linear->candlc = 8;
     auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_angular->canid = 0x111;
+    msg_angular->canid = 0x101;
     msg_angular->candlc = 4;
 
     if(max_trajectories>0){ //追従時
@@ -127,9 +128,17 @@ void SplinePid::_publisher_callback(){
     const double error_a = velPlanner_angular.pos() - self_pose.z;
     error_a_integral += error_a * sampling_time;
 
+    const double error_x_diff = (error_x - last_error_x) / sampling_time;
+    const double error_y_diff = (error_y - last_error_y) / sampling_time;
+    const double error_a_diff = (error_a - last_error_a) / sampling_time;
+
+    last_error_x = error_x;
+    last_error_y = error_y;
+    last_error_a = error_a;
+
     //並進速度処理
-    cmd_velocity->linear.x = velPlanner_linear.vel() * (x_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_x*linear_pos_gain + error_x_integral*linear_pos_integral_gain;
-    cmd_velocity->linear.y = velPlanner_linear.vel() * (y_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_y*linear_pos_gain + error_y_integral*linear_pos_integral_gain;
+    cmd_velocity->linear.x = velPlanner_linear.vel() * (x_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_x*linear_pos_gain + error_x_diff*linear_pos_diff_gain +error_x_integral*linear_pos_integral_gain;
+    cmd_velocity->linear.y = velPlanner_linear.vel() * (y_diff/(std::abs(x_diff)+std::abs(y_diff)))*linear_planner_gain + error_y*linear_pos_gain + error_y_diff*linear_pos_diff_gain +error_y_integral*linear_pos_integral_gain;
     const double vel_length = std::sqrt(cmd_velocity->linear.x*cmd_velocity->linear.x + cmd_velocity->linear.y*cmd_velocity->linear.y);
     if(vel_length > limit_linear.vel){
         cmd_velocity->linear.x *= limit_linear.vel / vel_length;
@@ -234,7 +243,18 @@ void SplinePid::_subscriber_callback_path(const path_msg::msg::Path::SharedPtr m
 void SplinePid::_subscriber_callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
     if(msg->is_restart){
         max_trajectories = 0;
+        velPlanner_linear.current(0.0, 0.0, 0.0);
+        velPlanner_angular.current(self_pose.z, 0.0, 0.0);
+        publish_is_tracking(false);
         RCLCPP_INFO(this->get_logger(), "経路追従を停止しました");
+    }
+    if(msg->is_move_autonomous){
+        is_running = true;
+        RCLCPP_INFO(this->get_logger(), "起動");
+    }
+    else if(!msg->is_move_autonomous){
+        is_running = false;
+        RCLCPP_INFO(this->get_logger(), "停止");
     }
 }
 

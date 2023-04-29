@@ -32,7 +32,7 @@ class PathPlotter(qtw.QWidget):
         get_package_share_directory('main_executor'),
         'config',
         'spline_pid',
-        'nodelist.txt')
+        'nodelist.cfg')
 
         self.node.get_logger().info('経路プロッター起動')
         # self.resize(320, 240)
