@@ -125,7 +125,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
   odom[2] = yaw + init_pose[2];
-  if(abs(odom[2] - last_odom[2]) / dt_jy > M_PI) odom[2] = last_odom[2];
+  if(abs(odom[2] - last_odom[2]) / dt_jy > 4*M_PI) odom[2] = last_odom[2];
   last_odom[2] = odom[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
   self_pose_publisher->publish(vector_msg);
@@ -158,12 +158,13 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
   if(abs(scan_odom_motion[0]) > 0.01) est_diff_sum[0] += estimated[0] - current_scan_odom[0];
   if(abs(scan_odom_motion[1]) > 0.01) est_diff_sum[1] += estimated[1] - current_scan_odom[1];
-  if(abs(scan_odom_motion[2]) > 0.01) est_diff_sum[2] += estimated[2] - current_scan_odom[2];
+  if(abs(scan_odom_motion[2]) > 0.001) est_diff_sum[2] += estimated[2] - current_scan_odom[2];
   last_estimated = estimated;
 
   if(plot_mode_) publishers(src_points);
 
   time_end = chrono::system_clock::now();
+  RCLCPP_INFO(this->get_logger(), "est_diff_sum x>%f y>%f a>%f°", est_diff_sum[0], est_diff_sum[1], radToDeg(est_diff_sum[2]));
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
 }

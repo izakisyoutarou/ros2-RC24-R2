@@ -2,6 +2,8 @@
 #include <vector>
 #include <eigen3/Eigen/Dense>
 #include "config.hpp"
+#include "detect_lines.hpp"
+
 using namespace std;
 using namespace Eigen;
 
@@ -46,4 +48,7 @@ private:
   double odom_weight_angler_;
   string robot_type_;
   bool accum{false};
+  int count=0;
+
+  DtectLines detect_lines;
 };

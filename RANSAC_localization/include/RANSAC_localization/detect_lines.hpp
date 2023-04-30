@@ -26,6 +26,7 @@ public:
 
   vector<LaserPoint> get_sum();
   Vector3d get_estimated_diff();
+  bool get_detect_circles_flag(){return detect_circles_flag;};
 
 private:
   EstimatedLine calc_inliers(vector<LaserPoint> &divided_points);
