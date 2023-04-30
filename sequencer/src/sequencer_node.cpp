@@ -21,9 +21,9 @@ can_inject_id(get_parameter("canid.inject").as_int()),
 socket_robot_state(get_parameter("port.robot_state").as_int()),
 socket_pole_state(get_parameter("port.pole_state").as_int()),
 
-pole_priorityA_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"pole_priority_A.cfg"),
-pole_priorityB_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"pole_priority_B.cfg"),
-pole_priorityC_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"pole_priority_C.cfg")
+pole_priorityA_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"/sequencer/"+"pole_priority_A.cfg"),
+pole_priorityB_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"/sequencer/"+"pole_priority_B.cfg"),
+pole_priorityC_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"/sequencer/"+"pole_priority_C.cfg")
 
 {
     _subscription_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
