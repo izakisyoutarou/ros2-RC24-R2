@@ -128,7 +128,7 @@ class SplineTrajectories(Node):
             self.is_tracking = False
             self.get_logger().info('現状態と目標のノードを初期位置に戻しました')
 
-        if (msg.is_wheel_autonomous is False):
+        if (msg.is_move_autonomous is False):
             pass
 
 
