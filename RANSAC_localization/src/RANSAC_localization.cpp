@@ -103,10 +103,9 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   diff_odom[0] = x - last_odom[0];
   diff_odom[1] = y - last_odom[1];
 
-  if(abs(diff_odom[0]) / dt_odom > 4 || abs(diff_odom[1]) / dt_odom > 4){
-    diff_odom[0] = 0.0;
-    diff_odom[1] = 0.0;
-  }
+  if(abs(diff_odom[0]) / dt_odom > 4) diff_odom[0] = 0.0;
+  if(abs(diff_odom[1]) / dt_odom > 4) diff_odom[1] = 0.0;
+
   odom[0] += diff_odom[0];
   odom[1] += diff_odom[1];
 
@@ -125,7 +124,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
   odom[2] = yaw + init_pose[2];
-  if(abs(odom[2] - last_odom[2]) / dt_jy > 4*M_PI) odom[2] = last_odom[2];
+  if(abs(odom[2] - last_odom[2]) / dt_jy > 6*M_PI) odom[2] = last_odom[2];
   last_odom[2] = odom[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
   self_pose_publisher->publish(vector_msg);
@@ -161,12 +160,18 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   if(abs(scan_odom_motion[2]) > 0.001) est_diff_sum[2] += estimated[2] - current_scan_odom[2];
   last_estimated = estimated;
 
-  if(plot_mode_) publishers(src_points);
-
+  if(plot_mode_) publishers(line_points);
   time_end = chrono::system_clock::now();
-  RCLCPP_INFO(this->get_logger(), "est_diff_sum x>%f y>%f a>%f°", est_diff_sum[0], est_diff_sum[1], radToDeg(est_diff_sum[2]));
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
+}
+
+Vector3d RANSACLocalization::get_correction_rate(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom){
+  Vector3d correction_rate;
+  correction_rate[0] = 1 - abs((laser_estimated[0]-estimated[0]) / (laser_estimated[0]-current_scan_odom[0]));
+  correction_rate[1] = 1 - abs((laser_estimated[1]-estimated[1]) / (laser_estimated[1]-current_scan_odom[1]));
+  correction_rate[2] = 1 - abs((laser_estimated[2]-estimated[2]) / (laser_estimated[2]-current_scan_odom[2]));
+  return correction_rate;
 }
 
 void RANSACLocalization::publishers(vector<LaserPoint> &points){

@@ -56,6 +56,7 @@ private:
   void create_map_line(vector<LaserPoint> &points, const double &start_map_point, const double &end_map_point, const double &static_map_point, const char coordinate);
   void publishers(vector<LaserPoint> &points);
   Vector3d calc_body_to_sensor(const Vector6d& sensor_pos);
+Vector3d get_correction_rate(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom);
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;

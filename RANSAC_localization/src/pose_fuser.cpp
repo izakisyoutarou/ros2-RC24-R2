@@ -20,7 +20,7 @@ Vector3d PoseFuser::fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_od
   Matrix3d laser_cov = laser_weight_ * calc_laser_cov(laser_estimated, current_points, reference_points);
   if(detect_lines.get_detect_circles_flag()){
     count++;
-    if(count<10) laser_cov*=0.1;
+    if(count<10) laser_cov*=0.5;
   }
   Matrix3d scan_odom_motion_cov = calc_motion_cov(scan_odom_motion, dt_scan);
   Matrix3d rotate_scan_odom_motion_cov = rotate_cov(laser_estimated, scan_odom_motion_cov);
@@ -125,13 +125,13 @@ double PoseFuser::calc_vertical_distance(const CorrespondLaserPoint current, con
 Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const double dt){
   double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt;
   double wt = abs(scan_odom_motion[2]/dt);
-  const double thre = 1.0;                   // 低速時、分散を大きくしないための閾値
+  const double thre = 0.01;                   // 低速時、分散を大きくしないための閾値
   if (vt < thre) vt = thre;
   // if (wt < thre) wt = thre;
   Matrix3d C1;
   C1.setZero();
-  C1(0,0) = odom_weight_liner_/(vt);                 // 並進成分x
-  C1(1,1) = odom_weight_liner_/(vt);                 // 並進成分y
+  C1(0,0) = odom_weight_liner_*vt;                 // 並進成分x
+  C1(1,1) = odom_weight_liner_*vt;                 // 並進成分y
   wt+=1;  //lidarが回転に弱いため、回転時オドメトリの信頼度を上げる。
   C1(2,2) = odom_weight_angler_/(wt*wt);                 // 回転成分
 
