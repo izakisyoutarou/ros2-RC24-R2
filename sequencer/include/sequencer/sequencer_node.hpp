@@ -59,9 +59,10 @@ private:
     std::vector<int> pole_priority_m0;
     std::vector<int> pole_priority_m1;
 
-    int last_pole_num_m0 = 11;   //最後に狙ったポール(最初は入らないように11で初期化)
-    int last_pole_num_m1 = 11;
-    unsigned char last_pole_state[11] = {0,0,0,0,0,0,0,0,0,0,0};
+    unsigned char last_pole_state[11] = {0,0,0,0,0,0,0,0,0,0,0};    //最後のポール情報
+
+    bool is_auto_inject_m0 = false;
+    bool is_auto_inject_m1 = false;
 };
 
 }  // namespace sequencer
