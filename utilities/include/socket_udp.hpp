@@ -7,7 +7,7 @@ class RecvUDP{
 public:
     RecvUDP(const int16_t port);
     const bool is_recved();
-    const unsigned char *data(unsigned char *data);
+    const unsigned char *data(unsigned char *data, size_t data_len);
 
 private:
     void recv(int sockfd);

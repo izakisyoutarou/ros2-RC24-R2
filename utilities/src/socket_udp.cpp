@@ -14,8 +14,8 @@ RecvUDP::RecvUDP(const int16_t port){
 
 }
 
-const unsigned char *RecvUDP::data(unsigned char *data){
-    memcpy(data, buffer, sizeof(data));
+const unsigned char *RecvUDP::data(unsigned char *data, size_t data_len){
+    memcpy(data, buffer, data_len);
     return data;
 }
 
