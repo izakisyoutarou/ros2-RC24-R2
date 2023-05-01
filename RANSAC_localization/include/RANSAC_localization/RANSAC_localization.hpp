@@ -56,7 +56,10 @@ private:
   void create_map_line(vector<LaserPoint> &points, const double &start_map_point, const double &end_map_point, const double &static_map_point, const char coordinate);
   void publishers(vector<LaserPoint> &points);
   Vector3d calc_body_to_sensor(const Vector6d& sensor_pos);
-Vector3d get_correction_rate(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom);
+  void update(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, vector<LaserPoint> &points);
+  void correction(const Vector3d &scan_odom_motion, const Vector3d &estimated, const Vector3d &current_scan_odom, const Vector3d &diff_circle);
+  void get_correction_rate_average(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom);
+  double calc_correction_rate_average(const double &estimated_, const double &laser_estimated_, const double &current_scan_odom_, double &correction_rate_sum_, int &correction_count_);
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
@@ -89,6 +92,10 @@ Vector3d get_correction_rate(const Vector3d &estimated, const Vector3d &laser_es
   double last_odom_received_time=0.0;
   double last_jy_received_time=0.0;
   double last_scan_received_time=0.0;
+
+  Vector3d correction_rate_ave = Vector3d::Zero();
+  Vector3d correction_rate_sum = Vector3d::Zero();
+  Vector3i correction_count = Vector3i::Zero();
 
   chrono::system_clock::time_point time_start, time_end;
 

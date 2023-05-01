@@ -155,23 +155,50 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d ransac_estimated = current_scan_odom + trans;
   vector<LaserPoint> global_points = transform(line_points, trans);
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
-  if(abs(scan_odom_motion[0]) > 0.01) est_diff_sum[0] += estimated[0] - current_scan_odom[0];
-  if(abs(scan_odom_motion[1]) > 0.01) est_diff_sum[1] += estimated[1] - current_scan_odom[1];
-  if(abs(scan_odom_motion[2]) > 0.001) est_diff_sum[2] += estimated[2] - current_scan_odom[2];
+
+  update(estimated, ransac_estimated, current_scan_odom, scan_odom_motion, src_points);
+
   last_estimated = estimated;
 
-  if(plot_mode_) publishers(line_points);
+  if(plot_mode_) publishers(src_points);
   time_end = chrono::system_clock::now();
+  // RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
 }
 
-Vector3d RANSACLocalization::get_correction_rate(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom){
-  Vector3d correction_rate;
-  correction_rate[0] = 1 - abs((laser_estimated[0]-estimated[0]) / (laser_estimated[0]-current_scan_odom[0]));
-  correction_rate[1] = 1 - abs((laser_estimated[1]-estimated[1]) / (laser_estimated[1]-current_scan_odom[1]));
-  correction_rate[2] = 1 - abs((laser_estimated[2]-estimated[2]) / (laser_estimated[2]-current_scan_odom[2]));
-  return correction_rate;
+void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, vector<LaserPoint> &points){
+  get_correction_rate_average(estimated, laser_estimated, current_scan_odom);
+  Vector3d diff_circle = correction_rate_ave.cwiseProduct(detect_circles.calc_diff_pose(points));
+  diff_circle[2] = 0.0;  //円の半径と角度の掛け算をしたため
+  correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
+}
+
+void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vector3d &estimated, const Vector3d &current_scan_odom, const Vector3d &diff_circle){
+  Vector3d correction_threshold(0.01, 0.01, 0.001);
+  Vector3d est_diff = estimated - current_scan_odom;  //直線からの推定値がデフォルト
+  for(size_t i=0; i<est_diff_sum.size(); i++){
+    if(abs(scan_odom_motion[i]) > correction_threshold[i]){
+      if(est_diff[i] == 0.0 && isfinite(diff_circle[i])) est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
+      est_diff_sum[i] += est_diff[i];
+    }
+  }
+}
+
+void RANSACLocalization::get_correction_rate_average(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom){
+  for(size_t i=0; i<correction_rate_ave.size(); i++){
+    double calc_correction_rate_average_ = calc_correction_rate_average(estimated[i], laser_estimated[i], current_scan_odom[i], correction_rate_sum[i], correction_count[i]);
+    if(isfinite(calc_correction_rate_average_)) correction_rate_ave[i] = calc_correction_rate_average_;
+  }
+}
+
+double RANSACLocalization::calc_correction_rate_average(const double &estimated_, const double &laser_estimated_, const double &current_scan_odom_, double &correction_rate_sum_, int &correction_count_){
+  double correction_rate_ = (1 - abs((laser_estimated_-estimated_) / (laser_estimated_-current_scan_odom_)));
+  if(!(correction_rate_==0.0) && isfinite(correction_rate_)){
+    correction_count_++;
+    correction_rate_sum_ += correction_rate_;
+  }
+  return correction_rate_sum_/correction_count_;
 }
 
 void RANSACLocalization::publishers(vector<LaserPoint> &points){
