@@ -23,7 +23,7 @@ public:
     voxel_size_ = voxel_size;
   }
 
-  vector<LaserPoint> apply_voxel_grid_filter(const Vector3d &laser, const vector<LaserPoint>& input_points) {
+  vector<LaserPoint> apply_voxel_grid_filter(const vector<LaserPoint>& input_points) {
     unordered_map<IntPair, vector<LaserPoint>, IntPairHash, IntPairEqual> voxel_grid;
     vector<LaserPoint> filtered_points;
     // 各点を対応するセルに割り当て

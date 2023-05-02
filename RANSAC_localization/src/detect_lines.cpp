@@ -31,6 +31,7 @@ void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points){
   init();
   devide_points(src_points);
   get_inliers();
+  if(robot_type_ == "RR" && lines_[1].points.size()>0) detect_circles_flag=true;
   calc_estimated_diff();
 }
 
@@ -39,19 +40,62 @@ void DtectLines::calc_estimated_diff(){
   estimated_diff[2] = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
-    double sum=0.0;
-    for(size_t j=0; j<lines_[i].points.size(); j++){
-      if(i<4) sum += lines_[i].points[j].y;
-      else sum += lines_[i].points[j].x;
-    }
+    double average = calc_average(i);
     if(robot_type_ == "ER"){
-      if(i<4) estimated_diff[1] = ER_map_point_y[i] - sum / lines_[i].points.size();
-      else estimated_diff[0] = ER_map_point_x[i-4] - sum / lines_[i].points.size();
+      if(i<4) estimated_diff[1] = ER_map_point_y[i] - average;
+      else estimated_diff[0] = ER_map_point_x[i-4] - average;
     }
     else if(robot_type_ == "RR"){
-      if(i<4) estimated_diff[1] = RR_map_point[i] - sum / lines_[i].points.size();
-      else estimated_diff[0] = RR_map_point[i-4] - sum / lines_[i].points.size();
+      if(i<4) estimated_diff[1] = RR_map_point[i] - average;
+      else estimated_diff[0] = RR_map_point[i-4] - average;
     }
+  }
+  // 垂木だけを読むことでリング回収時の自己位置精度を高める
+  if(robot_type_ == "ER"){
+    check_tracking();
+    if(is_tracking_rafter_right && is_tracking_rafter_left){
+      if(lines_[0].points.size()<lines_[3].points.size()) is_tracking_rafter_right=false;
+      else is_tracking_rafter_left=true;
+    }
+    if(is_tracking_rafter_right) calc_tracking_diff(0);
+    if(is_tracking_rafter_left) calc_tracking_diff(3);
+  }
+}
+
+void DtectLines::calc_tracking_diff(const int &num){
+      if(!lines_[num].points.size()==0){
+        estimated_diff[1] = ER_map_point_y[num] - calc_average(num);
+        // estimated_diff[2] = lines_[num].angle;
+      }
+      else {
+        estimated_diff[1]=0.0;
+        // estimated_diff[2]=0.0;
+      }
+}
+
+double DtectLines::calc_average(const int &num){
+  double sum=0.0;
+  for(size_t i=0; i<lines_[num].points.size(); i++){
+    if(num<4) sum += lines_[num].points[i].y;
+    else sum += lines_[num].points[i].x;
+  }
+  return sum/lines_[num].points.size();
+}
+
+double DtectLines::check_tracking(){
+  if(!lines_[0].points.size()==0){
+    is_tracking_rafter_right=true;
+    detect_rafter_right_time = chrono::system_clock::now();
+  }
+  if(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now()-detect_rafter_right_time).count()>1500){
+    is_tracking_rafter_right=false;
+  }
+  if(!lines_[3].points.size()==0){
+    is_tracking_rafter_left=true;
+    detect_rafter_left_time = chrono::system_clock::now();
+  }
+  if(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now()-detect_rafter_left_time).count()>1500){
+    is_tracking_rafter_left=false;
   }
 }
 
@@ -129,7 +173,7 @@ void DtectLines::input_points(const EstimatedLine &line){
 
 
 EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
-  inlier.points.clear();
+  EstimatedLine inlier;
   inlier.angle=0.0;
   if(divided_points.size()==0){
     return inlier;

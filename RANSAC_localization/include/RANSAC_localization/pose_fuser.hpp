@@ -2,6 +2,8 @@
 #include <vector>
 #include <eigen3/Eigen/Dense>
 #include "config.hpp"
+#include "detect_lines.hpp"
+
 using namespace std;
 using namespace Eigen;
 
@@ -22,9 +24,9 @@ class PoseFuser{
 public:
   PoseFuser(){}
   ~PoseFuser(){}
-  void setup(const double laser_weight, const double odom_weight_liner, const double odom_weight_angler);
+  void setup(const string &robot_type, const double laser_weight, const double odom_weight_liner, const double odom_weight_angler);
   void init();
-  Vector3d fuse_pose(const Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points);
+  Vector3d fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points);
 
 private:
   void find_correspondence(const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points);
@@ -35,14 +37,17 @@ private:
   Matrix3d calc_motion_cov_plus(const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, const double dt);
   Matrix3d svdInverse(const Matrix3d &A);
   Matrix3d rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_odom_motion_cov);
-  Vector3d fuse(const Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov);
+  Vector3d fuse(Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov);
 
   vector<CorrespondLaserPoint> current_points;   //対応がとれた現在スキャンの点群
   vector<CorrespondLaserPoint> reference_points;   //対応がとれた参照スキャンの点群
 
-  Matrix3d last_cov;
   double laser_weight_;
   double odom_weight_liner_;
   double odom_weight_angler_;
+  string robot_type_;
   bool accum{false};
+  int count=0;
+
+  DtectLines detect_lines;
 };

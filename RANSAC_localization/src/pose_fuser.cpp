@@ -1,10 +1,11 @@
 #include "RANSAC_localization/pose_fuser.hpp"
 
 
-void PoseFuser::setup(const double laser_weight, const double odom_weight_liner, const double odom_weight_angler){
+void PoseFuser::setup(const string &robot_type, const double laser_weight, const double odom_weight_liner, const double odom_weight_angler){
   laser_weight_ = laser_weight;
   odom_weight_liner_ = odom_weight_liner;
   odom_weight_angler_ = odom_weight_angler;
+  robot_type_ = robot_type;
 }
 
 void PoseFuser::init(){
@@ -12,11 +13,15 @@ void PoseFuser::init(){
   reference_points.clear();
 }
 
-Vector3d PoseFuser::fuse_pose(const Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points){
+Vector3d PoseFuser::fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points){
   init();
   if(global_points.size()==0) return current_scan_odom;
   find_correspondence(src_points, global_points, current_points, reference_points);
   Matrix3d laser_cov = laser_weight_ * calc_laser_cov(laser_estimated, current_points, reference_points);
+  if(detect_lines.get_detect_circles_flag()){
+    count++;
+    if(count<10) laser_cov*=0.5;
+  }
   Matrix3d scan_odom_motion_cov = calc_motion_cov(scan_odom_motion, dt_scan);
   Matrix3d rotate_scan_odom_motion_cov = rotate_cov(laser_estimated, scan_odom_motion_cov);
   return fuse(laser_estimated, laser_cov, current_scan_odom, rotate_scan_odom_motion_cov);
@@ -42,21 +47,31 @@ CorrespondLaserPoint PoseFuser::find_closest_vertical_point(CorrespondLaserPoint
   CorrespondLaserPoint closest;
   CorrespondLaserPoint vertical_distance;
   double distance_min = 100.0;
+  const double *map_point_x = nullptr;
+  const double *map_point_y = nullptr;
+  if(robot_type_ == "ER"){
+    map_point_x = ER_map_point_x;
+    map_point_y = ER_map_point_y;
+  }
+  else if(robot_type_ == "RR"){
+    map_point_x = RR_map_point;
+    map_point_y = RR_map_point;
+  }
   for(int i=0; i<4; i++){
-    vertical_distance.x = fabs(ER_map_point_x[i] - global.x);
-    vertical_distance.y = fabs(ER_map_point_y[i] - global.y);
+    vertical_distance.x = fabs(map_point_x[i] - global.x);
+    vertical_distance.y = fabs(map_point_y[i] - global.y);
     if(vertical_distance.x < distance_min){
       distance_min = vertical_distance.x;
-      closest.x = ER_map_point_x[i];
+      closest.x = map_point_x[i];
       closest.y = global.y;
     }
     if(vertical_distance.y < distance_min){
       distance_min = vertical_distance.y;
       closest.x = global.x;
-      closest.y = ER_map_point_y[i];
+      closest.y = map_point_y[i];
     }
   }
-  if(closest.x==ER_map_point_x[0] || closest.x==ER_map_point_x[1] || closest.x==ER_map_point_x[2] || closest.x==ER_map_point_x[3]){
+  if(closest.x==map_point_x[0] || closest.x==map_point_x[1] || closest.x==map_point_x[2] || closest.x==map_point_x[3]){
     closest.nx=1.0;
     closest.ny=0.0;
   }
@@ -110,48 +125,17 @@ double PoseFuser::calc_vertical_distance(const CorrespondLaserPoint current, con
 Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const double dt){
   double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt;
   double wt = abs(scan_odom_motion[2]/dt);
-  const double thre = 0.1;                   // 静止時にlidarを信頼しすぎないための下限値
+  const double thre = 0.01;                   // 低速時、分散を大きくしないための閾値
   if (vt < thre) vt = thre;
-  if (wt < thre) wt = thre;
+  // if (wt < thre) wt = thre;
   Matrix3d C1;
   C1.setZero();
-  C1(0,0) = 1*odom_weight_liner_/(vt*vt);                 // 並進成分x
-  C1(1,1) = 1*odom_weight_liner_/(vt*vt);                 // 並進成分y
-  C1(2,2) = 1*odom_weight_angler_/(wt*wt);                 // 回転成分
+  C1(0,0) = odom_weight_liner_*vt;                 // 並進成分x
+  C1(1,1) = odom_weight_liner_*vt;                 // 並進成分y
+  wt+=1;  //lidarが回転に弱いため、回転時オドメトリの信頼度を上げる。
+  C1(2,2) = odom_weight_angler_/(wt*wt);                 // 回転成分
 
   return C1;
-}
-
-Matrix3d PoseFuser::calc_motion_cov_plus(const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, const double dt) {
-  double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt;
-  double wt = abs(scan_odom_motion[2] / dt);
-  const double thre = 0.1;                   // 静止時にlidarを信頼しすぎないための下限値
-  if (vt < thre) vt = thre;
-  if (wt < thre) wt = thre;
-  double cs = cos(current_scan_odom[2]);
-  double sn = sin(current_scan_odom[2]);
- // 累積する場合は、時刻t-1の共分散行列sigmaから、時刻tの共分散行列を計算
-  Matrix3d A = Matrix3d::Zero(3,3);
-  if(accum){
-    Matrix3d Jxk;
-    Jxk << 1, 0, -vt*dt*sn,
-           0, 1,  vt*dt*cs,
-           0, 0,          1;
-    A = Jxk*last_cov*Jxk.transpose();
-  }
-  accum=true;
-
-  Matrix2d Uk;
-  Uk << odom_weight_liner_/(vt*vt),                         0,
-                               0, odom_weight_angler_/(wt*wt);
-  Matrix<double, 3, 2> Juk;
-  Juk << dt*cs,  0,
-         dt*sn,  0,
-             0, dt;
-  Matrix3d B = Juk*Uk*Juk.transpose();
-  Matrix3d cov = last_cov = A + B;
-  last_cov = cov;
-  return cov;
 }
 
 Matrix3d PoseFuser::rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_odom_motion_cov){
@@ -165,7 +149,7 @@ Matrix3d PoseFuser::rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_o
   return J*scan_odom_motion_cov*JT;  // 回転変換
 }
 
-Vector3d PoseFuser::fuse(const Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov){
+Vector3d PoseFuser::fuse(Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov){
   // 共分散行列の融合
   Matrix3d IC1 = svdInverse(laser_cov);
   Matrix3d IC2 = svdInverse(rotate_scan_odom_motion_cov);
@@ -173,10 +157,9 @@ Vector3d PoseFuser::fuse(const Vector3d &laser_estimated, const Matrix3d &laser_
   Matrix3d fused_cov = svdInverse(IC);
 
   //角度を連続に保つ
-  Vector3d laser_estimated_ = laser_estimated;
   double da = current_scan_odom[2] - laser_estimated[2];
-  if (da > M_PI) laser_estimated_[2] += 2*M_PI;
-  else if (da < -M_PI) laser_estimated_[2] -= 2*M_PI;
+  if (da > M_PI) laser_estimated[2] += 2*M_PI;
+  else if (da < -M_PI) laser_estimated[2] -= 2*M_PI;
 
   // 平均を算出
   Vector3d nu1 = IC1*laser_estimated;
