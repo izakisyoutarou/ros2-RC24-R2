@@ -103,8 +103,8 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   diff_odom[0] = x - last_odom[0];
   diff_odom[1] = y - last_odom[1];
 
-  if(abs(diff_odom[0]) / dt_odom > 4) diff_odom[0] = 0.0;
-  if(abs(diff_odom[1]) / dt_odom > 4) diff_odom[1] = 0.0;
+  if(abs(diff_odom[0]) / dt_odom > 7) diff_odom[0] = 0.0;
+  if(abs(diff_odom[1]) / dt_odom > 7) diff_odom[1] = 0.0;
 
   odom[0] += diff_odom[0];
   odom[1] += diff_odom[1];
@@ -124,7 +124,6 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
   diff_odom[2] = yaw - last_odom[2];
-  cout << abs(diff_odom[2]) / dt_jy << endl;
   if(abs(diff_odom[2]) / dt_jy > 6*M_PI) diff_odom[2] = 0.0;
   odom[2] += diff_odom[2];
   last_odom[2] = yaw;
@@ -158,7 +157,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   vector<LaserPoint> global_points = transform(line_points, trans);
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
-  update(estimated, ransac_estimated, current_scan_odom, scan_odom_motion, src_points);
+  // update(estimated, ransac_estimated, current_scan_odom, scan_odom_motion, src_points);
 
   last_estimated = estimated;
 
