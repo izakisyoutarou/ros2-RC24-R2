@@ -106,6 +106,8 @@ class SplineTrajectories(Node):
     def node_name_2_pose(self, node_name):
         if node_name == 'O':
             return self.get_parameter('initial_pose').get_parameter_value().double_array_value    #x,y,yaw
+        elif node_name == 'P':
+            return self.get_parameter('2nd_initial_pose').get_parameter_value().double_array_value    #x,y,yaw
 
         with open(self.nodelist_file_path, 'r', encoding='utf-8') as file:
                 lines = file.read().splitlines()
@@ -121,12 +123,12 @@ class SplineTrajectories(Node):
 
     def base_control_callback(self, msg):
         if (msg.is_restart is True):
-            self.current_node = 'O'
-            self.target_node = 'O'
+            self.current_node = msg.initial_state
+            self.target_node = msg.initial_state
             self.is_tracking = False
             self.get_logger().info('現状態と目標のノードを初期位置に戻しました')
 
-        if (msg.is_wheel_autonomous is False):
+        if (msg.is_move_autonomous is False):
             pass
 
 
