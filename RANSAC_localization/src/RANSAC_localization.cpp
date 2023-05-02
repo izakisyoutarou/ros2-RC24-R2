@@ -67,19 +67,19 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
 }
 
 void RANSACLocalization::init(){
-  est_diff_sum = init_pose;
   odom = Vector3d::Zero();
   last_odom = Vector3d::Zero();
+  est_diff_sum = init_pose;
   last_estimated = init_pose;
   pose_fuser.init();
   detect_lines.init();
+  detect_circles.init();
 }
 
 void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
   RCLCPP_INFO(this->get_logger(), "RESTART");
   if(msg->is_restart){
     init();
-
     // 初期角度をpublish
     uint8_t _candata[8];
     auto msg_angle = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
@@ -175,12 +175,24 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
 }
 
 void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vector3d &estimated, const Vector3d &current_scan_odom, const Vector3d &diff_circle){
-  Vector3d correction_threshold(0.01, 0.01, 0.001);
+  const double d = 0.01;
+  const double correction_threshold_dist = sqrt(d*d + d*d);
+  Vector3d correction_threshold(correction_threshold_dist, correction_threshold_dist, 0.001);
+
   Vector3d est_diff = estimated - current_scan_odom;  //直線からの推定値がデフォルト
+  cout<<"ここにflag作る"<<endl;
   for(size_t i=0; i<est_diff_sum.size(); i++){
-    if(abs(scan_odom_motion[i]) > correction_threshold[i]){
-      if(est_diff[i] == 0.0 && isfinite(diff_circle[i])) est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
-      est_diff_sum[i] += est_diff[i];
+    if(i==0 || i==1){
+      if(abs(scan_odom_motion[0]) > correction_threshold[0] || abs(scan_odom_motion[1]) > correction_threshold[1]){
+        if(est_diff[i] == 0.0 && isfinite(diff_circle[i])) est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
+        est_diff_sum[i] += est_diff[i];
+      }
+    }
+    else{
+      if(abs(scan_odom_motion[i]) > correction_threshold[i]){
+        if(est_diff[i] == 0.0 && isfinite(diff_circle[i])) est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
+        est_diff_sum[i] += est_diff[i];
+      }
     }
   }
 }

@@ -54,7 +54,6 @@ private:
   7:fence_centor_left*/
   vector<EstimatedLine> lines_;
   vector<LaserPoint> sum;
-  EstimatedLine inlier;
   Vector3d estimated_diff = Vector3d::Zero();
   string robot_type_;
   double voxel_size_;

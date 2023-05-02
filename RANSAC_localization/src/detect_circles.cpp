@@ -83,7 +83,7 @@ Vector3d DetectCircles::get_best_circle(CirclesData &circles_data) {
     // 各点が円周上に存在するか調べる
     int inliers_num = 0;
     for (int j = 0; j < circles_data.points.size(); ++j) {
-      double d = distance(circles_data.points[j], circle[0], circle[1]);
+      double d = distance(circles_data.points[j].x, circles_data.points[j].y, circle[0], circle[1]);
       if (d >= type_1_r-esp && d <= type_1_r+esp) {
         ++inliers_num;
       }

@@ -173,7 +173,7 @@ void DtectLines::input_points(const EstimatedLine &line){
 
 
 EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
-  inlier.points.clear();
+  EstimatedLine inlier;
   inlier.angle=0.0;
   if(divided_points.size()==0){
     return inlier;

@@ -24,7 +24,7 @@ const double RR_map_point[4] = {2.6-6., 4.5-6., 7.5-6., 9.4-6.};
 const double bridge_width = 0.975;
 
 inline bool detect_circles_flag{false};
-
+constexpr double distance(const double x1, const double y1, const double x2, const double y2) {return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));}
 constexpr double radToDeg(const double rad){ return rad*180/M_PI; };
 constexpr double normalize_yaw(double yaw){
   if (yaw < -M_PI) yaw += 2*M_PI;

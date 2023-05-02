@@ -42,7 +42,6 @@ private:
   vector<CorrespondLaserPoint> current_points;   //対応がとれた現在スキャンの点群
   vector<CorrespondLaserPoint> reference_points;   //対応がとれた参照スキャンの点群
 
-  Matrix3d last_cov;
   double laser_weight_;
   double odom_weight_liner_;
   double odom_weight_angler_;

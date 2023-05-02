@@ -15,6 +15,7 @@ public:
   DetectCircles();
   ~DetectCircles(){};
   Vector3d calc_diff_pose(const vector<LaserPoint> &src_points);
+  void init();
 
 private:
   struct CirclesData{
@@ -22,10 +23,6 @@ private:
     double rate=0.0;
   };
 
-  void init();
-  double distance(LaserPoint point, double x2, double y2) {
-    return sqrt((x2 - point.x) * (x2 - point.x) + (y2 - point.y) * (y2 - point.y));
-  }
   Vector3d calc_diff(const Vector3d &circle, const int &num);
   Vector3d get_best_circle(CirclesData &circles_data);
   void devide_points(const vector<LaserPoint> &src_points);

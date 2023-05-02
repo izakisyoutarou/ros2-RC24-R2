@@ -138,38 +138,6 @@ Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const doub
   return C1;
 }
 
-Matrix3d PoseFuser::calc_motion_cov_plus(const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, const double dt) {
-  double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt;
-  double wt = abs(scan_odom_motion[2] / dt);
-  const double thre = 0.1;                   // 静止時にlidarを信頼しすぎないための下限値
-  if (vt < thre) vt = thre;
-  if (wt < thre) wt = thre;
-  double cs = cos(current_scan_odom[2]);
-  double sn = sin(current_scan_odom[2]);
- // 累積する場合は、時刻t-1の共分散行列sigmaから、時刻tの共分散行列を計算
-  Matrix3d A = Matrix3d::Zero(3,3);
-  if(accum){
-    Matrix3d Jxk;
-    Jxk << 1, 0, -vt*dt*sn,
-           0, 1,  vt*dt*cs,
-           0, 0,          1;
-    A = Jxk*last_cov*Jxk.transpose();
-  }
-  accum=true;
-
-  Matrix2d Uk;
-  Uk << odom_weight_liner_/(vt*vt),                         0,
-                               0, odom_weight_angler_/(wt*wt);
-  Matrix<double, 3, 2> Juk;
-  Juk << dt*cs,  0,
-         dt*sn,  0,
-             0, dt;
-  Matrix3d B = Juk*Uk*Juk.transpose();
-  Matrix3d cov = last_cov = A + B;
-  last_cov = cov;
-  return cov;
-}
-
 Matrix3d PoseFuser::rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_odom_motion_cov){
   const double cs = cos(laser_estimated[2]);            // poseの回転成分thによるcos
   const double sn = sin(laser_estimated[2]);
