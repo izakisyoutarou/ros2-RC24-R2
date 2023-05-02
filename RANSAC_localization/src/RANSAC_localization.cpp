@@ -168,33 +168,25 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
 }
 
 void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, vector<LaserPoint> &points){
-  get_correction_rate_average(estimated, laser_estimated, current_scan_odom);
-  Vector3d diff_circle = correction_rate_ave.cwiseProduct(detect_circles.calc_diff_pose(points));
-  diff_circle[2] = 0.0;  //円の半径と角度の掛け算をしたため
+  Vector3d diff_circle = Vector3d::Zero();
+  if(robot_type_ == "RR"){
+    get_correction_rate_average(estimated, laser_estimated, current_scan_odom);
+    diff_circle = correction_rate_ave.cwiseProduct(detect_circles.calc_diff_pose(points));
+    diff_circle[2] = 0.0;  //円の半径と角度の掛け算をしたため
+  }
   correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
 }
 
 void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vector3d &estimated, const Vector3d &current_scan_odom, const Vector3d &diff_circle){
-  const double d = 0.01;
-  const double correction_threshold_dist = sqrt(d*d + d*d);
-  Vector3d correction_threshold(correction_threshold_dist, correction_threshold_dist, 0.001);
-
+  const double motion_dist = distance(0.0,scan_odom_motion[0],0.0,scan_odom_motion[1]);
   Vector3d est_diff = estimated - current_scan_odom;  //直線からの推定値がデフォルト
-  cout<<"ここにflag作る"<<endl;
-  for(size_t i=0; i<est_diff_sum.size(); i++){
-    if(i==0 || i==1){
-      if(abs(scan_odom_motion[0]) > correction_threshold[0] || abs(scan_odom_motion[1]) > correction_threshold[1]){
-        if(est_diff[i] == 0.0 && isfinite(diff_circle[i])) est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
-        est_diff_sum[i] += est_diff[i];
-      }
-    }
-    else{
-      if(abs(scan_odom_motion[i]) > correction_threshold[i]){
-        if(est_diff[i] == 0.0 && isfinite(diff_circle[i])) est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
-        est_diff_sum[i] += est_diff[i];
-      }
+  if(motion_dist > 0.015){
+    for(size_t i=0; i<2; i++){
+      if(est_diff[i] == 0.0 && isfinite(diff_circle[i]) && robot_type_ == "RR") est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
+      est_diff_sum[i] += est_diff[i];
     }
   }
+  if(abs(scan_odom_motion[2]) > 0.001) est_diff_sum[2] += est_diff[2];
 }
 
 void RANSACLocalization::get_correction_rate_average(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom){
