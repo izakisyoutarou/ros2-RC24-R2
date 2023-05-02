@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(controller_interface)
+project(sequencer)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -17,58 +17,39 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(utilities REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
 find_package(socketcan_interface_msg REQUIRED)
 find_package(controller_interface_msg REQUIRED)
+find_package(utilities REQUIRED)
 
-add_library(controller_interface_node 
-  src/controller_interface_node.cpp
-)
-
-target_compile_definitions(controller_interface_node
-  PRIVATE "CONTROLLER_INTERFACE_LIBRARY"
-)
-
-target_compile_options(controller_interface_node PUBLIC -Wall)
-
-ament_target_dependencies(controller_interface_node
+add_library(sequencer_node src/sequencer_node.cpp)
+target_include_directories(sequencer_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(sequencer_node
   rclcpp
-  utilities
   std_msgs
-  sensor_msgs
-  geometry_msgs
   socketcan_interface_msg
   controller_interface_msg
+  utilities
 )
 
-target_include_directories(controller_interface_node
-  PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-if(NOT WIN32)
-  ament_environment_hooks(
-     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
-  )
-endif()
+# Causes the visibility macros to use dllexport rather than dllimport,
+# which is appropriate when building the dll but not consuming it.
+target_compile_definitions(sequencer_node PRIVATE "SEQUENCER_BUILDING_LIBRARY")
 
 install(
   DIRECTORY include/
   DESTINATION include
 )
-
 install(
-  TARGETS controller_interface_node
+  TARGETS sequencer_node
   EXPORT export_${PROJECT_NAME}
-  LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
@@ -82,16 +63,14 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
-
-ament_export_dependencies(
-  rclcpp
-  utilities
-  std_msgs
-  sensor_msgs
-  geometry_msgs
-  socketcan_interface_msg
-  controller_interface_msg
+ament_export_include_directories(
+  include
+)
+ament_export_libraries(
+  sequencer_node
+)
+ament_export_targets(
+  export_${PROJECT_NAME}
 )
 
 ament_package()
