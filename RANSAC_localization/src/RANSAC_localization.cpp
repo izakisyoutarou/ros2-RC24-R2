@@ -123,7 +123,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   uint8_t _candata[8];
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
-  odom[2] = yaw + init_pose[2];
+  odom[2] = yaw;
   if(abs(odom[2] - last_odom[2]) / dt_jy > 6*M_PI) odom[2] = last_odom[2];
   last_odom[2] = odom[2];
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
