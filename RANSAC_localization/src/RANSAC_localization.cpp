@@ -19,7 +19,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   const auto inlier_length_threshold_ = this->get_parameter("inlier_length_threshold").as_double();
 
   restart_subscriber = this->create_subscription<controller_interface_msg::msg::BaseControl>(
-    "pub_base_control",_qos,
+    "base_control",_qos,
     bind(&RANSACLocalization::callback_restart, this, placeholders::_1));
 
   scan_subscriber = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -80,6 +80,7 @@ void RANSACLocalization::callback_restart(const controller_interface_msg::msg::B
   RCLCPP_INFO(this->get_logger(), "RESTART");
   if(msg->is_restart){
     init();
+    // if(msg->initial_state=='O')
     // 初期角度をpublish
     uint8_t _candata[8];
     auto msg_angle = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
@@ -99,7 +100,6 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double x = (double)bytes_to_float(_candata);
   const double y = (double)bytes_to_float(_candata+4);
-  Vector3d diff_odom = Vector3d::Zero();
   diff_odom[0] = x - last_odom[0];
   diff_odom[1] = y - last_odom[1];
 
@@ -123,9 +123,11 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   uint8_t _candata[8];
   for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
   const double yaw = (double)bytes_to_float(_candata);
-  odom[2] = yaw;
-  if(abs(odom[2] - last_odom[2]) / dt_jy > 6*M_PI) odom[2] = last_odom[2];
-  last_odom[2] = odom[2];
+  diff_odom[2] = yaw - last_odom[2];
+  cout << abs(diff_odom[2]) / dt_jy << endl;
+  if(abs(diff_odom[2]) / dt_jy > 6*M_PI) diff_odom[2] = 0.0;
+  odom[2] += diff_odom[2];
+  last_odom[2] = yaw;
   vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
   self_pose_publisher->publish(vector_msg);
 }
