@@ -76,12 +76,13 @@ void Sequencer::_subscriber_callback_convergence(const controller_interface_msg:
             msg_load->candata[5] = true;    //装填
             publisher_can->publish(*msg_load);
         }
-        if(msg->injection0 && msg->injection1){
-            _recv_pole_state(last_pole_state);
-            current_pickup_state = "O";
-        }
+        // if(msg->injection0 && msg->injection1){
+        //     _recv_pole_state(last_pole_state);
+        //     current_pickup_state = "O";
+        // }
     }
-    if(current_pickup_state == "O"){
+    // if(current_pickup_state == "O"){
+    else{
         auto msg_inject = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         msg_inject->canid = can_inject_id;
         msg_inject->candlc = 2;
@@ -103,6 +104,8 @@ void Sequencer::_subscriber_callback_movable(const socketcan_interface_msg::msg:
         msg_move_node->data = current_inject_state;
         publisher_move_node->publish(*msg_move_node);
 
+        current_pickup_state = "O";
+        _recv_pole_state(last_pole_state);
     }
 }
 
@@ -183,32 +186,38 @@ void Sequencer::_recv_pole_state(const unsigned char data[11]){
     auto injection_pole_m1 = std::make_shared<std_msgs::msg::String>();
 
     // RCLCPP_INFO(this->get_logger(), "pole %d %d %d %d %d %d %d %d %d %d %d ", data[0],data[1],data[2],data[3],data[4],data[5],data[6],data[7],data[8],data[9],data[10]);
-    // if(current_pickup_state != "L0" && current_pickup_state != "L1"){
+    if(current_pickup_state != "L0" && current_pickup_state != "L1"){
 
     is_auto_inject_m0 = false;
     is_auto_inject_m1 = false;
 
     for(const auto& pole_num : pole_priority_m0){
         if(!data[pole_num]){
-            string pole{static_cast<char>(pole_num+0x41)};  //0~10をA~Kに変換
-            injection_pole_m0->data = pole;
-            publisher_pole_m0->publish(*injection_pole_m0);
+            if(pole_num != aiming_pole_num_m0){
+                string pole{static_cast<char>(pole_num+0x41)};  //0~10をA~Kに変換
+                injection_pole_m0->data = pole;
+                publisher_pole_m0->publish(*injection_pole_m0);
+                aiming_pole_num_m0 = pole_num;
+            }
             is_auto_inject_m0 = true;
             break;
         }
     }
     for(const auto& pole_num : pole_priority_m1){
         if(!data[pole_num]){
-            string pole{static_cast<char>(pole_num+0x41)};  //0~10をA~Kに変換
-            injection_pole_m1->data = pole;
-            publisher_pole_m1->publish(*injection_pole_m1);
+            if(pole_num != aiming_pole_num_m1){
+                string pole{static_cast<char>(pole_num+0x41)};  //0~10をA~Kに変換
+                injection_pole_m1->data = pole;
+                publisher_pole_m1->publish(*injection_pole_m1);
+                aiming_pole_num_m1 = pole_num;
+            }
             is_auto_inject_m1 = true;
             break;
         }
     }
-    memcpy(last_pole_state, data, sizeof(data));
 
-    // }
+    }
+    memcpy(last_pole_state, data, sizeof(last_pole_state));
 }
 
 }  // namespace sequencer
