@@ -65,6 +65,7 @@ class SplineTrajectories(Node):
             # if True:
             try:
                 msg_tx, x,y,a,nodes = self.get_path(self.current_node, msg.data)
+                self.get_logger().info(str(msg_tx.accurate_convergence))
 
                 self.publisher_path.publish(msg_tx)
 
@@ -94,6 +95,11 @@ class SplineTrajectories(Node):
         print('角度 : ',input_a)
 
         path = Path()
+
+        if(end_node =='L0' or end_node == 'L1'):
+            path.accurate_convergence = True
+        else:
+            path.accurate_convergence = False
 
         trajectories_resolution = self.get_parameter('resolution').get_parameter_value().double_value
         amount = 1.0/ trajectories_resolution
