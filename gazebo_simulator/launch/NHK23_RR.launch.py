@@ -26,7 +26,7 @@ def generate_launch_description():
         initial_pose = yaml.safe_load(file)['/**']['ros__parameters']['initial_pose']
 
     # オイラー角からクオータニオンにする - https://ken3susume.com/archives/12958
-    initial_pose_ = 'position: {{x: {:.2f}, y: {:.2f}, z: {:.2f}}}, orientation: {{x: 0.0, y: 0.0, z: 0.0, w: 1.0}}'.format(initial_pose[0], initial_pose[1], initial_pose[2])
+    initial_pose_ = 'position: {{x: {:.2f}, y: {:.2f}, z: 0.1}}, orientation: {{x: 0.0, y: 0.0, z: 0.7, w: 0.7}}'.format(initial_pose[0], initial_pose[1], initial_pose[2])
 
     # full  path to urdf and world file
 
