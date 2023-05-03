@@ -93,20 +93,21 @@ void SplinePid::_publisher_callback(){
 
     // 曲率考慮
     // VelPlannerLimit current_limit_linear = limit_linear;
-    // current_limit_linear.vel = current_limit_linear.vel - (current_limit_linear.vel * std::abs(path->curvature.at(current_count)) * curvature_attenuation_rate);
+    // current_limit_linear.vel = current_limit_linear.vel - (current_limit_linear.vel * std::abs(path->curvature[current_count]) * curvature_attenuation_rate);
     // current_limit_linear.vel *= linear_planner_vel_limit_gain;
     // velPlanner_linear.limit(current_limit_linear);
 
     // velPlanner_linear.pos(path->length.back(), velPlanner_linear.vel());
 
-    velPlanner_linear.cycle();
-    velPlanner_angular.cycle();
 
     // RCLCPP_INFO(this->get_logger(), "target:%lf  vel:%lf", path->length.back(), velPlanner_linear.vel());
 
+    // 軌道点のインクリメント
+    velPlanner_linear.cycle();
+
     bool is_target_changed = false;
     if(!is_target_arrived){
-    while(path->length.at(current_count) < velPlanner_linear.pos()){
+    while(path->length[current_count] < velPlanner_linear.pos()){
         current_count++;
         is_target_changed = true;
         if(!(current_count+1 < max_trajectories)){
@@ -117,13 +118,22 @@ void SplinePid::_publisher_callback(){
     }
     }
     if(is_target_changed){
-        x_diff = path->x.at(current_count) - last_target_position.x;
-        y_diff = path->y.at(current_count) - last_target_position.y;
+        x_diff = path->x[current_count] - last_target_position.x;
+        y_diff = path->y[current_count] - last_target_position.y;
     }
 
-    const double error_x = path->x.at(current_count) - self_pose.x;
+    // 精確な追従時は経路点ごとに角度を補正する
+    // RCLCPP_INFO(this->get_logger(), "%d path:%lf  last:%lf", is_accurate_convergence, path->angle[current_count], last_target_position.z);
+    if(is_accurate_convergence && (path->angle[current_count] != last_target_position.z)){
+        velPlanner_angular.pos(path->angle[current_count], velPlanner_angular.vel());
+        RCLCPP_INFO(this->get_logger(), "経路点による角度の補正が入りました");
+    }
+    velPlanner_angular.cycle();
+
+    // PID処理
+    const double error_x = path->x[current_count] - self_pose.x;
     error_x_integral += error_x * sampling_time;
-    const double error_y = path->y.at(current_count) - self_pose.y;
+    const double error_y = path->y[current_count] - self_pose.y;
     error_y_integral += error_y * sampling_time;
     const double error_a = velPlanner_angular.pos() - self_pose.z;
     error_a_integral += error_a * sampling_time;
@@ -170,7 +180,7 @@ void SplinePid::_publisher_callback(){
         // 追従終了の出版
         publish_is_tracking(false);
     }
-    else if((!is_linear_arrived || !is_angular_arrived) &&is_arrived){
+    else if((!is_linear_arrived || !is_angular_arrived) &&is_arrived && is_accurate_convergence){
         is_arrived = false;
         RCLCPP_INFO(this->get_logger(), "状態が目標から外れました");
         publish_is_tracking(true);
@@ -187,9 +197,9 @@ void SplinePid::_publisher_callback(){
 
 
     //前回値の更新
-    last_target_position.x = path->x.at(current_count);
-    last_target_position.y = path->y.at(current_count);
-    last_target_position.z = path->angle.at(current_count);
+    last_target_position.x = path->x[current_count];
+    last_target_position.y = path->y[current_count];
+    last_target_position.z = path->angle[current_count];
 
     }
 
@@ -214,8 +224,11 @@ void SplinePid::_subscriber_callback_path(const path_msg::msg::Path::SharedPtr m
         current_limit_linear.vel *= linear_planner_vel_limit_gain;
         velPlanner_linear.limit(current_limit_linear);
 
+        is_accurate_convergence = path->accurate_convergence;
+        RCLCPP_INFO(this->get_logger(), "精確な終点の補正 : %d", this->is_accurate_convergence);
+
         velPlanner_linear.pos(path->length.back(), velPlanner_linear.vel());
-        velPlanner_angular.pos(path->angle.back(),velPlanner_angular.vel());
+        if(!is_accurate_convergence) velPlanner_angular.pos(path->angle.back(),velPlanner_angular.vel());
 
         current_count = 0;
         last_target_position.x = path->x.front();
@@ -265,7 +278,7 @@ void SplinePid::_subscriber_callback_self_pose(const geometry_msgs::msg::Vector3
 }
 void SplinePid::_subscriber_callback_target_angle_diff(const geometry_msgs::msg::Vector3::SharedPtr msg){
     if(max_trajectories>0){
-    velPlanner_angular.pos(msg->z,velPlanner_angular.vel() + self_pose.z);
+    velPlanner_angular.pos(msg->z + self_pose.z ,velPlanner_angular.vel());
     }
 }
 

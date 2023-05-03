@@ -94,6 +94,8 @@ private:
     double last_error_x = 0.0;
     double last_error_y = 0.0;
     double last_error_a = 0.0;
+
+    bool is_accurate_convergence = false;   //精確な最終収束と経路上の角度の補正
 };
 
 }  // namespace spline_pid
