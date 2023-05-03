@@ -157,7 +157,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   vector<LaserPoint> global_points = transform(line_points, trans);
   Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
 
-  // update(estimated, ransac_estimated, current_scan_odom, scan_odom_motion, src_points);
+  update(estimated, ransac_estimated, current_scan_odom, scan_odom_motion, src_points);
 
   last_estimated = estimated;
 
