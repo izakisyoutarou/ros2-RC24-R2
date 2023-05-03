@@ -11,7 +11,6 @@ RecvUDP::RecvUDP(const int16_t port){
     servaddr.sin_port = htons(port);
     bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
     recv_thread = std::thread(&RecvUDP::recv, this, sockfd);
-
 }
 
 const unsigned char *RecvUDP::data(unsigned char *data, size_t data_len){

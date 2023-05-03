@@ -86,10 +86,12 @@ private:
   Vector3d init_pose = Vector3d::Zero();
   Vector3d odom = Vector3d::Zero();
   Vector3d last_odom = Vector3d::Zero();
+  Vector3d diff_odom = Vector3d::Zero();
   Vector3d est_diff_sum = Vector3d::Zero();
   Vector3d last_estimated = Vector3d::Zero();
   Vector6d tf_laser2robot = Vector6d::Zero();
-  
+
+
   double last_odom_received_time=0.0;
   double last_jy_received_time=0.0;
   double last_scan_received_time=0.0;
