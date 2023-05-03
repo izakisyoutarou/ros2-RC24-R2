@@ -46,11 +46,13 @@ private:
     const int16_t can_movable_id;
     const int16_t can_digital_button_id;
     const int16_t can_inject_id;
+    const int16_t can_cancel_inject_id;
 
     controller_interface_msg::msg::Convergence judge_convergence;
 
     std::string current_pickup_state;
     std::string current_inject_state;
+    std::string initial_state;
 
     const std::string pole_priorityA_file_path;   //状態Aでのポール優先のファイルパス
     const std::string pole_priorityB_file_path;   //状態Bでのポール優先のファイルパス
