@@ -161,7 +161,7 @@ Vector3d PoseFuser::fuse(Vector3d &laser_estimated, const Matrix3d &laser_cov, c
   Vector3d nu1 = IC1*laser_estimated;
   Vector3d nu2 = IC2*current_scan_odom;
   Vector3d estimated = fused_cov * (nu1 + nu2);
-  estimated[2] = normalize_yaw(estimated[2]);
+  // estimated[2] = normalize_yaw(estimated[2]);
   return estimated;
 }
 
