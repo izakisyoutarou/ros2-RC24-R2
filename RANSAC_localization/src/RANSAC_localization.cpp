@@ -165,7 +165,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   time_end = chrono::system_clock::now();
   // RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
-  RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
+//   RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
 }
 
 void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, vector<LaserPoint> &points){
