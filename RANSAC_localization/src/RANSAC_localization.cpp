@@ -127,7 +127,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   if(abs(diff_odom[2]) / dt_jy > 6*M_PI) diff_odom[2] = 0.0;
   odom[2] += diff_odom[2];
   last_odom[2] = yaw;
-  vector_msg.z = normalize_yaw(odom[2] + est_diff_sum[2]);
+  vector_msg.z = odom[2] + est_diff_sum[2];
   self_pose_publisher->publish(vector_msg);
 }
 
