@@ -52,11 +52,11 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
     ransaced_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "self_localization/ransac",fast_qos);
 
-    path_publisher = this->create_publisher<nav_msgs::msg::Path>(
-      "self_localization/path",fast_qos);
-
     pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
       "self_localization/pose", fast_qos);
+
+    odom_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+      "self_localization/odom", fast_qos);
 
     map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "self_localization/map", fast_qos);
@@ -216,15 +216,18 @@ void RANSACLocalization::publishers(vector<LaserPoint> &points){
   corrent_pose_stamped.pose.orientation.z = sin((odom[2]+est_diff_sum[2]) / 2.0);
   corrent_pose_stamped.pose.orientation.w = cos((odom[2]+est_diff_sum[2]) / 2.0);
 
-  // path.header.stamp = this->now();
-  // path.header.frame_id = "map";
-  // path.poses.push_back(corrent_pose_stamped);
+  odom_stamped.header.stamp = this->now();
+  odom_stamped.header.frame_id = "map";
+  odom_stamped.pose.position.x = odom[0] + init_pose[0];
+  odom_stamped.pose.position.y = odom[1] + init_pose[1];
+  odom_stamped.pose.orientation.z = sin((odom[2] +init_pose[2])/ 2.0);
+  odom_stamped.pose.orientation.w = cos((odom[2] +init_pose[2]) / 2.0);
 
   if(robot_type_ == "ER") map_publisher->publish(ER_map_cloud);
   else if(robot_type_ == "RR") map_publisher->publish(RR_map_cloud);
   ransaced_publisher->publish(cloud);
   pose_publisher->publish(corrent_pose_stamped);
-  // path_publisher->publish(path);
+  odom_publisher->publish(odom_stamped);
 }
 
 

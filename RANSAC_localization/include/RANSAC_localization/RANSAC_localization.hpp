@@ -67,8 +67,8 @@ private:
   rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr restart_subscriber;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_publisher;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ransaced_publisher;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr odom_publisher;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr self_pose_publisher;
   rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr init_angle_publisher;
 
@@ -77,6 +77,7 @@ private:
   sensor_msgs::msg::PointCloud2 RR_map_cloud;
   nav_msgs::msg::Path path;
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
+  geometry_msgs::msg::PoseStamped odom_stamped;
   rclcpp::QoS _qos = rclcpp::QoS(rclcpp::KeepLast(10));
   rclcpp::QoS fast_qos = rclcpp::QoS(rclcpp::KeepLast(1));
 
