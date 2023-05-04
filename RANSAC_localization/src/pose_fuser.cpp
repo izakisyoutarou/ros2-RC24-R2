@@ -18,10 +18,6 @@ Vector3d PoseFuser::fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_od
   if(global_points.size()==0) return current_scan_odom;
   find_correspondence(src_points, global_points, current_points, reference_points);
   Matrix3d laser_cov = laser_weight_ * calc_laser_cov(laser_estimated, current_points, reference_points);
-  if(detect_lines.get_detect_circles_flag()){
-    count++;
-    if(count<10) laser_cov*=0.5;
-  }
   Matrix3d scan_odom_motion_cov = calc_motion_cov(scan_odom_motion, dt_scan);
   Matrix3d rotate_scan_odom_motion_cov = rotate_cov(laser_estimated, scan_odom_motion_cov);
   return fuse(laser_estimated, laser_cov, current_scan_odom, rotate_scan_odom_motion_cov);
@@ -165,7 +161,7 @@ Vector3d PoseFuser::fuse(Vector3d &laser_estimated, const Matrix3d &laser_cov, c
   Vector3d nu1 = IC1*laser_estimated;
   Vector3d nu2 = IC2*current_scan_odom;
   Vector3d estimated = fused_cov * (nu1 + nu2);
-  estimated[2] = normalize_yaw(estimated[2]);
+  // estimated[2] = normalize_yaw(estimated[2]);
   return estimated;
 }
 

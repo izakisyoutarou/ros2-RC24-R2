@@ -48,6 +48,4 @@ private:
   string robot_type_;
   bool accum{false};
   int count=0;
-
-  DtectLines detect_lines;
 };
