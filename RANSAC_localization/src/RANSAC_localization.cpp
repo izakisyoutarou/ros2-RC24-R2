@@ -136,7 +136,6 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
-  // if (dt_scan > 0.03 /* [sec] */) RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
 
   Vector3d current_scan_odom = odom + est_diff_sum;
   Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
@@ -150,7 +149,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
   vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points);
 
-  detect_lines.fuse_inliers(filtered_points);
+  detect_lines.fuse_inliers(filtered_points, laser);
   vector<LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
   Vector3d ransac_estimated = current_scan_odom + trans;
@@ -165,7 +164,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   time_end = chrono::system_clock::now();
   // RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
-//   RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
+  // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
 }
 
 void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, vector<LaserPoint> &points){
@@ -187,6 +186,8 @@ void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vect
       est_diff_sum[i] += est_diff[i];
     }
   }
+
+
   if(abs(scan_odom_motion[2]) > 0.001) est_diff_sum[2] += est_diff[2];
 }
 

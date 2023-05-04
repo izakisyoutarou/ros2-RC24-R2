@@ -21,12 +21,11 @@ Vector3d DetectCircles::calc_diff_pose(const vector<LaserPoint> &src_points){
   if(!detect_circles_flag) return estimated_diff;
   devide_points(src_points);
   double best_rate=0.0;
-  Vector3d best_circle=Vector3d::Zero();
+  Vector3d circle=Vector3d::Zero();
   for(size_t i=0; i<circles_datas.size(); i++){
     if(circles_datas[i].points.size() < 4 ) continue;
-    Vector3d circle = get_best_circle(circles_datas[i]);
-    if(best_rate < circles_datas[i].rate && circles_datas[i].rate > 0.6){
-      best_circle = circle;
+    circle = get_best_circle(circles_datas[i]);
+    if(best_rate < circles_datas[i].rate && circles_datas[i].rate > 0.7){
       best_rate = circles_datas[i].rate;
       estimated_diff = circles_datas[i].rate*(circle-circles[i]);
     }

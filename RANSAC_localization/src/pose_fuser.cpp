@@ -131,9 +131,9 @@ Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const doub
   wt+=1;  //lidarが回転に弱いため、回転時オドメトリの信頼度を上げる。
   Matrix3d C1;
   C1.setZero();
-  C1(0,0) = odom_weight_liner_*vt/(wt*wt*wt*wt);                 // 並進成分x
-  C1(1,1) = odom_weight_liner_*vt/(wt*wt*wt*wt);                 // 並進成分y
-  C1(2,2) = odom_weight_angler_/(wt*wt*wt*wt);                 // 回転成分
+  C1(0,0) = odom_weight_liner_*vt/(wt*wt*wt*wt*wt*wt);                 // 並進成分x
+  C1(1,1) = odom_weight_liner_*vt/(wt*wt*wt*wt*wt*wt);                 // 並進成分y
+  C1(2,2) = odom_weight_angler_/(wt*wt*wt*wt*wt*wt);                 // 回転成分
 
   return C1;
 }
