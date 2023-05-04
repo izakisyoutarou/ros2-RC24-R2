@@ -17,12 +17,12 @@ namespace mcl_2d{
         );
 
         _subscription_odom_linear = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-                "can_rx_100",
+                "can_rx_110",
                 _qos,
                 std::bind(&Mcl2D::_subscriber_callback_odom_linear, this, std::placeholders::_1)
         );
         _subscription_odom_angular = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-                "can_rx_101",
+                "can_rx_111",
                 _qos,
                 std::bind(&Mcl2D::_subscriber_callback_odom_angular, this, std::placeholders::_1)
         );

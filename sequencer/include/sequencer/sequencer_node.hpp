@@ -66,6 +66,8 @@ private:
     bool is_auto_inject_m0 = false;
     bool is_auto_inject_m1 = false;
 
+    bool is_could_aim = false;
+
     int aiming_pole_num_m0 = -1;   //狙っているポール番号(最初はないため-1)
     int aiming_pole_num_m1 = -1;
 };
