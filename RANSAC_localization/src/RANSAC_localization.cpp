@@ -171,7 +171,8 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
   Vector3d diff_circle = Vector3d::Zero();
   if(robot_type_ == "RR"){
     get_correction_rate_average(estimated, laser_estimated, current_scan_odom);
-    diff_circle = correction_rate_ave.cwiseProduct(detect_circles.calc_diff_pose(points));
+    diff_circle = correction_rate_ave.cwiseProduct(detect_circles.get_diff_pose(points));
+    if(uphill_super_correction) diff_circle =detect_circles.super_correction();
     diff_circle[2] = 0.0;  //円の半径と角度の掛け算をしたため
   }
   correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);

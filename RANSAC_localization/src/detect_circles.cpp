@@ -16,10 +16,25 @@ void DetectCircles::init(){
   circles_datas.resize(circles.size());
 }
 
-Vector3d DetectCircles::calc_diff_pose(const vector<LaserPoint> &src_points){
+Vector3d DetectCircles::get_diff_pose(const vector<LaserPoint> &src_points){
   init();
   if(!detect_circles_flag) return estimated_diff;
   devide_points(src_points);
+  return calc_diff_pose();
+}
+
+Vector3d DetectCircles::super_correction(){
+  Vector3d circle=Vector3d::Zero();
+  if(circles_datas[1].points.size() < 10 ) return estimated_diff;
+  circle = get_best_circle(circles_datas[1]);
+  if(circles_datas[1].rate > 0.7){
+    estimated_diff = (circles[1]-circle);
+    uphill_super_correction=false;
+  }
+  return estimated_diff;
+}
+
+Vector3d DetectCircles::calc_diff_pose(){
   double best_rate=0.0;
   Vector3d circle=Vector3d::Zero();
   for(size_t i=0; i<circles_datas.size(); i++){
@@ -27,7 +42,7 @@ Vector3d DetectCircles::calc_diff_pose(const vector<LaserPoint> &src_points){
     circle = get_best_circle(circles_datas[i]);
     if(best_rate < circles_datas[i].rate && circles_datas[i].rate > 0.7){
       best_rate = circles_datas[i].rate;
-      estimated_diff = circles_datas[i].rate*(circle-circles[i]);
+      estimated_diff = circles_datas[i].rate*(circles[i]-circle);
     }
   }
   return estimated_diff;

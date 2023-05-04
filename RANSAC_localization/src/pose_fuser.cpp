@@ -20,7 +20,7 @@ Vector3d PoseFuser::fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_od
   Matrix3d laser_cov = laser_weight_ * calc_laser_cov(laser_estimated, current_points, reference_points);
   if(detect_circles_flag){
     count++;
-    if(count<100) laser_cov*=0.5;
+    if(count<200) laser_cov*=0.5;
   }
   Matrix3d scan_odom_motion_cov = calc_motion_cov(scan_odom_motion, dt_scan);
   Matrix3d rotate_scan_odom_motion_cov = rotate_cov(laser_estimated, scan_odom_motion_cov);

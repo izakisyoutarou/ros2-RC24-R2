@@ -23,6 +23,7 @@ const double ER_map_point_y[4] = {0.05-6., 1.975-6, 10.025-6., 11.95-6.};
 const double RR_map_point[4] = {2.6-6., 4.5-6., 7.5-6., 9.4-6.};
 const double bridge_width = 0.975;
 
+inline bool uphill_super_correction{true};
 inline bool detect_circles_flag{false};
 constexpr double distance(const double x1, const double y1, const double x2, const double y2) {return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));}
 constexpr double get_angle(const double x1, const double y1, const double x2, const double y2){return atan2(y2 - y1, x2 - x1);}
