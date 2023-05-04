@@ -27,27 +27,27 @@ void DtectLines::init(){
   }
 }
 
-void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points){
+void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vector3d &laser_pose){
   init();
   devide_points(src_points);
   get_inliers();
   if(robot_type_ == "RR" && lines_[1].points.size()>0) detect_circles_flag=true;
-  calc_estimated_diff();
+  calc_estimated_diff(laser_pose);
 }
 
 
-void DtectLines::calc_estimated_diff(){
+void DtectLines::calc_estimated_diff(const Vector3d &laser_pose){
   estimated_diff[2] = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
-    double average = calc_average(i);
+    LaserToPoint laser_to_point = calc_min_dist(lines_[i].points, laser_pose);
     if(robot_type_ == "ER"){
-      if(i<4) estimated_diff[1] = ER_map_point_y[i] - average;
-      else estimated_diff[0] = ER_map_point_x[i-4] - average;
+      if(i<4) estimated_diff[1] = -(laser_pose[1] - (laser_to_point.dist + ER_map_point_y[i]));
+      else estimated_diff[0] = -(laser_pose[0] - (-laser_to_point.dist + ER_map_point_x[i-4]));
     }
     else if(robot_type_ == "RR"){
-      if(i<4) estimated_diff[1] = RR_map_point[i] - average;
-      else estimated_diff[0] = RR_map_point[i-4] - average;
+      if(i<4) estimated_diff[1] = -(laser_pose[1] - (-laser_to_point.dist*sin(laser_to_point.angle) + RR_map_point[i]));
+      else estimated_diff[0] = -(laser_pose[0] - (-laser_to_point.dist*cos(laser_to_point.angle) + RR_map_point[i-4]));
     }
   }
   // 垂木だけを読むことでリング回収時の自己位置精度を高める
@@ -71,6 +71,24 @@ void DtectLines::calc_tracking_diff(const int &num){
         estimated_diff[1]=0.0;
         // estimated_diff[2]=0.0;
       }
+}
+
+LaserToPoint DtectLines::calc_min_dist(const vector<LaserPoint> &points, const Vector3d &laser_pose) {
+  LaserToPoint laser_to_point;
+  // 最初の点とレーザーのポーズ間の距離を計算し、最小距離として設定
+  double min_dist = distance(laser_pose[0], laser_pose[1], points[0].x, points[0].y);
+  double angle = get_angle(laser_pose[0], laser_pose[1], points[0].x, points[0].y);
+  // 2番目の点から最後の点までループし、最小距離を更新
+  for (size_t i = 1; i < points.size(); ++i) {
+    double dist = distance(laser_pose[0], laser_pose[1], points[i].x, points[i].y);
+    if (dist < min_dist) {
+      min_dist = dist;
+      angle = get_angle(laser_pose[0], laser_pose[1], points[i].x, points[i].y);
+    }
+  }
+  laser_to_point.dist=min_dist;
+  laser_to_point.angle=angle;
+  return laser_to_point;
 }
 
 double DtectLines::calc_average(const int &num){
@@ -114,7 +132,7 @@ double DtectLines::calc_diff_angle(){
     if(diff_angle < best_diff_angle) best_diff_angle = diff_angle;
   }
   if(get_angle_count==0) return 0.0;
-  return best_diff_angle;
+  return LPF(best_diff_angle);
 }
 
 void DtectLines::devide_points(const vector<LaserPoint> &src_points){

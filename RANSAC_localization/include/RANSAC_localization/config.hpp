@@ -25,6 +25,7 @@ const double bridge_width = 0.975;
 
 inline bool detect_circles_flag{false};
 constexpr double distance(const double x1, const double y1, const double x2, const double y2) {return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));}
+constexpr double get_angle(const double x1, const double y1, const double x2, const double y2){return atan2(y2 - y1, x2 - x1);}
 constexpr double radToDeg(const double rad){ return rad*180/M_PI; };
 constexpr double normalize_yaw(double yaw){
   if (yaw < -M_PI) yaw += 2*M_PI;

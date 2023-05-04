@@ -52,11 +52,11 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
     ransaced_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "self_localization/ransac",fast_qos);
 
-    path_publisher = this->create_publisher<nav_msgs::msg::Path>(
-      "self_localization/path",fast_qos);
-
     pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
       "self_localization/pose", fast_qos);
+
+    odom_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+      "self_localization/odom", fast_qos);
 
     map_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
       "self_localization/map", fast_qos);
@@ -136,7 +136,6 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
   double dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
-  // if (dt_scan > 0.03 /* [sec] */) RCLCPP_WARN(this->get_logger(), "scan time interval is too large->%f", dt_scan);
 
   Vector3d current_scan_odom = odom + est_diff_sum;
   Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
@@ -150,7 +149,7 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
   vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points);
 
-  detect_lines.fuse_inliers(filtered_points);
+  detect_lines.fuse_inliers(filtered_points, laser);
   vector<LaserPoint> line_points = detect_lines.get_sum();
   Vector3d trans = detect_lines.get_estimated_diff();
   Vector3d ransac_estimated = current_scan_odom + trans;
@@ -187,6 +186,8 @@ void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vect
       est_diff_sum[i] += est_diff[i];
     }
   }
+
+
   if(abs(scan_odom_motion[2]) > 0.001) est_diff_sum[2] += est_diff[2];
 }
 
@@ -216,15 +217,18 @@ void RANSACLocalization::publishers(vector<LaserPoint> &points){
   corrent_pose_stamped.pose.orientation.z = sin((odom[2]+est_diff_sum[2]) / 2.0);
   corrent_pose_stamped.pose.orientation.w = cos((odom[2]+est_diff_sum[2]) / 2.0);
 
-  // path.header.stamp = this->now();
-  // path.header.frame_id = "map";
-  // path.poses.push_back(corrent_pose_stamped);
+  odom_stamped.header.stamp = this->now();
+  odom_stamped.header.frame_id = "map";
+  odom_stamped.pose.position.x = odom[0] + init_pose[0];
+  odom_stamped.pose.position.y = odom[1] + init_pose[1];
+  odom_stamped.pose.orientation.z = sin((odom[2] +init_pose[2])/ 2.0);
+  odom_stamped.pose.orientation.w = cos((odom[2] +init_pose[2]) / 2.0);
 
   if(robot_type_ == "ER") map_publisher->publish(ER_map_cloud);
   else if(robot_type_ == "RR") map_publisher->publish(RR_map_cloud);
   ransaced_publisher->publish(cloud);
   pose_publisher->publish(corrent_pose_stamped);
-  // path_publisher->publish(path);
+  odom_publisher->publish(odom_stamped);
 }
 
 
