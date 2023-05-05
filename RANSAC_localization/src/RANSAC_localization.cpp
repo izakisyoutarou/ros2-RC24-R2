@@ -134,7 +134,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
 void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::SharedPtr msg){
   time_start = chrono::system_clock::now();
   double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
-  double dt_scan = current_scan_received_time - last_scan_received_time;
+  dt_scan = current_scan_received_time - last_scan_received_time;
   last_scan_received_time = current_scan_received_time;
 
   Vector3d current_scan_odom = odom + est_diff_sum;
@@ -175,21 +175,31 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
     if(uphill_super_correction) diff_circle =detect_circles.super_correction();
     diff_circle[2] = 0.0;  //円の半径と角度の掛け算をしたため
   }
-  correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
+
+  bool correction_flag{false};
+  if(abs(scan_odom_motion[2])/dt_scan > 0.4){
+    correction_flag=false;
+    amendment_permission_time_start = chrono::system_clock::now();
+  }
+  else correction_flag=true;
+
+  if(correction_flag && chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now()-amendment_permission_time_start).count()<500){
+    correction_flag=false;
+  }
+
+  if(correction_flag) correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
 }
 
 void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vector3d &estimated, const Vector3d &current_scan_odom, const Vector3d &diff_circle){
   const double motion_dist = distance(0.0,scan_odom_motion[0],0.0,scan_odom_motion[1]);
   Vector3d est_diff = estimated - current_scan_odom;  //直線からの推定値がデフォルト
-  if(motion_dist > 0.015){
+  // if(motion_dist > 0.015){
     for(size_t i=0; i<2; i++){
       if(est_diff[i] == 0.0 && isfinite(diff_circle[i]) && robot_type_ == "RR") est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
       est_diff_sum[i] += est_diff[i];
     }
-  }
-
-
-  if(abs(scan_odom_motion[2]) > 0.001) est_diff_sum[2] += est_diff[2];
+  // }
+  est_diff_sum[2] += est_diff[2];
 }
 
 void RANSACLocalization::get_correction_rate_average(const Vector3d &estimated, const Vector3d &laser_estimated, const Vector3d &current_scan_odom){

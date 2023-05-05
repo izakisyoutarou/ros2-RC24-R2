@@ -40,7 +40,7 @@ Vector3d DetectCircles::calc_diff_pose(){
   for(size_t i=0; i<circles_datas.size(); i++){
     if(circles_datas[i].points.size() < 4 ) continue;
     circle = get_best_circle(circles_datas[i]);
-    if(best_rate < circles_datas[i].rate && circles_datas[i].rate > 0.7){
+    if(best_rate < circles_datas[i].rate && circles_datas[i].rate > 0.5){
       best_rate = circles_datas[i].rate;
       estimated_diff = circles_datas[i].rate*(circles[i]-circle);
     }
