@@ -32,22 +32,48 @@ void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vector
   devide_points(src_points);
   get_inliers();
   if(robot_type_ == "RR" && lines_[1].points.size()>0) detect_circles_flag=true;
-  calc_estimated_diff(laser_pose);
+  calc_estimated_diff();
 }
 
 
-void DtectLines::calc_estimated_diff(const Vector3d &laser_pose){
+// void DtectLines::calc_estimated_diff(const Vector3d &laser_pose){
+//   estimated_diff[2] = calc_diff_angle();
+//   for (size_t i=0; i<lines_.size(); i++){
+//     if(lines_[i].points.size()==0) continue;
+//     LaserToPoint laser_to_point = calc_min_dist(lines_[i].points, laser_pose);
+//     if(robot_type_ == "ER"){
+//       if(i<4) estimated_diff[1] = -(laser_pose[1] - (laser_to_point.dist + ER_map_point_y[i]));
+//       else estimated_diff[0] = -(laser_pose[0] - (-laser_to_point.dist + ER_map_point_x[i-4]));
+//     }
+//     else if(robot_type_ == "RR"){
+//       if(i<4) estimated_diff[1] = -(laser_pose[1] - (-laser_to_point.dist*sin(laser_to_point.angle) + RR_map_point[i]));
+//       else estimated_diff[0] = -(laser_pose[0] - (-laser_to_point.dist*cos(laser_to_point.angle) + RR_map_point[i-4]));
+//     }
+//   }
+//   // 垂木だけを読むことでリング回収時の自己位置精度を高める
+//   if(robot_type_ == "ER"){
+//     check_tracking();
+//     if(is_tracking_rafter_right && is_tracking_rafter_left){
+//       if(lines_[0].points.size()<lines_[3].points.size()) is_tracking_rafter_right=false;
+//       else is_tracking_rafter_left=true;
+//     }
+//     if(is_tracking_rafter_right) calc_tracking_diff(0);
+//     if(is_tracking_rafter_left) calc_tracking_diff(3);
+//   }
+// }
+
+void DtectLines::calc_estimated_diff(){
   estimated_diff[2] = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
-    LaserToPoint laser_to_point = calc_min_dist(lines_[i].points, laser_pose);
+    double average = calc_average(i);
     if(robot_type_ == "ER"){
-      if(i<4) estimated_diff[1] = -(laser_pose[1] - (laser_to_point.dist + ER_map_point_y[i]));
-      else estimated_diff[0] = -(laser_pose[0] - (-laser_to_point.dist + ER_map_point_x[i-4]));
+      if(i<4) estimated_diff[1] = ER_map_point_y[i] - average;
+      else estimated_diff[0] = ER_map_point_x[i-4] - average;
     }
     else if(robot_type_ == "RR"){
-      if(i<4) estimated_diff[1] = -(laser_pose[1] - (-laser_to_point.dist*sin(laser_to_point.angle) + RR_map_point[i]));
-      else estimated_diff[0] = -(laser_pose[0] - (-laser_to_point.dist*cos(laser_to_point.angle) + RR_map_point[i-4]));
+      if(i<4) estimated_diff[1] = RR_map_point[i] - average;
+      else estimated_diff[0] = RR_map_point[i-4] - average;
     }
   }
   // 垂木だけを読むことでリング回収時の自己位置精度を高める
