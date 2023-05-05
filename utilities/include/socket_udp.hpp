@@ -12,7 +12,7 @@ public:
 private:
     void recv(int sockfd);
 
-    int timeout_ms = 17;
+    int timeout_ms = 20;
     bool is_recved_ = false;
 
     int sockfd;

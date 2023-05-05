@@ -30,7 +30,8 @@ void RecvUDP::recv(int sockfd){
     struct timeval tv;
     tv.tv_usec = timeout_ms;
 
-    while(rclcpp::ok())
+    // while(rclcpp::ok())
+    while(true)
     {
         clilen = sizeof(cliaddr);
 
@@ -39,24 +40,24 @@ void RecvUDP::recv(int sockfd){
         FD_ZERO(&read_fds);
         FD_SET(sockfd, &read_fds);
         int sel = select(sockfd + 1, &read_fds, NULL, NULL, &tv);
-        if (sel == -1){
-            perror("select");
-            continue;
-        }
-        else if (sel == 0){
-            // タイムアウトした場合、再試行
-            continue;
-        }
+        // if (sel == -1){
+        //     perror("select");
+        //     continue;
+        // }
+        // else if (sel == 0){
+        //     // タイムアウトした場合、再試行
+        //     continue;
+        // }
 
         // bufferに受信したデータが格納されている
         int n = recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr *) &cliaddr, &clilen);
 
         if(n > 0) is_recved_ = true;
 
-        if (n < 0){
-            perror("recvfrom");
-            continue;
-        }
+        // if (n < 0){
+        //     perror("recvfrom");
+        //     continue;
+        // }
 
         if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0){
             perror("setsockopt");
