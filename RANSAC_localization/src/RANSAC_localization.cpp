@@ -77,8 +77,8 @@ void RANSACLocalization::init(){
 }
 
 void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
-  RCLCPP_INFO(this->get_logger(), "RESTART");
   if(msg->is_restart){
+    RCLCPP_INFO(this->get_logger(), "RESTART");
     init();
     // if(msg->initial_state=='O')
     // 初期角度をpublish
@@ -195,7 +195,7 @@ void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vect
   Vector3d est_diff = estimated - current_scan_odom;  //直線からの推定値がデフォルト
   // if(motion_dist > 0.015){
     for(size_t i=0; i<2; i++){
-      if(est_diff[i] == 0.0 && isfinite(diff_circle[i]) && robot_type_ == "RR") est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
+      // if(est_diff[i] == 0.0 && isfinite(diff_circle[i]) && robot_type_ == "RR") est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
       est_diff_sum[i] += est_diff[i];
     }
   // }
