@@ -77,8 +77,8 @@ void RANSACLocalization::init(){
 }
 
 void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
-  RCLCPP_INFO(this->get_logger(), "RESTART");
   if(msg->is_restart){
+    RCLCPP_INFO(this->get_logger(), "RESTART");
     init();
     // if(msg->initial_state=='O')
     // 初期角度をpublish
