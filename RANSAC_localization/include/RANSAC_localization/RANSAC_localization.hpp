@@ -107,5 +107,8 @@ private:
   bool plot_mode_;
   string robot_type_;
   int count=0;
+
+  vector<double> initial_pose_;
+  vector<double> second_initial_pose_;
 };
 }

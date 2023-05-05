@@ -8,7 +8,8 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   RCLCPP_INFO(this->get_logger(), "START");
   robot_type_ = this->get_parameter("robot_type").as_string();
   plot_mode_ = this->get_parameter("plot_mode").as_bool();
-  const auto pose_array = this->get_parameter("initial_pose").as_double_array();
+  initial_pose_ = this->get_parameter("initial_pose").as_double_array();
+  second_initial_pose_ = this->get_parameter("2nd_initial_pose").as_double_array();
   const auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
   const auto laser_weight_ = this->get_parameter("laser_weight").as_double();
   const auto odom_weight_liner_ = this->get_parameter("odom_weight_liner").as_double();
@@ -45,7 +46,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   voxel_grid_filter.setup(voxel_size_);
 
   tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
-  init_pose << pose_array[0], pose_array[1], pose_array[2];
+  init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
   init();
 
   if(plot_mode_){
@@ -79,8 +80,11 @@ void RANSACLocalization::init(){
 void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
   if(msg->is_restart){
     RCLCPP_INFO(this->get_logger(), "RESTART");
+    if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+    else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
+
     init();
-    // if(msg->initial_state=='O')
+
     // 初期角度をpublish
     uint8_t _candata[8];
     auto msg_angle = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
