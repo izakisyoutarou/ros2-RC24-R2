@@ -7,9 +7,9 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <nav_msgs/msg/path.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
+#include "std_msgs/msg/int32.hpp"
 
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
@@ -71,11 +71,11 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr odom_publisher;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr self_pose_publisher;
   rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr init_angle_publisher;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr calc_time_publisher;
 
   geometry_msgs::msg::Vector3 vector_msg;
   sensor_msgs::msg::PointCloud2 ER_map_cloud;
   sensor_msgs::msg::PointCloud2 RR_map_cloud;
-  nav_msgs::msg::Path path;
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
   geometry_msgs::msg::PoseStamped odom_stamped;
   rclcpp::QoS _qos = rclcpp::QoS(rclcpp::KeepLast(10));

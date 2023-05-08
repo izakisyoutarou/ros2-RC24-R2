@@ -41,6 +41,8 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
     "self_pose", _qos);
 
+  calc_time_publisher = this->create_publisher<std_msgs::msg::Int32>("self_localization/calc_time", 10);
+
   detect_lines.setup(robot_type_, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
   pose_fuser.setup(robot_type_, laser_weight_, odom_weight_liner_, odom_weight_angler_);
   voxel_grid_filter.setup(voxel_size_);
@@ -172,6 +174,10 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
 
   if(plot_mode_) publishers(src_points);
   time_end = chrono::system_clock::now();
+
+  std_msgs::msg::Int32 msg_calc;
+  msg_calc.data = chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count();
+  calc_time_publisher->publish(msg_calc);
   // RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
