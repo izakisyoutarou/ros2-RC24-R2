@@ -98,6 +98,8 @@ private:
   double last_scan_received_time=0.0;
   double dt_scan=0.0;
 
+  bool re_init_flag{false};
+
   Vector3d correction_rate_ave = Vector3d::Zero();
   Vector3d correction_rate_sum = Vector3d::Zero();
   Vector3i correction_count = Vector3i::Zero();

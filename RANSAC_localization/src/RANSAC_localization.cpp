@@ -70,6 +70,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
 void RANSACLocalization::init(){
   odom = Vector3d::Zero();
   last_odom = Vector3d::Zero();
+  diff_odom = Vector3d::Zero();
   est_diff_sum = init_pose;
   last_estimated = init_pose;
   pose_fuser.init();
@@ -80,10 +81,11 @@ void RANSACLocalization::init(){
 void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
   if(msg->is_restart){
     RCLCPP_INFO(this->get_logger(), "RESTART");
-    if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
-    else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
+    // if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+    // else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
 
     init();
+    re_init_flag=true;
 
     // 初期角度をpublish
     uint8_t _candata[8];
@@ -115,9 +117,6 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
 
   last_odom[0] = x;
   last_odom[1] = y;
-
-  vector_msg.x = odom[0] + est_diff_sum[0];
-  vector_msg.y = odom[1] + est_diff_sum[1];
 }
 
 void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -131,6 +130,13 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   if(abs(diff_odom[2]) / dt_jy > 6*M_PI) diff_odom[2] = 0.0;
   odom[2] += diff_odom[2];
   last_odom[2] = yaw;
+
+  if(re_init_flag){
+    re_init_flag=false;
+    init();
+  }
+  vector_msg.x = odom[0] + est_diff_sum[0];
+  vector_msg.y = odom[1] + est_diff_sum[1];
   vector_msg.z = odom[2] + est_diff_sum[2];
   self_pose_publisher->publish(vector_msg);
 }
