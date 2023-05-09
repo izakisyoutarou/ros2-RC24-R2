@@ -39,7 +39,7 @@ public:
 
 private:
   PoseFuser pose_fuser;  // センサ融合器
-  DtectLines detect_lines;
+  DetectLines detect_lines;
   DetectCircles detect_circles;
   Converter converter;
   VoxelGridFilter voxel_grid_filter;

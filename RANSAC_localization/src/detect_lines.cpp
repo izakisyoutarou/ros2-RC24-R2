@@ -1,6 +1,6 @@
 #include "RANSAC_localization/detect_lines.hpp"
 
-void DtectLines::setup(const string &robot_type, const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold){
+void DetectLines::setup(const string &robot_type, const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold){
   robot_type_ = robot_type;
   voxel_size_ = voxel_size;
   trial_num_ = trial_num;
@@ -8,7 +8,7 @@ void DtectLines::setup(const string &robot_type, const double &voxel_size, const
   points_num_threshold = inlier_length_threshold / voxel_size_;
 }
 
-void DtectLines::init(){
+void DetectLines::init(){
   estimated_diff = Vector3d::Zero();
   sum.clear();
   for (int i=0; i<lines.size(); ++i){
@@ -27,7 +27,7 @@ void DtectLines::init(){
   }
 }
 
-void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vector3d &laser_pose){
+void DetectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vector3d &laser_pose){
   init();
   devide_points(src_points);
   get_inliers();
@@ -35,34 +35,7 @@ void DtectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vector
   calc_estimated_diff();
 }
 
-
-// void DtectLines::calc_estimated_diff(const Vector3d &laser_pose){
-//   estimated_diff[2] = calc_diff_angle();
-//   for (size_t i=0; i<lines_.size(); i++){
-//     if(lines_[i].points.size()==0) continue;
-//     LaserToPoint laser_to_point = calc_min_dist(lines_[i].points, laser_pose);
-//     if(robot_type_ == "ER"){
-//       if(i<4) estimated_diff[1] = -(laser_pose[1] - (laser_to_point.dist + ER_map_point_y[i]));
-//       else estimated_diff[0] = -(laser_pose[0] - (-laser_to_point.dist + ER_map_point_x[i-4]));
-//     }
-//     else if(robot_type_ == "RR"){
-//       if(i<4) estimated_diff[1] = -(laser_pose[1] - (-laser_to_point.dist*sin(laser_to_point.angle) + RR_map_point[i]));
-//       else estimated_diff[0] = -(laser_pose[0] - (-laser_to_point.dist*cos(laser_to_point.angle) + RR_map_point[i-4]));
-//     }
-//   }
-//   // 垂木だけを読むことでリング回収時の自己位置精度を高める
-//   if(robot_type_ == "ER"){
-//     check_tracking();
-//     if(is_tracking_rafter_right && is_tracking_rafter_left){
-//       if(lines_[0].points.size()<lines_[3].points.size()) is_tracking_rafter_right=false;
-//       else is_tracking_rafter_left=true;
-//     }
-//     if(is_tracking_rafter_right) calc_tracking_diff(0);
-//     if(is_tracking_rafter_left) calc_tracking_diff(3);
-//   }
-// }
-
-void DtectLines::calc_estimated_diff(){
+void DetectLines::calc_estimated_diff(){
   estimated_diff[2] = calc_diff_angle();
   for (size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size()==0) continue;
@@ -88,7 +61,7 @@ void DtectLines::calc_estimated_diff(){
   }
 }
 
-void DtectLines::calc_tracking_diff(const int &num){
+void DetectLines::calc_tracking_diff(const int &num){
       if(!lines_[num].points.size()==0){
         estimated_diff[1] = ER_map_point_y[num] - calc_average(num);
         // estimated_diff[2] = lines_[num].angle;
@@ -99,25 +72,7 @@ void DtectLines::calc_tracking_diff(const int &num){
       }
 }
 
-LaserToPoint DtectLines::calc_min_dist(const vector<LaserPoint> &points, const Vector3d &laser_pose) {
-  LaserToPoint laser_to_point;
-  // 最初の点とレーザーのポーズ間の距離を計算し、最小距離として設定
-  double min_dist = distance(laser_pose[0], laser_pose[1], points[0].x, points[0].y);
-  double angle = get_angle(laser_pose[0], laser_pose[1], points[0].x, points[0].y);
-  // 2番目の点から最後の点までループし、最小距離を更新
-  for (size_t i = 1; i < points.size(); ++i) {
-    double dist = distance(laser_pose[0], laser_pose[1], points[i].x, points[i].y);
-    if (dist < min_dist) {
-      min_dist = dist;
-      angle = get_angle(laser_pose[0], laser_pose[1], points[i].x, points[i].y);
-    }
-  }
-  laser_to_point.dist=min_dist;
-  laser_to_point.angle=angle;
-  return laser_to_point;
-}
-
-double DtectLines::calc_average(const int &num){
+double DetectLines::calc_average(const int &num){
   double sum=0.0;
   for(size_t i=0; i<lines_[num].points.size(); i++){
     if(num<4) sum += lines_[num].points[i].y;
@@ -126,7 +81,7 @@ double DtectLines::calc_average(const int &num){
   return sum/lines_[num].points.size();
 }
 
-double DtectLines::check_tracking(){
+double DetectLines::check_tracking(){
   if(!lines_[0].points.size()==0){
     is_tracking_rafter_right=true;
     detect_rafter_right_time = chrono::system_clock::now();
@@ -143,7 +98,7 @@ double DtectLines::check_tracking(){
   }
 }
 
-double DtectLines::calc_diff_angle(){
+double DetectLines::calc_diff_angle(){
   double diff_angle=0.0;
   double best_diff_angle=100.0;
   int get_angle_count=0;
@@ -161,7 +116,7 @@ double DtectLines::calc_diff_angle(){
   return best_diff_angle;
 }
 
-void DtectLines::devide_points(const vector<LaserPoint> &src_points){
+void DetectLines::devide_points(const vector<LaserPoint> &src_points){
   for(size_t i=0; i<src_points.size(); i++){
     if(robot_type_ == "ER"){
       set_points(lines[0], ER_map_point_x[0], ER_map_point_x[3], ER_map_point_y[0], ER_map_point_y[0], src_points[i]);
@@ -184,7 +139,7 @@ void DtectLines::devide_points(const vector<LaserPoint> &src_points){
   }
 }
 
-void DtectLines::get_inliers(){
+void DetectLines::get_inliers(){
   for(size_t i=0; i<lines.size(); i++){
     lines_[i]=calc_inliers(lines[i]);
     if(i<4) clear_points(lines_[i], 0, 30);
@@ -193,7 +148,7 @@ void DtectLines::get_inliers(){
   }
 }
 
-void DtectLines::set_points(vector<LaserPoint> &points, const double map_point_x_1, const double map_point_x_2, const double map_point_y_1, const double map_point_y_2, const LaserPoint &src_point){
+void DetectLines::set_points(vector<LaserPoint> &points, const double map_point_x_1, const double map_point_x_2, const double map_point_y_1, const double map_point_y_2, const LaserPoint &src_point){
   if(map_point_x_1 - distance_threshold < src_point.x &&
      map_point_x_2 + distance_threshold > src_point.x &&
      map_point_y_1 - distance_threshold < src_point.y &&
@@ -206,7 +161,7 @@ void DtectLines::set_points(vector<LaserPoint> &points, const double map_point_x
 }
 
 
-void DtectLines::input_points(const EstimatedLine &line){
+void DetectLines::input_points(const EstimatedLine &line){
   LaserPoint sum_point;
   for(size_t i=0; i<line.points.size(); i++){
     sum_point.x = line.points[i].x;
@@ -216,7 +171,7 @@ void DtectLines::input_points(const EstimatedLine &line){
 }
 
 
-EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
+EstimatedLine DetectLines::calc_inliers(vector<LaserPoint> &divided_points){
   EstimatedLine inlier;
   inlier.angle=0.0;
   if(divided_points.size()==0){
@@ -270,7 +225,7 @@ EstimatedLine DtectLines::calc_inliers(vector<LaserPoint> &divided_points){
   return inlier;
 }
 
-bool DtectLines::clear_points(EstimatedLine &estimated_line, int angle_threshold_min, int angle_threshold_max){
+bool DetectLines::clear_points(EstimatedLine &estimated_line, int angle_threshold_min, int angle_threshold_max){
   if(estimated_line.points.size()<points_num_threshold || abs(radToDeg(estimated_line.angle)) > angle_threshold_max || abs(radToDeg(estimated_line.angle)) < angle_threshold_min){
     estimated_line.points.clear();
     return true;
@@ -278,12 +233,5 @@ bool DtectLines::clear_points(EstimatedLine &estimated_line, int angle_threshold
   return false;
 }
 
-double DtectLines::LPF(const double &raw){
-  double k=0.1;
-  double lpf = (1 - k) * last_lpf + k * raw;
-  last_lpf = lpf;
-  return lpf;
-}
-
-vector<LaserPoint> DtectLines::get_sum(){return sum;}
-Vector3d DtectLines::get_estimated_diff(){return estimated_diff;}
+vector<LaserPoint> DetectLines::get_sum(){return sum;}
+Vector3d DetectLines::get_estimated_diff(){return estimated_diff;}

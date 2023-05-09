@@ -26,15 +26,14 @@ public:
   ~PoseFuser(){}
   void setup(const string &robot_type, const double laser_weight, const double odom_weight_liner, const double odom_weight_angler);
   void init();
-  Vector3d fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points);
+  Vector3d fuse_pose(Vector3d &laser_estimated, const Vector3d &current_scan_odom, double &vt, double &wt, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points);
 
 private:
   void find_correspondence(const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points);
   CorrespondLaserPoint find_closest_vertical_point(CorrespondLaserPoint global);
   Matrix3d calc_laser_cov(const Vector3d &laser_estimated, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points);
   double calc_vertical_distance(const CorrespondLaserPoint current, const CorrespondLaserPoint reference, double x, double y, double yaw);
-  Matrix3d calc_motion_cov(const Vector3d &scan_odom_motion, const double dt);
-  Matrix3d calc_motion_cov_plus(const Vector3d &current_scan_odom, const Vector3d &scan_odom_motion, const double dt);
+  Matrix3d calc_motion_cov(double &vt, double &wt);
   Matrix3d svdInverse(const Matrix3d &A);
   Matrix3d rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_odom_motion_cov);
   Vector3d fuse(Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov);

@@ -13,7 +13,7 @@ void PoseFuser::init(){
   reference_points.clear();
 }
 
-Vector3d PoseFuser::fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_odom_motion, const Vector3d &current_scan_odom, const double dt_scan, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points){
+Vector3d PoseFuser::fuse_pose(Vector3d &laser_estimated, const Vector3d &current_scan_odom, double &vt, double &wt, const vector<LaserPoint> &src_points, const vector<LaserPoint> &global_points){
   init();
   if(global_points.size()==0) return current_scan_odom;
   find_correspondence(src_points, global_points, current_points, reference_points);
@@ -22,7 +22,7 @@ Vector3d PoseFuser::fuse_pose(Vector3d &laser_estimated, const Vector3d &scan_od
     count++;
     if(count<200) laser_cov*=0.5;
   }
-  Matrix3d scan_odom_motion_cov = calc_motion_cov(scan_odom_motion, dt_scan);
+  Matrix3d scan_odom_motion_cov = calc_motion_cov(vt, wt);
   Matrix3d rotate_scan_odom_motion_cov = rotate_cov(laser_estimated, scan_odom_motion_cov);
   return fuse(laser_estimated, laser_cov, current_scan_odom, rotate_scan_odom_motion_cov);
 }
@@ -122,18 +122,17 @@ double PoseFuser::calc_vertical_distance(const CorrespondLaserPoint current, con
   return (x_-reference.x)*reference.nx + (y_-reference.y)*reference.ny;
 }
 
-Matrix3d PoseFuser::calc_motion_cov(const Vector3d &scan_odom_motion, const double dt){
-  double vt = sqrt(scan_odom_motion[0]*scan_odom_motion[0] + scan_odom_motion[1]*scan_odom_motion[1]) / dt;
-  double wt = abs(scan_odom_motion[2]/dt);
+Matrix3d PoseFuser::calc_motion_cov(double &vt, double &wt){
   const double thre = 0.01;                   // 低速時、分散を大きくしないための閾値
   if (vt < thre) vt = thre;
   // if (wt < thre) wt = thre;
-  wt+=1;  //lidarが回転に弱いため、回転時オドメトリの信頼度を上げる。
+  wt+=1;  //lidarが回転に弱いため、回転時ジャイロの信頼度を上げる。
+  double wt_=wt*wt*wt*wt*wt*wt;
   Matrix3d C1;
   C1.setZero();
-  C1(0,0) = odom_weight_liner_*vt/(wt*wt*wt*wt*wt*wt);                 // 並進成分x
-  C1(1,1) = odom_weight_liner_*vt/(wt*wt*wt*wt*wt*wt);                 // 並進成分y
-  C1(2,2) = odom_weight_angler_/(wt*wt*wt*wt*wt*wt);                 // 回転成分
+  C1(0,0) = odom_weight_liner_*vt/(wt_);                 // 並進成分x
+  C1(1,1) = odom_weight_liner_*vt/(wt_);                 // 並進成分y
+  C1(2,2) = odom_weight_angler_/(wt_);                 // 回転成分
 
   return C1;
 }

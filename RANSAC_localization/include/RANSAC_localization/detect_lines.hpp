@@ -21,10 +21,10 @@ struct LaserToPoint{
 };
 
 
-class DtectLines{
+class DetectLines{
 public:
-  DtectLines(){};
-  ~DtectLines(){};
+  DetectLines(){};
+  ~DetectLines(){};
 
   void setup(const string &robot_type, const double &voxel_size, const int &trial_num, const double &inlier_dist_threshold, const double &inlier_length_threshold);
   void init();
@@ -41,12 +41,9 @@ private:
   void input_points(const EstimatedLine &line);
   bool clear_points(EstimatedLine &estimated_line, int angle_threshold_min, int angle_threshold_max);
   double calc_diff_angle();
-  double LPF(const double &raw);
-  // void calc_estimated_diff(const Vector3d &laser_pose);
   void calc_estimated_diff();
   void calc_tracking_diff(const int &num);
   double check_tracking();
-  LaserToPoint calc_min_dist(const vector<LaserPoint> &points, const Vector3d &laser_pose);
   double calc_average(const int &num);
 
   vector<vector<LaserPoint>> lines;
