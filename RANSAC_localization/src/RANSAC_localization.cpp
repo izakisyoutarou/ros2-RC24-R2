@@ -41,8 +41,6 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
     "self_pose", _qos);
 
-  calc_time_publisher = this->create_publisher<std_msgs::msg::Int32>("self_localization/calc_time", 10);
-
   detect_lines.setup(robot_type_, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
   pose_fuser.setup(robot_type_, laser_weight_, odom_weight_liner_, odom_weight_angler_);
   voxel_grid_filter.setup(voxel_size_);
@@ -83,11 +81,10 @@ void RANSACLocalization::init(){
 void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
   if(msg->is_restart){
     RCLCPP_INFO(this->get_logger(), "RESTART");
-    // if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
-    // else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
+    if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+    else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
 
-    init();
-    re_init_flag=true;
+    init_flag=true;
 
     // 初期角度をpublish
     uint8_t _candata[8];
@@ -133,8 +130,8 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   odom[2] += diff_odom[2];
   last_odom[2] = yaw;
 
-  if(re_init_flag){
-    re_init_flag=false;
+  if(init_flag){
+    init_flag=false;
     init();
   }
   vector_msg.x = odom[0] + est_diff_sum[0];
@@ -166,7 +163,11 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d trans = detect_lines.get_estimated_diff();
   Vector3d ransac_estimated = current_scan_odom + trans;
   vector<LaserPoint> global_points = transform(line_points, trans);
-  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, scan_odom_motion, current_scan_odom, dt_scan, line_points, global_points);
+
+  linear_vel = distance(0.0,scan_odom_motion[0],0.0,scan_odom_motion[1]) / dt_scan;
+  angular_vel = abs(scan_odom_motion[2]/dt_scan);
+
+  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, current_scan_odom, linear_vel, angular_vel, line_points, global_points);
 
   update(estimated, ransac_estimated, current_scan_odom, scan_odom_motion, src_points);
 
@@ -175,9 +176,6 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   if(plot_mode_) publishers(src_points);
   time_end = chrono::system_clock::now();
 
-  std_msgs::msg::Int32 msg_calc;
-  msg_calc.data = chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count();
-  calc_time_publisher->publish(msg_calc);
   // RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
@@ -193,28 +191,26 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
   }
 
   bool correction_flag{false};
-  if(abs(scan_odom_motion[2])/dt_scan > 0.4){
+  // if(linear_vel > 0.2) translation_permission_time_start = chrono::system_clock::now();
+  if(angular_vel > 0.4){
     correction_flag=false;
-    amendment_permission_time_start = chrono::system_clock::now();
+    angle_permission_time_start = chrono::system_clock::now();
   }
   else correction_flag=true;
 
-  if(correction_flag && chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now()-amendment_permission_time_start).count()<500){
-    correction_flag=false;
-  }
+  //角速度が低くなっても数ミリ秒間は点群が歪むため
+  // if(get_time_diff(angle_permission_time_start)<100 || get_time_diff(translation_permission_time_start)>100) correction_flag=false;
+  if(get_time_diff(angle_permission_time_start)<100) correction_flag=false;
 
   if(correction_flag) correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
 }
 
 void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vector3d &estimated, const Vector3d &current_scan_odom, const Vector3d &diff_circle){
-  const double motion_dist = distance(0.0,scan_odom_motion[0],0.0,scan_odom_motion[1]);
   Vector3d est_diff = estimated - current_scan_odom;  //直線からの推定値がデフォルト
-  // if(motion_dist > 0.015){
-    for(size_t i=0; i<2; i++){
-      // if(est_diff[i] == 0.0 && isfinite(diff_circle[i]) && robot_type_ == "RR") est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
-      est_diff_sum[i] += est_diff[i];
-    }
-  // }
+  for(size_t i=0; i<2; i++){
+    // if(est_diff[i] == 0.0 && isfinite(diff_circle[i]) && robot_type_ == "RR") est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
+    est_diff_sum[i] += est_diff[i];
+  }
   est_diff_sum[2] += est_diff[2];
 }
 

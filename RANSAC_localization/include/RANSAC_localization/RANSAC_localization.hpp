@@ -9,7 +9,6 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
-#include "std_msgs/msg/int32.hpp"
 
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
@@ -40,7 +39,7 @@ public:
 
 private:
   PoseFuser pose_fuser;  // センサ融合器
-  DtectLines detect_lines;
+  DetectLines detect_lines;
   DetectCircles detect_circles;
   Converter converter;
   VoxelGridFilter voxel_grid_filter;
@@ -71,7 +70,6 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr odom_publisher;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr self_pose_publisher;
   rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr init_angle_publisher;
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr calc_time_publisher;
 
   geometry_msgs::msg::Vector3 vector_msg;
   sensor_msgs::msg::PointCloud2 ER_map_cloud;
@@ -97,14 +95,16 @@ private:
   double last_jy_received_time=0.0;
   double last_scan_received_time=0.0;
   double dt_scan=0.0;
+  double linear_vel=0.0;
+  double angular_vel=0.0;
 
-  bool re_init_flag{false};
+  bool init_flag{false};
 
   Vector3d correction_rate_ave = Vector3d::Zero();
   Vector3d correction_rate_sum = Vector3d::Zero();
   Vector3i correction_count = Vector3i::Zero();
 
-  chrono::system_clock::time_point time_start, time_end, amendment_permission_time_start;
+  chrono::system_clock::time_point time_start, time_end, angle_permission_time_start, translation_permission_time_start;
 
   bool plot_mode_;
   string robot_type_;

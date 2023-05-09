@@ -53,7 +53,8 @@ class SplineTrajectories(Node):
 
         # パラメータの宣言
         self.declare_parameter('resolution', 0.01)
-        self.declare_parameter('initial_pose', [-5.5, 0.0 ,0.0])
+        self.declare_parameter('initial_pose', [-5.5, -0.3 ,0.0])
+        self.declare_parameter('2nd_initial_pose', [-0.25, -5.7, 90.0])
 
         self.current_node = 'O'
         self.target_node = 'O'
