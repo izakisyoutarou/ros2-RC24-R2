@@ -122,8 +122,8 @@ double PoseFuser::calc_vertical_distance(const CorrespondLaserPoint current, con
   return (x_-reference.x)*reference.nx + (y_-reference.y)*reference.ny;
 }
 
-Matrix3d PoseFuser::calc_motion_cov(double &vt, double &wt){
-  const double thre = 0.01;                   // 低速時、分散を大きくしないための閾値
+Matrix3d PoseFuser::calc_motion_cov(double vt, double wt){
+  const double thre = 1.0;                   // 低速時、分散を大きくしないための閾値
   if (vt < thre) vt = thre;
   // if (wt < thre) wt = thre;
   wt+=1;  //lidarが回転に弱いため、回転時ジャイロの信頼度を上げる。

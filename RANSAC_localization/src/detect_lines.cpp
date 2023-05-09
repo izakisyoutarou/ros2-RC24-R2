@@ -62,14 +62,9 @@ void DetectLines::calc_estimated_diff(){
 }
 
 void DetectLines::calc_tracking_diff(const int &num){
-      if(!lines_[num].points.size()==0){
-        estimated_diff[1] = ER_map_point_y[num] - calc_average(num);
-        // estimated_diff[2] = lines_[num].angle;
-      }
-      else {
-        estimated_diff[1]=0.0;
-        // estimated_diff[2]=0.0;
-      }
+  if(!lines_[num].points.size()==0) estimated_diff[1] = ER_map_point_y[num] - calc_average(num);
+  else estimated_diff[1]=0.0;
+  if(lines_[num].points.size() < 3.0/voxel_size_) estimated_diff[2] = lines_[num].angle;
 }
 
 double DetectLines::calc_average(const int &num){

@@ -163,9 +163,11 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   Vector3d trans = detect_lines.get_estimated_diff();
   Vector3d ransac_estimated = current_scan_odom + trans;
   vector<LaserPoint> global_points = transform(line_points, trans);
-  double vt = distance(0.0,scan_odom_motion[0],0.0,scan_odom_motion[1]) / dt_scan;
-  double wt = abs(scan_odom_motion[2]/dt_scan);
-  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, current_scan_odom, vt, wt, line_points, global_points);
+
+  linear_vel = distance(0.0,scan_odom_motion[0],0.0,scan_odom_motion[1]) / dt_scan;
+  angular_vel = abs(scan_odom_motion[2]/dt_scan);
+
+  Vector3d estimated = pose_fuser.fuse_pose(ransac_estimated, current_scan_odom, linear_vel, angular_vel, line_points, global_points);
 
   update(estimated, ransac_estimated, current_scan_odom, scan_odom_motion, src_points);
 
@@ -189,15 +191,17 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
   }
 
   bool correction_flag{false};
-  if(abs(scan_odom_motion[2])/dt_scan > 0.4){
+  // if(linear_vel > 0.2) translation_permission_time_start = chrono::system_clock::now();
+  // if(linear_vel > 0.2) correction_flag=false;
+  if(angular_vel > 0.4){
     correction_flag=false;
-    amendment_permission_time_start = chrono::system_clock::now();
+    angle_permission_time_start = chrono::system_clock::now();
   }
   else correction_flag=true;
 
-  if(correction_flag && chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now()-amendment_permission_time_start).count()<500){
-    correction_flag=false;
-  }
+  //角速度が低くなっても数ミリ秒間は点群が歪むため
+  // if(get_time_diff(angle_permission_time_start)<100 || get_time_diff(translation_permission_time_start)>100) correction_flag=false;
+  if(get_time_diff(angle_permission_time_start)<100) correction_flag=false;
 
   if(correction_flag) correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
 }
