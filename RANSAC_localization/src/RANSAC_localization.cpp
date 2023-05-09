@@ -41,8 +41,6 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
     "self_pose", _qos);
 
-  calc_time_publisher = this->create_publisher<std_msgs::msg::Int32>("self_localization/calc_time", 10);
-
   detect_lines.setup(robot_type_, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
   pose_fuser.setup(robot_type_, laser_weight_, odom_weight_liner_, odom_weight_angler_);
   voxel_grid_filter.setup(voxel_size_);
@@ -83,11 +81,10 @@ void RANSACLocalization::init(){
 void RANSACLocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
   if(msg->is_restart){
     RCLCPP_INFO(this->get_logger(), "RESTART");
-    // if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
-    // else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
+    if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+    else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
 
-    init();
-    re_init_flag=true;
+    init_flag=true;
 
     // 初期角度をpublish
     uint8_t _candata[8];
@@ -133,8 +130,8 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
   odom[2] += diff_odom[2];
   last_odom[2] = yaw;
 
-  if(re_init_flag){
-    re_init_flag=false;
+  if(init_flag){
+    init_flag=false;
     init();
   }
   vector_msg.x = odom[0] + est_diff_sum[0];
@@ -175,9 +172,6 @@ void RANSACLocalization::callback_scan(const sensor_msgs::msg::LaserScan::Shared
   if(plot_mode_) publishers(src_points);
   time_end = chrono::system_clock::now();
 
-  std_msgs::msg::Int32 msg_calc;
-  msg_calc.data = chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count();
-  calc_time_publisher->publish(msg_calc);
   // RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
   // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
   // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());

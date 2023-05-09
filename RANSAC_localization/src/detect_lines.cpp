@@ -148,7 +148,7 @@ double DtectLines::calc_diff_angle(){
   double best_diff_angle=100.0;
   int get_angle_count=0;
   for(size_t i=0; i<lines_.size(); i++){
-    if(lines_[i].points.size()==0) continue;
+    if(lines_[i].points.size() < 3.0/voxel_size_) continue;
     get_angle_count++;
     if(i<4) diff_angle = lines_[i].angle;
     else{
@@ -158,7 +158,7 @@ double DtectLines::calc_diff_angle(){
     if(diff_angle < best_diff_angle) best_diff_angle = diff_angle;
   }
   if(get_angle_count==0) return 0.0;
-  return LPF(best_diff_angle);
+  return best_diff_angle;
 }
 
 void DtectLines::devide_points(const vector<LaserPoint> &src_points){
