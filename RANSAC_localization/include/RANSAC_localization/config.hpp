@@ -55,3 +55,7 @@ inline vector<LaserPoint> transform(const vector<LaserPoint> &points, const Vect
   }
   return transformed_points;
 }
+
+inline int get_time_diff(chrono::system_clock::time_point &start){
+  return chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now()-start).count();
+}

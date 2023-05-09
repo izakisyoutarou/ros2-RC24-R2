@@ -95,6 +95,8 @@ private:
   double last_jy_received_time=0.0;
   double last_scan_received_time=0.0;
   double dt_scan=0.0;
+  double linear_vel=0.0;
+  double angular_vel=0.0;
 
   bool init_flag{false};
 
@@ -102,7 +104,7 @@ private:
   Vector3d correction_rate_sum = Vector3d::Zero();
   Vector3i correction_count = Vector3i::Zero();
 
-  chrono::system_clock::time_point time_start, time_end, amendment_permission_time_start;
+  chrono::system_clock::time_point time_start, time_end, angle_permission_time_start, translation_permission_time_start;
 
   bool plot_mode_;
   string robot_type_;

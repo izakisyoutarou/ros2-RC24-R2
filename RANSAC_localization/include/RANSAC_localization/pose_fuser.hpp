@@ -33,7 +33,7 @@ private:
   CorrespondLaserPoint find_closest_vertical_point(CorrespondLaserPoint global);
   Matrix3d calc_laser_cov(const Vector3d &laser_estimated, vector<CorrespondLaserPoint> &current_points, vector<CorrespondLaserPoint> &reference_points);
   double calc_vertical_distance(const CorrespondLaserPoint current, const CorrespondLaserPoint reference, double x, double y, double yaw);
-  Matrix3d calc_motion_cov(double &vt, double &wt);
+  Matrix3d calc_motion_cov(double vt, double wt);
   Matrix3d svdInverse(const Matrix3d &A);
   Matrix3d rotate_cov(const Vector3d &laser_estimated, Matrix3d &scan_odom_motion_cov);
   Vector3d fuse(Vector3d &laser_estimated, const Matrix3d &laser_cov, const Vector3d &current_scan_odom, const Matrix3d &rotate_scan_odom_motion_cov);
