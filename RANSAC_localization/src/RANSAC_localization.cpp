@@ -192,7 +192,6 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
 
   bool correction_flag{false};
   // if(linear_vel > 0.2) translation_permission_time_start = chrono::system_clock::now();
-  // if(linear_vel > 0.2) correction_flag=false;
   if(angular_vel > 0.4){
     correction_flag=false;
     angle_permission_time_start = chrono::system_clock::now();
