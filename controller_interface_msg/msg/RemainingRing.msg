@@ -1,0 +1,2 @@
+bool is_injection0
+bool is_injection1
