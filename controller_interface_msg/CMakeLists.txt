@@ -28,6 +28,7 @@ set(msg_files
   "msg/Pad.msg"
   "msg/BaseControl.msg"
   "msg/Convergence.msg"
+  "msg/RemainingRing.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
