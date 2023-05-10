@@ -197,7 +197,7 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
     angle_permission_time_start = chrono::system_clock::now();
   }
   else correction_flag=true;
-
+  if(linear_vel < 0.3) correction_flag=false;
   //角速度が低くなっても数ミリ秒間は点群が歪むため
   // if(get_time_diff(angle_permission_time_start)<100 || get_time_diff(translation_permission_time_start)>100) correction_flag=false;
   if(get_time_diff(angle_permission_time_start)<100) correction_flag=false;
