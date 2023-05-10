@@ -3,8 +3,6 @@ DetectCircles::DetectCircles(){
   circles.push_back(circle_self_right);
   circles.push_back(circle_self_center);
   circles.push_back(circle_self_left);
-  circles.push_back(circle_opponent_right);
-  circles.push_back(circle_opponent_left);
 };
 
 void DetectCircles::init(){

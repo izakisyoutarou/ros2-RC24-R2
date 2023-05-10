@@ -16,8 +16,6 @@ const double type_1_r = 0.1016/2;
 const Vector3d circle_self_right(2.8-6., 2.8-6., type_1_r);
 const Vector3d circle_self_center(2.8-6., 6.-6., type_1_r);
 const Vector3d circle_self_left(2.8-6., 9.2-6, type_1_r);
-const Vector3d circle_opponent_right(9.2-6., 2.8-6., type_1_r);
-const Vector3d circle_opponent_left(9.2-6., 9.2-6, type_1_r);
 const double ER_map_point_x[4] = {0.05-6., 1.975-6., 5.9875-6., 6.-6.};
 const double ER_map_point_y[4] = {0.05-6., 1.975-6, 10.025-6., 11.95-6.};
 const double RR_map_point[2] = {4.5-6., 7.5-6.};

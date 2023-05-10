@@ -285,8 +285,6 @@ void RANSACLocalization::create_RR_map(){
   generate_circle(RR_map_points, circle_self_right, 2000);
   generate_circle(RR_map_points, circle_self_center, 2000);
   generate_circle(RR_map_points, circle_self_left, 2000);
-  generate_circle(RR_map_points, circle_opponent_right, 2000);
-  generate_circle(RR_map_points, circle_opponent_left, 2000);
   RR_map_cloud = converter.vector_to_PC2(RR_map_points);
 }
 
