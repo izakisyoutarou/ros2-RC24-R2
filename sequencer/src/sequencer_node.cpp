@@ -19,12 +19,7 @@ can_digital_button_id(get_parameter("canid.sub_digital_button").as_int()),
 can_inject_id(get_parameter("canid.inject").as_int()),
 can_cancel_inject_id(get_parameter("canid.cancel_inject").as_int()),
 
-socket_robot_state(get_parameter("port.robot_state").as_int()),
-socket_pole_state(get_parameter("port.pole_state").as_int()),
-
-pole_priorityA_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"/sequencer/"+"pole_priority_A.cfg"),
-pole_priorityB_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"/sequencer/"+"pole_priority_B.cfg"),
-pole_priorityC_file_path(ament_index_cpp::get_package_share_directory("main_executor")+"/config/"+"/sequencer/"+"pole_priority_C.cfg")
+socket_robot_state(get_parameter("port.robot_state").as_int())
 
 {
     _subscription_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
@@ -42,6 +37,16 @@ pole_priorityC_file_path(ament_index_cpp::get_package_share_directory("main_exec
         _qos,
         std::bind(&Sequencer::_subscriber_callback_movable, this, std::placeholders::_1)
     );
+    _subscription_injected = this->create_subscription<controller_interface_msg::msg::Injection>(
+        "injection_completed",
+        _qos,
+        std::bind(&Sequencer::_subscriber_callback_injected, this, std::placeholders::_1)
+    );
+    _subscription_pole = this->create_subscription<std_msgs::msg::String>(
+        "injection_pole",
+        _qos,
+        std::bind(&Sequencer::_subscriber_callback_pole, this, std::placeholders::_1)
+    );
 
     _socket_timer = this->create_wall_timer(
         std::chrono::milliseconds(this->get_parameter("interval_ms").as_int()),
@@ -52,9 +57,7 @@ pole_priorityC_file_path(ament_index_cpp::get_package_share_directory("main_exec
     publisher_pole_m0 = this->create_publisher<std_msgs::msg::String>("injection_pole_m0", _qos);
     publisher_pole_m1 = this->create_publisher<std_msgs::msg::String>("injection_pole_m1", _qos);
     publisher_move_node = this->create_publisher<std_msgs::msg::String>("move_node", _qos);
-
-    pole_priority_m0.reserve(11);
-    pole_priority_m1.reserve(11);
+    publisher_rings = this->create_publisher<controller_interface_msg::msg::Injection>("current_rings", _qos);
 }
 
 void Sequencer::_subscriber_callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
@@ -64,44 +67,30 @@ void Sequencer::_subscriber_callback_base_control(const controller_interface_msg
         initial_state = msg->initial_state;
     }
     judge_convergence.spline_convergence = msg->is_move_autonomous;
-
-    // judge_convergence.injection0 = msg->is_injection_autonomous;
-    // judge_convergence.injection1 = msg->is_injection_autonomous;
 }
 
 void Sequencer::_subscriber_callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg){
     if(current_pickup_state == "L0" || current_pickup_state == "L1"){
         if(msg->spline_convergence || !judge_convergence.spline_convergence){
             current_pickup_state = "";
-            // auto msg_load = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            // msg_load->canid = can_digital_button_id;
-            // msg_load->candlc = 8;
-            // msg_load->candata[5] = true;    //装填
-            // publisher_can->publish(*msg_load);
-            // RCLCPP_INFO(this->get_logger(), "回収・装填");
+
+            current_poles = {max_poles, max_poles};
+            auto msg_rings = std::make_shared<controller_interface_msg::msg::Injection>();
+            msg_rings->mech0 = current_poles[0];
+            msg_rings->mech1 = current_poles[1];
+            publisher_rings->publish(*msg_rings);
         }
-        // if(msg->injection0 && msg->injection1){
-        //     _recv_pole_state(last_pole_state);
-        //     current_pickup_state = "O";
-        // }
     }
-    // if(current_pickup_state == "O"){
     else if(current_inject_state != initial_state){
         auto msg_inject = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         msg_inject->canid = can_inject_id;
         msg_inject->candlc = 2;
 
-        if(!is_could_aim && (msg->injection0 || msg->injection1) && (msg->spline_convergence || !judge_convergence.spline_convergence)){
-            is_could_aim = true;
-            _recv_pole_state(last_pole_state);
-            RCLCPP_INFO(this->get_logger(), "射出開始");
-
-        }
-        if(is_auto_inject_m0 && msg->injection_calculator0 && msg->injection0 && (msg->spline_convergence || !judge_convergence.spline_convergence)){
+        if(msg->injection_calculator0 && msg->injection0 && (msg->spline_convergence || !judge_convergence.spline_convergence)){
             msg_inject->candata[0] = true;
             publisher_can->publish(*msg_inject);
         }
-        if(is_auto_inject_m1 && msg->injection_calculator1 && msg->injection1 && (msg->spline_convergence || !judge_convergence.spline_convergence)){
+        if(msg->injection_calculator1 && msg->injection1 && (msg->spline_convergence || !judge_convergence.spline_convergence)){
             msg_inject->candata[1] = true;
             publisher_can->publish(*msg_inject);
         }
@@ -109,23 +98,32 @@ void Sequencer::_subscriber_callback_convergence(const controller_interface_msg:
 }
 
 void Sequencer::_subscriber_callback_movable(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
-    if(current_pickup_state == "L0" || current_pickup_state == "L1"){
-        auto msg_move_node = std::make_shared<std_msgs::msg::String>();
-        msg_move_node->data = current_inject_state;
-        publisher_move_node->publish(*msg_move_node);
+    auto msg_move_node = std::make_shared<std_msgs::msg::String>();
+    msg_move_node->data = current_inject_state;
+    publisher_move_node->publish(*msg_move_node);
 
-        RCLCPP_INFO(this->get_logger(), "移動可能指令受信");
-    }
+    RCLCPP_INFO(this->get_logger(), "移動可能指令受信");
+}
+
+void Sequencer::_subscriber_callback_injected(const controller_interface_msg::msg::Injection::SharedPtr msg){
+    current_poles[0]--;
+    current_poles[1]--;
+    if(current_poles[0]<0) current_poles[0] = 0;
+    if(current_poles[1]<0) current_poles[1] = 0;
+    auto msg_rings = std::make_shared<controller_interface_msg::msg::Injection>();
+    msg_rings->mech0 = current_poles[0];
+    msg_rings->mech1 = current_poles[1];
+    publisher_rings->publish(*msg_rings);
+}
+
+void Sequencer::_subscriber_callback_pole(const std_msgs::msg::String::SharedPtr msg){
+
 }
 
 void Sequencer::_recv_callback(){
     if(socket_robot_state.is_recved()){
         unsigned char data[2];
         _recv_robot_state(socket_robot_state.data(data, sizeof(data)));
-    }
-    if(socket_pole_state.is_recved()){
-        unsigned char data[11] = {0};
-        _recv_pole_state(socket_pole_state.data(data, sizeof(data)));
     }
 }
 
@@ -139,126 +137,42 @@ void Sequencer::_recv_robot_state(const unsigned char data[2]){
     auto msg_move_node = std::make_shared<std_msgs::msg::String>();
 
     if(state=="L0"){
-        current_pickup_state = state;
-        msg_move_node->data = state;
-        publisher_move_node->publish(*msg_move_node);
-
         msg_pickup_preparation->candata[6] = true; //左回収準備
         publisher_can->publish(*msg_pickup_preparation);
         RCLCPP_INFO(this->get_logger(), "左方回収準備");
     }
     else if(state=="L1"){
-        current_pickup_state = state;
-        msg_move_node->data = state;
-        publisher_move_node->publish(*msg_move_node);
-
         msg_pickup_preparation->candata[4] = true; //右回収準備
         publisher_can->publish(*msg_pickup_preparation);
         RCLCPP_INFO(this->get_logger(), "右方回収準備");
     }
+
     if(state=="L0" || state=="L1"){
-        auto msg_cancel_inject = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-        msg_cancel_inject->canid = can_cancel_inject_id;
-        msg_cancel_inject->candlc = 2;
-        msg_cancel_inject->candata[0] = true;   //機構0
-        msg_cancel_inject->candata[1] = true;   //機構1
-        publisher_can->publish(*msg_cancel_inject);
+        current_pickup_state = state;
+        msg_move_node->data = state;
+        publisher_move_node->publish(*msg_move_node);
+
+        cancel_inject(true, true);
         return;
     }
 
-    /*回収特殊状態はこの先は実行しない*/
-
-    string pole_priority_file_path;
+    /***** 回収特殊状態(L0,L1)入力時はこの先は実行しない *****/
     current_inject_state = state[0];
-    is_could_aim = false;
 
-    if(state[0]=='A') pole_priority_file_path = pole_priorityA_file_path;
-    else if(state[0]=='B') pole_priority_file_path = pole_priorityB_file_path;
-    else if(state[0]=='C') pole_priority_file_path = pole_priorityC_file_path;
-
-    ifstream ifs(pole_priority_file_path);
-    string str;
-    int mech_num = 0;
-    while(getline(ifs, str)){
-        string token;
-        istringstream stream(str);
-        int count = 0;
-        while(getline(stream, token, ' ')){   //スペース区切り
-            if(count==0 && token=="#") break;
-            else if(count==0) mech_num++;
-
-            if(mech_num==1) pole_priority_m0.push_back(static_cast<int>(token[0])-0x41);
-            else if(mech_num==2) pole_priority_m1.push_back(static_cast<int>(token[0])-0x41);
-            count++;
-        }
-    }
     if(current_pickup_state != "L0" && current_pickup_state != "L1"){
-        auto msg_move_node = std::make_shared<std_msgs::msg::String>();
         msg_move_node->data = current_inject_state;
         publisher_move_node->publish(*msg_move_node);
+        cancel_inject(true, true);
     }
-    // _recv_pole_state(last_pole_state);
-
 }
 
-void Sequencer::_recv_pole_state(const unsigned char data[11]){
-    auto injection_pole_m0 = std::make_shared<std_msgs::msg::String>();
-    auto injection_pole_m1 = std::make_shared<std_msgs::msg::String>();
-
-    // RCLCPP_INFO(this->get_logger(), "pole %d %d %d %d %d %d %d %d %d %d %d ", data[0],data[1],data[2],data[3],data[4],data[5],data[6],data[7],data[8],data[9],data[10]);
-    if(current_pickup_state != "L0" && current_pickup_state != "L1" && current_inject_state != initial_state){
-
-    is_auto_inject_m0 = false;
-    is_auto_inject_m1 = false;
-
-    for(const auto& pole_num : pole_priority_m0){
-        if(!data[pole_num] && is_could_aim){
-            if(pole_num != aiming_pole_num_m0){
-                string pole{static_cast<char>(pole_num+0x41)};  //0~10をA~Kに変換
-                injection_pole_m0->data = pole;
-                publisher_pole_m0->publish(*injection_pole_m0);
-                aiming_pole_num_m0 = pole_num;
-                cout << "機構0 目標ポール : " << pole << endl;
-            }
-            is_auto_inject_m0 = true;
-            break;
-        }
-    }
-    for(const auto& pole_num : pole_priority_m1){
-        if(!data[pole_num] && is_could_aim){
-            if(pole_num != aiming_pole_num_m1){
-                string pole{static_cast<char>(pole_num+0x41)};  //0~10をA~Kに変換
-                injection_pole_m1->data = pole;
-                publisher_pole_m1->publish(*injection_pole_m1);
-                aiming_pole_num_m1 = pole_num;
-                cout << "機構1 目標ポール : " << pole << endl;
-            }
-            is_auto_inject_m1 = true;
-            break;
-        }
-    }
-
-    if(!is_auto_inject_m0 && aiming_pole_num_m0 >= 0){
-        auto msg_cancel_inject = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-        msg_cancel_inject->canid = can_cancel_inject_id;
-        msg_cancel_inject->candlc = 2;
-        msg_cancel_inject->candata[0] = true;    //機構0
-        publisher_can->publish(*msg_cancel_inject);
-        aiming_pole_num_m0 = -1;
-        RCLCPP_INFO(this->get_logger(), "機構0 射出準備止め");
-    }
-    if(!is_auto_inject_m1 && aiming_pole_num_m1 >= 0){
-        auto msg_cancel_inject = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-        msg_cancel_inject->canid = can_cancel_inject_id;
-        msg_cancel_inject->candlc = 2;
-        msg_cancel_inject->candata[1] = true;    //機構1
-        publisher_can->publish(*msg_cancel_inject);
-        aiming_pole_num_m1 = -1;
-        RCLCPP_INFO(this->get_logger(), "機構1 射出準備止め");
-    }
-
-    }
-    memcpy(last_pole_state, data, sizeof(last_pole_state));
+void Sequencer::cancel_inject(const bool mech0, const bool mech1){
+    auto msg_cancel_inject = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+    msg_cancel_inject->canid = can_cancel_inject_id;
+    msg_cancel_inject->candlc = 2;
+    msg_cancel_inject->candata[0] = mech0;   //機構0
+    msg_cancel_inject->candata[1] = mech1;   //機構1
+    publisher_can->publish(*msg_cancel_inject);
 }
 
 }  // namespace sequencer
