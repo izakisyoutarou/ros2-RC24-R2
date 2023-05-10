@@ -22,7 +22,7 @@ namespace socketcan_interface {
         struct ifreq ifr{};
         int s;
 
-        rclcpp::QoS _qos = rclcpp::QoS(40).keep_all();
+            rclcpp::QoS _qos = rclcpp::QoS(rclcpp::KeepLast(40));
 
         void _publisher_callback();
         void _subscriber_callback(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
