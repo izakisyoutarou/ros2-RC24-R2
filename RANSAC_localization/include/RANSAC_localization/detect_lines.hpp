@@ -66,7 +66,6 @@ private:
   double points_num_threshold;
   double detect_length = 0.0;
   const double distance_threshold=1.0;
-  double last_lpf=0;
   bool is_tracking_rafter_left{false};
   bool is_tracking_rafter_right{false};
 

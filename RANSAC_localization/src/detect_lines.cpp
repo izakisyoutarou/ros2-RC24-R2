@@ -22,8 +22,8 @@ void DetectLines::init(){
     lines_.resize(8);
   }
   else if(robot_type_ == "RR"){
-    lines.resize(6);
-    lines_.resize(6);
+    lines.resize(2);
+    lines_.resize(2);
   }
 }
 
@@ -31,7 +31,6 @@ void DetectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vecto
   init();
   devide_points(src_points);
   get_inliers();
-  if(robot_type_ == "RR" && lines_[1].points.size()>0) detect_circles_flag=true;
   calc_estimated_diff();
 }
 
@@ -45,8 +44,8 @@ void DetectLines::calc_estimated_diff(){
       else estimated_diff[0] = ER_map_point_x[i-4] - average;
     }
     else if(robot_type_ == "RR"){
-      if(i<4) estimated_diff[1] = RR_map_point[i] - average;
-      else estimated_diff[0] = RR_map_point[i-4] - average;
+      if(i==0) estimated_diff[1] = RR_map_point[0] - average;
+      else estimated_diff[0] = RR_map_point[0] - average;
     }
   }
   // 垂木だけを読むことでリング回収時の自己位置精度を高める
@@ -100,10 +99,19 @@ double DetectLines::calc_diff_angle(){
   for(size_t i=0; i<lines_.size(); i++){
     if(lines_[i].points.size() < 3.0/voxel_size_) continue;
     get_angle_count++;
-    if(i<4) diff_angle = lines_[i].angle;
-    else{
-      if(lines_[i].angle<0) diff_angle = lines_[i].angle + M_PI/2;
-      else diff_angle = lines_[i].angle - M_PI/2;
+    if(robot_type_ == "ER"){
+      if(i<4) diff_angle = lines_[i].angle;
+      else{
+        if(lines_[i].angle<0) diff_angle = lines_[i].angle + M_PI/2;
+        else diff_angle = lines_[i].angle - M_PI/2;
+      }
+    }
+    if(robot_type_ == "RR"){
+      if(i==0) diff_angle = lines_[i].angle;
+      else{
+        if(lines_[i].angle<0) diff_angle = lines_[i].angle + M_PI/2;
+        else diff_angle = lines_[i].angle - M_PI/2;
+      }
     }
     if(diff_angle < best_diff_angle) best_diff_angle = diff_angle;
   }
@@ -124,12 +132,8 @@ void DetectLines::devide_points(const vector<LaserPoint> &src_points){
       set_points(lines[7], ER_map_point_x[2], ER_map_point_x[2], ER_map_point_y[2], ER_map_point_y[3], src_points[i]);
     }
     else if(robot_type_ == "RR"){
-      set_points(lines[0], RR_map_point[0], RR_map_point[3], RR_map_point[0], RR_map_point[0], src_points[i]);
-      set_points(lines[1], RR_map_point[1], RR_map_point[2], RR_map_point[1], RR_map_point[1], src_points[i]);
-      set_points(lines[2], RR_map_point[1], RR_map_point[2], RR_map_point[2], RR_map_point[2], src_points[i]);
-      set_points(lines[3], RR_map_point[0], RR_map_point[3], RR_map_point[3], RR_map_point[3], src_points[i]);
-      set_points(lines[4], RR_map_point[0], RR_map_point[0], RR_map_point[0], RR_map_point[3], src_points[i]);
-      set_points(lines[5], RR_map_point[1], RR_map_point[1], RR_map_point[1], RR_map_point[2], src_points[i]);
+      set_points(lines[0], RR_map_point[0], RR_map_point[1], RR_map_point[1], RR_map_point[1], src_points[i]);
+      set_points(lines[1], RR_map_point[0], RR_map_point[0], RR_map_point[0], RR_map_point[1], src_points[i]);
     }
   }
 }
@@ -137,8 +141,14 @@ void DetectLines::devide_points(const vector<LaserPoint> &src_points){
 void DetectLines::get_inliers(){
   for(size_t i=0; i<lines.size(); i++){
     lines_[i]=calc_inliers(lines[i]);
-    if(i<4) clear_points(lines_[i], 0, 30);
-    else clear_points(lines_[i], 60, 90);
+    if(robot_type_ == "ER"){
+      if(i<4) clear_points(lines_[i], 0, 30);
+      else clear_points(lines_[i], 60, 90);
+    }
+    else if(robot_type_ == "RR"){
+      if(i==0) clear_points(lines_[i], 0, 30);
+      else clear_points(lines_[i], 60, 90);
+    }
     input_points(lines_[i]);
   }
 }

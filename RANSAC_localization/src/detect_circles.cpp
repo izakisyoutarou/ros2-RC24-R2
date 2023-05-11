@@ -3,8 +3,6 @@ DetectCircles::DetectCircles(){
   circles.push_back(circle_self_right);
   circles.push_back(circle_self_center);
   circles.push_back(circle_self_left);
-  circles.push_back(circle_opponent_right);
-  circles.push_back(circle_opponent_left);
 };
 
 void DetectCircles::init(){
@@ -18,17 +16,16 @@ void DetectCircles::init(){
 
 Vector3d DetectCircles::get_diff_pose(const vector<LaserPoint> &src_points){
   init();
-  if(!detect_circles_flag) return estimated_diff;
   devide_points(src_points);
   return calc_diff_pose();
 }
 
 Vector3d DetectCircles::super_correction(){
   Vector3d circle=Vector3d::Zero();
-  if(circles_datas[1].points.size() < 10 ) return estimated_diff;
-  circle = get_best_circle(circles_datas[1]);
-  if(circles_datas[1].rate > 0.7){
-    estimated_diff = (circles[1]-circle);
+  if(circles_datas[0].points.size() < 10 ) return estimated_diff;
+  circle = get_best_circle(circles_datas[0]);
+  if(circles_datas[0].rate > 0.7){
+    estimated_diff = (circles[0]-circle);
     uphill_super_correction=false;
   }
   return estimated_diff;
