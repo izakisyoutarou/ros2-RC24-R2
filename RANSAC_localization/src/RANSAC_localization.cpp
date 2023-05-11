@@ -120,6 +120,8 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
 
 void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
   double jy_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
+  if(init_jy_time_flag) last_jy_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
+  init_jy_time_flag=false;
   double dt_jy = jy_received_time - last_jy_received_time;
   last_jy_received_time = jy_received_time;
   uint8_t _candata[8];
@@ -134,6 +136,7 @@ void RANSACLocalization::callback_odom_angular(const socketcan_interface_msg::ms
     init_flag=false;
     init();
   }
+
   vector_msg.x = odom[0] + est_diff_sum[0];
   vector_msg.y = odom[1] + est_diff_sum[1];
   vector_msg.z = odom[2] + est_diff_sum[2];
@@ -186,10 +189,9 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
   if(robot_type_ == "RR"){
     get_correction_rate_average(estimated, laser_estimated, current_scan_odom);
     diff_circle = correction_rate_ave.cwiseProduct(detect_circles.get_diff_pose(points));
-    if(uphill_super_correction) diff_circle =detect_circles.super_correction();
+    diff_circle = detect_circles.super_correction();
     diff_circle[2] = 0.0;  //円の半径と角度の掛け算をしたため
   }
-
   bool correction_flag{false};
   // if(linear_vel > 0.2) translation_permission_time_start = chrono::system_clock::now();
   if(angular_vel > 0.4){
@@ -208,7 +210,7 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
 void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vector3d &estimated, const Vector3d &current_scan_odom, const Vector3d &diff_circle){
   Vector3d est_diff = estimated - current_scan_odom;  //直線からの推定値がデフォルト
   for(size_t i=0; i<2; i++){
-    // if(est_diff[i] == 0.0 && isfinite(diff_circle[i]) && robot_type_ == "RR") est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
+    if(est_diff[i] == 0.0 && isfinite(diff_circle[i]) && robot_type_ == "RR") est_diff[i] = diff_circle[i];  //直線からの推定値が0の場合、円から推定
     est_diff_sum[i] += est_diff[i];
   }
   est_diff_sum[2] += est_diff[2];
@@ -277,22 +279,12 @@ void RANSACLocalization::create_ER_map(){
 
 void RANSACLocalization::create_RR_map(){
   //2段目右
-  create_map_line(RR_map_points, RR_map_point[0], RR_map_point[3], RR_map_point[0], 'x');
+  create_map_line(RR_map_points, RR_map_point[0], RR_map_point[1], RR_map_point[0], 'x');
   //2段目正面
-  create_map_line(RR_map_points, RR_map_point[0], RR_map_point[3], RR_map_point[0], 'y');
-  //2段目左
-  create_map_line(RR_map_points, RR_map_point[0], RR_map_point[3], RR_map_point[3], 'x');
-  //3段目右
-  create_map_line(RR_map_points, RR_map_point[1], RR_map_point[2], RR_map_point[1], 'x');
-  //3段目正面
-  create_map_line(RR_map_points, RR_map_point[1], RR_map_point[2], RR_map_point[1], 'y');
-  //3段目左
-  create_map_line(RR_map_points, RR_map_point[1], RR_map_point[2], RR_map_point[2], 'x');
+  create_map_line(RR_map_points, RR_map_point[0], RR_map_point[1], RR_map_point[0], 'y');
   generate_circle(RR_map_points, circle_self_right, 2000);
   generate_circle(RR_map_points, circle_self_center, 2000);
   generate_circle(RR_map_points, circle_self_left, 2000);
-  generate_circle(RR_map_points, circle_opponent_right, 2000);
-  generate_circle(RR_map_points, circle_opponent_left, 2000);
   RR_map_cloud = converter.vector_to_PC2(RR_map_points);
 }
 

@@ -99,6 +99,7 @@ private:
   double angular_vel=0.0;
 
   bool init_flag{false};
+  bool init_jy_time_flag{true};
 
   Vector3d correction_rate_ave = Vector3d::Zero();
   Vector3d correction_rate_sum = Vector3d::Zero();
