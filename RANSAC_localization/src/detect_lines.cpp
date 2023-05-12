@@ -57,13 +57,24 @@ void DetectLines::calc_estimated_diff(){
     }
     if(is_tracking_rafter_right) calc_tracking_diff(0);
     if(is_tracking_rafter_left) calc_tracking_diff(3);
+    if(is_tracking_rafter_back) calc_tracking_diff(4);
   }
 }
 
 void DetectLines::calc_tracking_diff(const int &num){
-  if(!lines_[num].points.size()==0) estimated_diff[1] = ER_map_point_y[num] - calc_average(num);
-  else estimated_diff[1]=0.0;
-  if(lines_[num].points.size() < 3.0/voxel_size_) estimated_diff[2] = lines_[num].angle;
+  if(num<4){
+    if(!lines_[num].points.size()==0) estimated_diff[1] = ER_map_point_y[num] - calc_average(num);
+    else estimated_diff[1]=0.0;
+    if(lines_[num].points.size() > 2.0/voxel_size_) estimated_diff[2] = lines_[num].angle;
+  }
+  else{
+    if(!lines_[num].points.size()==0) estimated_diff[0] = ER_map_point_x[num-4] - calc_average(num);
+    else estimated_diff[0]=0.0;
+    if(lines_[num].points.size() > 2.0/voxel_size_){
+      if(lines_[num].angle<0) estimated_diff[2] = lines_[num].angle + M_PI/2;
+      else estimated_diff[2] = lines_[num].angle - M_PI/2;
+    }
+  }
 }
 
 double DetectLines::calc_average(const int &num){
@@ -80,16 +91,22 @@ double DetectLines::check_tracking(){
     is_tracking_rafter_right=true;
     detect_rafter_right_time = chrono::system_clock::now();
   }
-  if(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now()-detect_rafter_right_time).count()>1500){
+  if(get_time_diff(detect_rafter_right_time)>1000)
     is_tracking_rafter_right=false;
-  }
+
   if(!lines_[3].points.size()==0){
     is_tracking_rafter_left=true;
     detect_rafter_left_time = chrono::system_clock::now();
   }
-  if(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now()-detect_rafter_left_time).count()>1500){
+  if(get_time_diff(detect_rafter_left_time)>1000)
     is_tracking_rafter_left=false;
+
+  if(!lines_[4].points.size()==0){
+    is_tracking_rafter_back=true;
+    detect_rafter_back_time = chrono::system_clock::now();
   }
+  if(get_time_diff(detect_rafter_back_time)>1000)
+    is_tracking_rafter_back=false;
 }
 
 double DetectLines::calc_diff_angle(){
