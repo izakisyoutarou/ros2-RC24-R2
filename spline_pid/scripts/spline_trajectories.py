@@ -21,17 +21,17 @@ class SplineTrajectories(Node):
             String,
             'move_node',
             self.node_callback,
-            1)
+            10)
         self.subscription_is_tracking = self.create_subscription(
             Bool,
             'is_move_tracking',
             self.is_tracking_callback,
-            1)
+            10)
         self.subscription_base_control = self.create_subscription(
             BaseControl,
             'pub_base_control',
             self.base_control_callback,
-            1)
+            10)
         self.subscription_node  # 未使用変数の警告を防ぐ
         self.subscription_is_tracking
         self.subscription_base_control
