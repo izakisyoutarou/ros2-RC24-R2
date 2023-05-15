@@ -107,11 +107,20 @@ private:
 
   chrono::system_clock::time_point time_start, time_end, angle_permission_time_start, translation_permission_time_start;
 
-  bool plot_mode_;
-  string robot_type_;
   int count=0;
 
   vector<double> initial_pose_;
   vector<double> second_initial_pose_;
+  vector<double> tf_array;
+
+  const string robot_type_;
+  const bool plot_mode_;
+  const double laser_weight_;
+  const double odom_weight_liner_;
+  const double odom_weight_angler_;
+  const double voxel_size_;
+  const int trial_num_;
+  const double inlier_dist_threshold_;
+  const double inlier_length_threshold_;
 };
 }
