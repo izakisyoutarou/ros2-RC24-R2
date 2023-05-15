@@ -68,6 +68,7 @@ private:
   const double distance_threshold=1.0;
   bool is_tracking_rafter_left{false};
   bool is_tracking_rafter_right{false};
+  bool is_tracking_rafter_back{false};
 
-  chrono::system_clock::time_point detect_rafter_left_time, detect_rafter_right_time;
+  chrono::system_clock::time_point detect_rafter_left_time, detect_rafter_right_time, detect_rafter_back_time;
 };
