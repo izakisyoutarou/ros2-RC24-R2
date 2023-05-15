@@ -191,7 +191,11 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
     diff_circle = detect_circles.super_correction();
     diff_circle[2] = 0.0;  //円の半径と角度の掛け算をしたため
   }
-  correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
+  bool correction_flag{true};
+
+  if(linear_vel > 0.6) translation_permission_time_start = chrono::system_clock::now();
+  if(get_time_diff(translation_permission_time_start)>1000) correction_flag=false;
+  if(correction_flag) correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
 }
 
 void RANSACLocalization::correction(const Vector3d &scan_odom_motion, const Vector3d &estimated, const Vector3d &current_scan_odom, const Vector3d &diff_circle){
