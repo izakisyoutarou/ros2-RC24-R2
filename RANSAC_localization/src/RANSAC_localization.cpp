@@ -113,7 +113,6 @@ void RANSACLocalization::callback_odom_linear(const socketcan_interface_msg::msg
 
   odom[0] += diff_odom[0];
   odom[1] += diff_odom[1];
-
   last_odom[0] = x;
   last_odom[1] = y;
 }
@@ -192,18 +191,10 @@ void RANSACLocalization::update(const Vector3d &estimated, const Vector3d &laser
     diff_circle = detect_circles.super_correction();
     diff_circle[2] = 0.0;  //円の半径と角度の掛け算をしたため
   }
-  bool correction_flag{false};
-  // if(linear_vel > 0.2) translation_permission_time_start = chrono::system_clock::now();
-  if(angular_vel > 0.4){
-    correction_flag=false;
-    angle_permission_time_start = chrono::system_clock::now();
-  }
-  else correction_flag=true;
-  if(linear_vel < 0.3) correction_flag=false;
-  //角速度が低くなっても数ミリ秒間は点群が歪むため
-  // if(get_time_diff(angle_permission_time_start)<100 || get_time_diff(translation_permission_time_start)>100) correction_flag=false;
-  if(get_time_diff(angle_permission_time_start)<100) correction_flag=false;
+  bool correction_flag{true};
 
+  if(linear_vel > 0.6) translation_permission_time_start = chrono::system_clock::now();
+  if(get_time_diff(translation_permission_time_start)>1000) correction_flag=false;
   if(correction_flag) correction(scan_odom_motion, estimated, current_scan_odom, diff_circle);
 }
 
