@@ -79,10 +79,19 @@ void DetectLines::calc_tracking_diff(const int &num){
 
 double DetectLines::calc_average(const int &num){
   double sum=0.0;
-  for(size_t i=0; i<lines_[num].points.size(); i++){
-    if(num<4) sum += lines_[num].points[i].y;
-    else sum += lines_[num].points[i].x;
+  if(robot_type_ == "ER"){
+    for(size_t i=0; i<lines_[num].points.size(); i++){
+      if(num<4) sum += lines_[num].points[i].y;
+      else sum += lines_[num].points[i].x;
+    }
   }
+  else if(robot_type_ == "RR"){
+    for(size_t i=0; i<lines_[num].points.size(); i++){
+      if(num==0) sum += lines_[num].points[i].y;
+      else sum += lines_[num].points[i].x;
+    }
+  }
+
   return sum/lines_[num].points.size();
 }
 
