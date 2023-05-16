@@ -4,20 +4,21 @@ namespace self_localization{
 RANSACLocalization::RANSACLocalization(const rclcpp::NodeOptions &options) : RANSACLocalization("", options) {}
 
 RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::NodeOptions &options)
-:  rclcpp::Node("RANSAC_localization", name_space, options){
+:  rclcpp::Node("RANSAC_localization", name_space, options),
+  robot_type_(get_parameter("robot_type").as_string()),
+  plot_mode_(get_parameter("plot_mode").as_bool()),
+  initial_pose_(get_parameter("initial_pose").as_double_array()),
+  second_initial_pose_(get_parameter("2nd_initial_pose").as_double_array()),
+  tf_array(get_parameter("tf_laser2robot").as_double_array()),
+  laser_weight_(get_parameter("laser_weight").as_double()),
+  odom_weight_liner_(get_parameter("odom_weight_liner").as_double()),
+  odom_weight_angler_(get_parameter("odom_weight_angler").as_double()),
+  voxel_size_(get_parameter("voxel_size").as_double()),
+  trial_num_(get_parameter("trial_num").as_int()),
+  inlier_dist_threshold_(get_parameter("inlier_dist_threshold").as_double()),
+  inlier_length_threshold_(get_parameter("inlier_length_threshold").as_double()){
+
   RCLCPP_INFO(this->get_logger(), "START");
-  robot_type_ = this->get_parameter("robot_type").as_string();
-  plot_mode_ = this->get_parameter("plot_mode").as_bool();
-  initial_pose_ = this->get_parameter("initial_pose").as_double_array();
-  second_initial_pose_ = this->get_parameter("2nd_initial_pose").as_double_array();
-  const auto tf_array = this->get_parameter("tf_laser2robot").as_double_array();
-  const auto laser_weight_ = this->get_parameter("laser_weight").as_double();
-  const auto odom_weight_liner_ = this->get_parameter("odom_weight_liner").as_double();
-  const auto odom_weight_angler_ = this->get_parameter("odom_weight_angler").as_double();
-  const auto voxel_size_ = this->get_parameter("voxel_size").as_double();
-  const auto trial_num_ = this->get_parameter("trial_num").as_int();
-  const auto inlier_dist_threshold_ = this->get_parameter("inlier_dist_threshold").as_double();
-  const auto inlier_length_threshold_ = this->get_parameter("inlier_length_threshold").as_double();
 
   restart_subscriber = this->create_subscription<controller_interface_msg::msg::BaseControl>(
     "pub_base_control",_qos,
@@ -36,7 +37,7 @@ RANSACLocalization::RANSACLocalization(const string& name_space, const rclcpp::N
     bind(&RANSACLocalization::callback_odom_angular, this, placeholders::_1));
 
   init_angle_publisher = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>(
-    "can_tx_120",_qos);
+    "can_tx",_qos);
 
   self_pose_publisher = this->create_publisher<geometry_msgs::msg::Vector3>(
     "self_pose", _qos);

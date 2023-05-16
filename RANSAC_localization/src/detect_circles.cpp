@@ -63,7 +63,7 @@ void DetectCircles::create_voxel(vector<LaserPoint> &points, const Vector3d &cir
 }
 
 Vector3d DetectCircles::get_best_circle(CirclesData &circles_data) {
-  int max_iterations=100;
+  int max_iterations=50;
   mt19937 rand_engine(chrono::system_clock::now().time_since_epoch().count());
   uniform_int_distribution<int> rand_dist(0, circles_data.points.size() - 1);
   Vector3d best_circle;     // 最も適合する円を保存する変数
@@ -89,7 +89,7 @@ Vector3d DetectCircles::get_best_circle(CirclesData &circles_data) {
     circle[0] = (diff_y_2 * pow_1 - diff_y_1 * pow_2) / (2 * diff_x_1 * diff_y_2 - 2 * diff_y_1 * diff_x_2);
     circle[1] = (diff_x_1 * pow_2 - diff_x_2 * pow_1) / (2 * diff_x_1 * diff_y_2 - 2 * diff_y_1 * diff_x_2);
     circle[2] = sqrt((circle[0] - x1) * (circle[0] - x1) + (circle[1] - y1) * (circle[1] - y1));
-    const double esp=0.005;
+    const double esp=0.01;
     if(!(circle[2] >= type_1_r-esp && circle[2] <= type_1_r+esp)) continue;
     // 各点が円周上に存在するか調べる
     int inliers_num = 0;
