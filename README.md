@@ -31,3 +31,4 @@ CAN USBを使ってPCをCANノードに追加する<br>
 ### ROS->CAN
 /can_tx <br>
 candlcに値を入れないと送信されません
+# rc23pkgs
