@@ -1,6 +1,0 @@
-bool is_restart
-string initial_state
-bool is_emergency
-bool is_move_autonomous
-bool is_injection_autonomous
-uint8 injection_mec

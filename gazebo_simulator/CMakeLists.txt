@@ -21,6 +21,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(socketcan_interface_msg REQUIRED)
 find_package(utilities REQUIRED)
+find_package(tf2 REQUIRED)
 
 add_executable(planar_bot_converter
     src/planar_bot_converter.cpp
@@ -31,6 +32,7 @@ ament_target_dependencies(planar_bot_converter
     nav_msgs
     socketcan_interface_msg
     utilities
+    tf2
 )
 target_include_directories(planar_bot_converter
     PUBLIC

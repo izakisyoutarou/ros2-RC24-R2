@@ -9,6 +9,8 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(socketcan_interface_msg REQUIRED)
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -37,16 +39,34 @@ ament_export_dependencies(
         rclcpp
 )
 
+add_executable(odom_printer
+  src/odom_printer
+)
+target_include_directories(odom_printer PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+ament_target_dependencies(odom_printer
+  rclcpp
+  socketcan_interface_msg
+)
+
 install(
   DIRECTORY include/
   DESTINATION include
 )
+
 install(
   TARGETS utilities
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
+)
+
+install(TARGETS
+  odom_printer
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
