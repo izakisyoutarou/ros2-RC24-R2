@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rcl/rcl.h>
 #include "socketcan_interface/socketcan_interface_node.hpp"
+#include "spline_pid/spline_pid_node.hpp"
 #include <iostream>
 
 int main(int argc, char * argv[]){
@@ -12,8 +13,10 @@ int main(int argc, char * argv[]){
     nodes_option.automatically_declare_parameters_from_overrides(true);
 
     // auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
+    auto spline_pid_node = std::make_shared<spline_pid::SplinePid>(nodes_option);
 
     // exec.add_node(socketcan_node);
+    exec.add_node(spline_pid_node);
 
     exec.spin();
     rclcpp::shutdown();
