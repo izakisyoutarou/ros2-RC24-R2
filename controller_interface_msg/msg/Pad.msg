@@ -1,0 +1,16 @@
+string a
+string b
+string y
+string x
+string r1
+string r2
+string r3
+string l1
+string l2
+string l3
+string s
+string g
+string up
+string left
+string down
+string right
