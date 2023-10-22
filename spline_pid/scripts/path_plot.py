@@ -8,9 +8,8 @@ import math
 from rclpy.node import Node
 from path_msg.msg import Path
 from ament_index_python.packages import get_package_share_directory
-
 from std_msgs.msg import String
-from spline_trajectories import SplineTrajectories
+from R1_trajectories import SplineTrajectories
 
 # import numpy as np
 import matplotlib.pyplot as plt
@@ -32,7 +31,7 @@ class PathPlotter(qtw.QWidget):
         get_package_share_directory('main_executor'),
         'config',
         'spline_pid',
-        'nodelist.cfg')
+        'R1_nodelist.cfg')
 
         self.node.get_logger().info('経路プロッター起動')
         # self.resize(320, 240)
@@ -64,8 +63,8 @@ class PathPlotter(qtw.QWidget):
         self.figure_layout.addWidget(self.figure_canvas)
 
         self.axis_tra = figure.add_subplot(2,2,1)
-        self.axis_ang = figure.add_subplot(2,2,2)
-        self.axis_cur = figure.add_subplot(2,2,3)
+        self.axis_ang = figure.add_subplot(2,2,3)
+        self.axis_cur = figure.add_subplot(2,2,2)
 
         self.update_figure()
 

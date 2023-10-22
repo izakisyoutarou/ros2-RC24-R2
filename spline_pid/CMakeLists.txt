@@ -88,7 +88,8 @@ endif()
 ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
-  scripts/spline_trajectories.py
+  scripts/R1_trajectories.py
+  scripts/R2_trajectories.py
   scripts/path_plot.py
   DESTINATION lib/${PROJECT_NAME}
 )

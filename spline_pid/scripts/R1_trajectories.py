@@ -42,19 +42,17 @@ class SplineTrajectories(Node):
         get_package_share_directory('main_executor'),
         'config',
         'spline_pid',
-        'edgelist.cfg')
+        'R1_edgelist.cfg')
         self.edgelist = nx.read_weighted_edgelist(edgelist_file_path)
 
         self.nodelist_file_path = os.path.join(
         get_package_share_directory('main_executor'),
         'config',
         'spline_pid',
-        'nodelist.cfg')
+        'R1_nodelist.cfg')
 
         # パラメータの宣言
         self.declare_parameter('resolution', 0.01)
-        self.declare_parameter('initial_pose', [-5.5, -0.3 ,0.0])
-        self.declare_parameter('2nd_initial_pose', [-0.25, -5.7, 90.0])
 
         self.current_node = 'O'
         self.target_node = 'O'
@@ -89,18 +87,17 @@ class SplineTrajectories(Node):
         input_a = []
 
         for node in nodes:
-            x,y,a = self.node_name_2_pose(node)
-            input_x.append(float(x))
-            input_y.append(float(y))
-            input_a.append(math.radians(float(a)))
+            with open(self.nodelist_file_path, 'r', encoding='utf-8') as file:
+                lines = file.read().splitlines()
+                for line in lines:
+                    line_s = line.split(' ')
+                    if(line_s[0]==node):
+                        input_x.append(float(line_s[1]))
+                        input_y.append(float(line_s[2]))
+                        input_a.append(math.radians(float(line_s[3])))
         print('角度 : ',input_a)
 
         path = Path()
-
-        # if(end_node =='L0' or end_node == 'L1'):
-        #     path.accurate_convergence = True
-        # else:
-        #     path.accurate_convergence = False
 
         trajectories_resolution = self.get_parameter('resolution').get_parameter_value().double_value
         amount = 1.0/ trajectories_resolution
@@ -108,20 +105,6 @@ class SplineTrajectories(Node):
         path.length = [float(s) for s in travel]
 
         return path, input_x, input_y, input_a, nodes
-
-
-    def node_name_2_pose(self, node_name):
-        if node_name == 'O':
-            return self.get_parameter('initial_pose').get_parameter_value().double_array_value    #x,y,yaw
-        elif node_name == 'P':
-            return self.get_parameter('2nd_initial_pose').get_parameter_value().double_array_value    #x,y,yaw
-
-        with open(self.nodelist_file_path, 'r', encoding='utf-8') as file:
-                lines = file.read().splitlines()
-                for line in lines:
-                    line_s = line.split(' ')
-                    if(line_s[0]==node_name):
-                        return line_s[1],line_s[2],line_s[3]  #x,y,yaw
 
     def is_tracking_callback(self, msg):
         self.is_tracking = msg.data
@@ -135,20 +118,10 @@ class SplineTrajectories(Node):
             self.is_tracking = False
             self.get_logger().info('現状態と目標のノードを初期位置に戻しました')
 
-        if (msg.is_move_autonomous is False):
-            pass
-
-
 def main(args=None):
     rclpy.init(args=args)
-
     subscriber = SplineTrajectories()
-
     rclpy.spin(subscriber)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     subscriber.destroy_node()
     rclpy.shutdown()
 

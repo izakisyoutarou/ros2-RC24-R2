@@ -221,5 +221,4 @@ def calc_2d_spline_interpolation(x, y, a, num=100):
 
 
 if __name__ == '__main__':
-    # test_spline()
-    test_spline2d()
+    pass
