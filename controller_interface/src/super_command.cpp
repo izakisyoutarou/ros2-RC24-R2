@@ -1,8 +1,8 @@
 #include "controller_interface/super_command.hpp"
 #include <rclcpp/rclcpp.hpp>
 
-#define IP_ER_PC "192.168.1.2"
-#define IP_RR_PC "192.168.1.3"
+#define IP_R1_PC "192.168.1.2"
+#define IP_R2_PC "192.168.1.3"
 
 super_command::super_command(){}
 //ERの状態をコントローラに送る

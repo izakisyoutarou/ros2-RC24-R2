@@ -5,9 +5,7 @@
 //使うmsg
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
-#include "controller_interface_msg/msg/pad.hpp"
 #include "controller_interface_msg/msg/convergence.hpp"
-#include "controller_interface_msg/msg/injection.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -17,6 +15,11 @@
 #include "utilities/utils.hpp"
 #include "socket_udp.hpp"
 #include "trapezoidal_velocity_planner.hpp"
+
+#include "send_udp.hpp"
+#include "super_command.hpp"
+
+#include "visibility_control.h"
 
 
 namespace controller_interface
@@ -34,17 +37,19 @@ namespace controller_interface
             explicit SmartphoneGamepad(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
         private:
-            //ER_mainのcontrollerから
+            //R1_mainのcontrollerから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_main_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_screen_pad;
+            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_coatstate_pad;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_state_num_R1;
 
-            //ER_subのcontrollerから
-            rclcpp::Subscription<controller_interface_msg::msg::Pad>::SharedPtr _sub_pad_sub;
+            //R1_subのcontrollerから
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_pad_sub;
 
             //mainボードから
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_injection_possible;
-            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_injection_complete;
-            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_injection_complete_1;
+
+
 
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
@@ -63,7 +68,8 @@ namespace controller_interface
             //各nodeと共有
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
-            rclcpp::Publisher<controller_interface_msg::msg::Injection>::SharedPtr _pub_injection;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_injection;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_coat_state;
 
             //gazebo_simulator用のpub
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
@@ -75,11 +81,13 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_move_auto;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_injection;
             
-            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _pub_con_spline;
-            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _pub_con_colcurator;
-            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _pub_con_injection;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_spline;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_colcurator;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_injection;
 
-            
+            //sprine_pid
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_sprine_pid;
+
             //timer
             rclcpp::TimerBase::SharedPtr _pub_heartbeat;
             rclcpp::TimerBase::SharedPtr _pub_timer_convergence;
@@ -92,6 +100,8 @@ namespace controller_interface
             //controller_mainからのcallback
             void callback_main_pad(const std_msgs::msg::String::SharedPtr msg);
             void callback_screen_pad(const std_msgs::msg::String::SharedPtr msg);
+            void callback_coatstate_pad(const std_msgs::msg::Bool::SharedPtr msg);
+            void callback_state_num_R1(const std_msgs::msg::String::SharedPtr msg);
 
             //controller_subからのcallback
             void callback_sub_pad(const std_msgs::msg::String::SharedPtr msg);
@@ -105,20 +115,22 @@ namespace controller_interface
 
             //injection_param_calculatorからのcallback
             void callback_injection_calculator(const std_msgs::msg::Bool::SharedPtr msg);
-            void callback_calculator_convergenced_arm(const std_msgs::Bool::SharedPtr msg);
+            //void callback_calculator_convergenced_arm(const std_msgs::Bool::SharedPtr msg);
+            void callback_initial_state(const std_msgs::msg::String::SharedPtr msg);
 
             //sequencerからのcallback
             void callback_injection_strage(const std_msgs::msg::String::SharedPtr msg);
             void callback_collecting_ball(const std_msgs::msg::String::SharedPtr msg);
             void _recv_callback();
 
-            void callback_collecting_ball(const std_msgs::msg::String::SharedPtr msg);
 
             void _recv_joy_main(const unsigned char data[16]);
 
             controller_interface_msg::msg::BaseControl msg_base_control;
-            controller_interface_msg::msg::BaseControl msg_base_control_1;
-            
+            std_msgs::msg::Bool msg_unity_control;
+            std_msgs::msg::String msg_unity_initial_state;
+
+
             //base_control用
             bool is_reset = false;
             bool is_emergency = false;
@@ -127,6 +139,21 @@ namespace controller_interface
             bool is_slow_speed = false;
             bool is_injection_mech_stop_m = false;
             std::string initial_state = "";
+
+            //unityにsubscrib
+            bool is_reset_unity = false;
+            bool is_emergency_unity = false;
+            bool is_move_autonomous_unity = false;
+            bool is_injection_autonomous_unity = false;
+            bool is_slow_speed_unity = false;
+            bool is_injection_mech_stop_m_unity = false;
+            std::string initial_state_unity = "";
+            
+            bool spline_convergence = false;
+            bool injection_calculator = false;
+            bool injection = false;
+            bool injection_flag = false;
+
 
             //canusb
             bool a;
@@ -145,6 +172,7 @@ namespace controller_interface
             bool left;
             bool down;
             bool right;
+
 
 
             //convergence用
