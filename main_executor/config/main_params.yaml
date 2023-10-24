@@ -6,17 +6,19 @@ launch: #起動パラメータ
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
-    initial_pose: [-5.45, 0.0, 0.0]  #初期位置[x,y,yaw]
-    2nd_initial_pose: [-5.45, 0.3, 0.0] #2つ目の初期位置[x,y,yaw]
-    # 並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
-    linear_max_vel: 6.0
-    linear_max_acc: 12.0
-    linear_max_dec: 12.0
+    initial_pose: [0.35, 1.25, 0.0]  #初期位置[x,y,yaw]
+    2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
+    tf_laser2robot: [0.1975,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
+
+    # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
+    linear_max_vel: 3.0
+    linear_max_acc: 4.0
+    linear_max_dec: 4.0
     linear_max_jer: 0.0
     # 回転  速度[deg/s],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
-    angular_max_vel: 90.0
-    angular_max_acc: 180.0
-    angular_max_dec: 180.0
+    angular_max_vel: 270.0
+    angular_max_acc: 230.0
+    angular_max_dec: 230.0
     angular_max_jer: 0.0
 
 spline_pid_node:
@@ -37,6 +39,23 @@ spline_pid_node:
     linear_pos_tolerance: 0.03  #並進到達位置の許容誤差[m]
     angular_pos_tolerance: 3.0  #回転到達位置の許容誤差[deg]
 
+    canid:
+      odom_linear: 0x110
+      odom_angular: 0x111
+      init_angular: 0x120
+
 spline_trajectories_node:
   ros__parameters:
     resolution: 0.01  #起動点の分解能[m]
+
+rasnac_localization:
+  ros__parameters:
+    robot_type: "R1"
+    plot_mode: false
+    laser_weight: 1.0 #lidarの重み
+    odom_weight_liner: 1.0e-2
+    odom_weight_angler: 1.0e-5
+    voxel_size: 0.05
+    trial_num: 40
+    inlier_dist_threshold: 0.01
+    inlier_length_threshold: 0.6

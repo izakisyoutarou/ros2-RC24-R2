@@ -9,6 +9,7 @@ find_package(socketcan_interface REQUIRED)
 find_package(spline_pid REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(utilities REQUIRED)
+find_package(ransac_localization REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -18,6 +19,7 @@ ament_target_dependencies(main_exec
         rclcpp
         socketcan_interface
         spline_pid
+        ransac_localization
         )
 
 target_include_directories(main_exec

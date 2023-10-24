@@ -12,7 +12,6 @@ from launch.substitutions import LaunchConfiguration
 # this is the function launch  system will look for
 
 def generate_launch_description():
-
     package_name = 'gazebo_simulator'
     world_file_name = 'NHK23_court.world'
     urdf_file_name = 'er.urdf'
