@@ -6,6 +6,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 find_package(rclcpp REQUIRED)
 find_package(socketcan_interface REQUIRED)
+find_package(ransac_localization REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -14,6 +15,7 @@ add_executable(main_exec
 ament_target_dependencies(main_exec
         rclcpp
         socketcan_interface
+        ransac_localization
         )
 
 target_include_directories(main_exec

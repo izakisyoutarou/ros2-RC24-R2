@@ -24,14 +24,14 @@
     <collision name='collision'>
       <origin xyz="0 0 0" rpy=" 0 0 0"/>
       <geometry>
-        <box size=".8 .8 .15"/>
+        <box size=".5 .5 .15"/>
       </geometry>
     </collision>
 
     <visual name='chassis_visual'>
       <origin xyz="0 0 0" rpy=" 0 0 0"/>
       <geometry>
-        <box size=".8 .8 .15"/>
+        <box size=".5 .5 .15"/>
       </geometry>
     </visual>
 
@@ -46,14 +46,14 @@
     <visual>
       <origin xyz="0.0 0 0" rpy=" 0 1.5707 1.5707"/>
       <geometry>
-        <cylinder length="0.05" radius="0.1"/>
+        <cylinder length="0.05" radius="0.05"/>
       </geometry>
     </visual>
 
     <collision>
       <origin xyz="0.0 0 0" rpy=" 0 1.5707 1.5707"/>
       <geometry>
-        <cylinder length="0.05" radius="0.1"/>
+        <cylinder length="0.05" radius="0.05"/>
       </geometry>
     </collision>
   </link>
@@ -68,14 +68,14 @@
     <visual>
       <origin xyz="0.0 0 0" rpy=" 0 1.5707 1.5707"/>
       <geometry>
-        <cylinder length="0.05" radius="0.1"/>
+        <cylinder length="0.05" radius="0.05"/>
       </geometry>
     </visual>
 
     <collision>
       <origin xyz="0.0 0 0" rpy=" 0 1.5707 1.5707"/>
       <geometry>
-        <cylinder length="0.05" radius="0.1"/>
+        <cylinder length="0.05" radius="0.05"/>
       </geometry>
     </collision>
   </link>
@@ -90,14 +90,14 @@
     <visual>
       <origin xyz="0.0 0 0" rpy=" 0 1.5707 1.5707"/>
       <geometry>
-        <cylinder length="0.05" radius="0.1"/>
+        <cylinder length="0.05" radius="0.05"/>
       </geometry>
     </visual>
 
     <collision>
       <origin xyz="0.0 0 0" rpy=" 0 1.5707 1.5707"/>
       <geometry>
-        <cylinder length="0.05" radius="0.1"/>
+        <cylinder length="0.05" radius="0.05"/>
       </geometry>
     </collision>
   </link>
@@ -112,14 +112,14 @@
     <visual>
       <origin xyz="0.0 0 0" rpy=" 0 1.5707 1.5707"/>
       <geometry>
-        <cylinder length="0.05" radius="0.1"/>
+        <cylinder length="0.05" radius="0.05"/>
       </geometry>
     </visual>
 
     <collision>
       <origin xyz="0.0 0 0" rpy=" 0 1.5707 1.5707"/>
       <geometry>
-        <cylinder length="0.05" radius="0.1"/>
+        <cylinder length="0.05" radius="0.05"/>
       </geometry>
     </collision>
   </link>
