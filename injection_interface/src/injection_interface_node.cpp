@@ -101,7 +101,6 @@ namespace injection_interface{
 
         void InjectionInterface::_callback_is_move_tracking(const std_msgs::msg::Bool::SharedPtr msg){
             is_move_tracking = msg->data;
-            
             //足回り追従が終わっており、
             if(is_correction_required && !msg->data){
                 _callback_aim_in_storage(last_target);
