@@ -16,3 +16,9 @@ launch: #起動パラメータ
     angular_max_acc: 180.0
     angular_max_dec: 180.0
     angular_max_jer: 0.0
+
+injection_interface_node:
+  ros__parameters:
+    tf_injection2robot: [0.0, 0.0] #射出機構のTF[x, y]
+    strage_backside: [0.0, 0.0, 0.0] #ストレージエリアの[x, y, 高さ]
+    strage_front: [0.1, 0.0, 0.0]
