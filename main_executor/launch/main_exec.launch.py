@@ -46,7 +46,7 @@ def generate_launch_description():
     # 軌道計画機ノードの作成
     trajectory_planner_node = Node(
         package = 'spline_pid',
-        executable = 'spline_trajectories.py',
+        executable = 'R2_trajectories.py',
         parameters= [config_file_path],
         output='screen'
     )
