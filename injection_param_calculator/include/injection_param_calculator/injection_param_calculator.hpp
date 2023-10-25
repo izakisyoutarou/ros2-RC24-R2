@@ -34,7 +34,7 @@ namespace injection_param_calculator{
             injection_interface_msg::msg::InjectionCommand injection_command;
             double velocity;
 
-            const std::vector<double> singular_point_coefficient;
+            const std::vector<double> singular_point_coefficient;//初期値を求める関数の係数
             const double mass; //リングの重量[kg]
             const double gravitational_accelerastion; //重力加速度[m/s^2]
             const double air_resistance; //空気抵抗係数[kg/s]
