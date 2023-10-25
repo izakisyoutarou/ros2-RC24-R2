@@ -112,4 +112,7 @@ namespace injection_param_calculator
         double y = injection_command.height;
         return -m/k*log(cos(atan(v0*sin(angle)*sqrt(k/(m*g))))*cosh(1/(v0*sin(angle))*sqrt(m*g/k)*(exp(k*x/m)-1)-atan(v0*sin(angle)*sqrt(k/(m*g)))))+y0-y;
     }
+    double InjectionParamCalculator::diff(double v0){
+        return (f(v0 + eps) - f(v0 - eps))/(2.0*eps);
+    }
 }
