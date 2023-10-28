@@ -24,14 +24,14 @@
     <collision name='collision'>
       <origin xyz="0 0 0" rpy=" 0 0 0"/>
       <geometry>
-        <box size=".5 .5 .15"/>
+        <box size=".5 .5 .65"/>
       </geometry>
     </collision>
 
     <visual name='chassis_visual'>
       <origin xyz="0 0 0" rpy=" 0 0 0"/>
       <geometry>
-        <box size=".5 .5 .15"/>
+        <box size=".5 .5 .7"/>
       </geometry>
     </visual>
 
@@ -172,7 +172,7 @@
 
 
   <joint type="continuous" name="front_left_wheel_joint">
-    <origin xyz="0.3 0.3 0" rpy="0 0 -0.7853"/>
+    <origin xyz="0.2 0.2 -0.35" rpy="0 0 -0.7853"/>
     <child link="front_left_wheel"/>
     <parent link="chassis"/>
     <axis xyz="0 1 0" rpy="0 0 0"/>
@@ -181,7 +181,7 @@
   </joint>
 
   <joint type="continuous" name="front_right_wheel_joint">
-    <origin xyz="0.3 -0.3 0" rpy="0 0 0.7853"/>
+    <origin xyz="0.22 -0.22 -0.35" rpy="0 0 0.7853"/>
     <child link="front_right_wheel"/>
     <parent link="chassis"/>
     <axis xyz="0 1 0" rpy="0 0 0"/>
@@ -190,7 +190,7 @@
   </joint>
 
   <joint type="continuous" name="back_left_wheel_joint">
-    <origin xyz="-0.3 0.3 0" rpy="0 0 3.9269"/>
+    <origin xyz="-0.22 0.22 -0.35" rpy="0 0 3.9269"/>
     <child link="back_left_wheel"/>
     <parent link="chassis"/>
     <axis xyz="0 1 0" rpy="0 0 0"/>
@@ -199,7 +199,7 @@
   </joint>
 
   <joint type="continuous" name="back_right_wheel_joint">
-    <origin xyz="-0.3 -0.3 0" rpy="0 0 -3.9269"/>
+    <origin xyz="-0.22 -0.22 -0.35" rpy="0 0 -3.9269"/>
     <child link="back_right_wheel"/>
     <parent link="chassis"/>
     <axis xyz="0 1 0" rpy="0 0 0"/>
@@ -208,14 +208,14 @@
   </joint>
 
   <joint type="fixed" name="camera_joint">
-    <origin xyz="0.3 0 0.1" rpy="0 0 0"/>
+    <origin xyz="0.3 0 -0.25" rpy="0 0 0"/>
     <child link="camera"/>
     <parent link="chassis"/>
     <axis xyz="0 1 0" rpy="0 0 0"/>
   </joint>
 
   <joint type="fixed" name="hokuyo_joint">
-    <origin xyz="0.425 0 -0.07" rpy="3.14159 0 0"/>
+    <origin xyz="0.3 0 -0.35" rpy="3.14159 0 0"/>
     <child link="hokuyo"/>
     <parent link="chassis"/>
     <axis xyz="0 1 0" rpy="0 0 0"/>

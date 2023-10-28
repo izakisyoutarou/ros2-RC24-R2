@@ -148,6 +148,7 @@ namespace self_localization{
   }
 
   void ransaclocalization::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+    //cout<<initial_pose_[0]<<" "<<initial_pose_[1]<<" "<<initial_pose_[2]<<endl;
     double jy_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
     if(init_jy_time_flag) last_jy_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
     init_jy_time_flag=false;
@@ -170,6 +171,7 @@ namespace self_localization{
     vector_msg.y = odom[1] + est_diff_sum[1];
     vector_msg.z = odom[2] + est_diff_sum[2];
     cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
+    //cout<<"x "<<odom[0]<<"  y "<<odom[1]<<"  z "<<odom[2]<<endl;
     self_pose_publisher->publish(vector_msg);
   }
 

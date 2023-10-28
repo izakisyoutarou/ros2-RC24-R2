@@ -12,10 +12,10 @@ int main(int argc, char * argv[]){
     nodes_option.allow_undeclared_parameters(true);
     nodes_option.automatically_declare_parameters_from_overrides(true);
 
-    auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
+    //auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
     auto ransac_localization = std::make_shared<self_localization::ransaclocalization>(nodes_option);
 
-    exec.add_node(socketcan_node);
+    //exec.add_node(socketcan_node);
     exec.add_node(ransac_localization);
 
     exec.spin();
