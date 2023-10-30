@@ -76,3 +76,11 @@ controller_interface_node:
 
     initial_pickup_state: "A"
     initial_inject_state: "B"
+
+injection_interface_node:
+  ros__parameters:
+    tf_injection2robot: [0.0, 0.0] #射出機構のTF[x, y]
+    strage_backside: [0.0, 0.0, 0.0] #ストレージエリアの[x, y, 高さ]
+    strage_front: [0.1, 0.0, 0.0]
+
+
