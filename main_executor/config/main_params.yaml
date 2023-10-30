@@ -30,6 +30,7 @@ launch: #起動パラメータ
       calculatable: 0x203
       main_digital_button: 0x220
       sub_digital_button: 0x221
+      
     port:
       joy_main: 50000
       pole_share: 53000
