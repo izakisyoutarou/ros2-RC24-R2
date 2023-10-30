@@ -6,6 +6,7 @@
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "controller_interface_msg/msg/convergence.hpp"
+#include "controller_interface_msg/msg/colorball.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -68,8 +69,10 @@ namespace controller_interface
             //各nodeと共有
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
+            rclcpp::Publisher<controller_interface_msg::msg::Colorball>::SharedPtr _pub_color_ball;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_injection;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_coat_state;
+            
 
             //gazebo_simulator用のpub
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
@@ -126,8 +129,11 @@ namespace controller_interface
 
             void _recv_joy_main(const unsigned char data[16]);
 
+            //メッセージ型の宣言
             controller_interface_msg::msg::BaseControl msg_base_control;
+            controller_interface_msg::msg::Colorball msg_colorball_info;
             std_msgs::msg::Bool msg_unity_control;
+            std_msgs::msg::Bool msg_unity_sub_control;
             std_msgs::msg::String msg_unity_initial_state;
 
 
@@ -190,11 +196,13 @@ namespace controller_interface
             const bool defalt_injection_autonomous_flag;
             const bool defalt_emergency_flag;
             const bool defalt_slow_speed_flag;
+            //subcontrollerのカラー情報
+            const bool defalt_color_information_flag;
 
             const bool defalt_spline_convergence;
             const bool defalt_injection_calculator_convergence;
             const bool defalt_injection_convergence;
-
+            
             const int16_t can_emergency_id;
             const int16_t can_heartbeat_id;
             const int16_t can_restart_id;

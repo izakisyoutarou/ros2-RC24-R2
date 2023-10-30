@@ -50,6 +50,8 @@ namespace controller_interface
         defalt_injection_autonomous_flag(get_parameter("defalt_injection_autonomous_flag").as_bool()),
         //低速モードのパラメータを取得
         defalt_slow_speed_flag(get_parameter("defalt_slow_speed_flag").as_bool()),
+        //ボールの色情報を取得
+        defalt_color_information_flag(get_parameter("defalt_color_information_flag").as_bool()),
 
         //足回りが目標の値まで移動して停止した状態を保存するための変数
         //要するに収束の確認
@@ -146,13 +148,11 @@ namespace controller_interface
             //各nodeへ共有。
             _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("base_control",_qos);
             _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("convergence" , _qos);
+            _pub_color_ball = this->create_publisher<controller_interface_msg::msg::Colorball>("color_information", _qos);
             _pub_injection = this->create_publisher<std_msgs::msg::Bool>("is_backside", _qos);
             _pub_coat_state = this->create_publisher<std_msgs::msg::Bool>("coat_color", _qos);
-
             //sprine_pid
             _pub_sprine_pid = this->create_publisher<std_msgs::msg::String>("move_node", _qos);
-
-
             //gazebo用のpub
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
@@ -238,6 +238,22 @@ namespace controller_interface
 
             msg_unity_control->data = injection;
             _pub_con_injection->publish(*msg_unity_control);
+
+            auto msg_colorball_info = std::make_shared<controller_interface_msg::msg::Colorball>();
+
+            msg_colorball_info->color_info[0] = defalt_color_information_flag;
+            msg_colorball_info->color_info[1] = defalt_color_information_flag;
+            msg_colorball_info->color_info[2] = defalt_color_information_flag;
+            msg_colorball_info->color_info[3] = defalt_color_information_flag;
+            msg_colorball_info->color_info[4] = defalt_color_information_flag;
+            msg_colorball_info->color_info[5] = defalt_color_information_flag;
+            msg_colorball_info->color_info[6] = defalt_color_information_flag;
+            msg_colorball_info->color_info[7] = defalt_color_information_flag;
+            msg_colorball_info->color_info[8] = defalt_color_information_flag;
+            msg_colorball_info->color_info[9] = defalt_color_information_flag;
+            msg_colorball_info->color_info[10] = defalt_color_information_flag;
+            msg_colorball_info->color_info[11] = defalt_color_information_flag;
+            _pub_color_ball->publish(*msg_colorball_info);
 
             //ハートビート
             //コントローラの鼓動
@@ -333,9 +349,9 @@ namespace controller_interface
             //resertがtureをpubした後にfalseをpubする
             bool flag_restart = false;
 
-            //leftで射出機構の停止
-            if(msg->data == "left"){
-                RCLCPP_INFO(this->get_logger(), "left");
+            //upで射出機構の停止
+            if(msg->data == "up"){
+                RCLCPP_INFO(this->get_logger(), "up");
                 robotcontrol_flag = true;
                 if(is_injection_mech_stop_m == true){
                     is_injection_mech_stop_m = false;
@@ -343,22 +359,17 @@ namespace controller_interface
                     is_injection_mech_stop_m = true;
                 }
             }
-            //l1,r1でボールの射出する位置を決める
+            //downでボールの射出する位置を決める
             auto msg_injection = std::make_shared<std_msgs::msg::Bool>();
-            if(msg->data == "l1")
+            if(msg->data == "down")
             {
-                RCLCPP_INFO(this->get_logger(), "l1");
+                RCLCPP_INFO(this->get_logger(), "down");
                 
                 injection_flag = true;
                 msg_injection->data = injection_flag;
                 _pub_injection->publish(*msg_injection);
-            }else if(msg->data == "r1"){
-                RCLCPP_INFO(this->get_logger(), "r1");
-                injection_flag = false;
-                msg_injection->data = injection_flag;
-                _pub_injection->publish(*msg_injection);
             }
-            //低速モートのonoff。トグル。
+            //r2で低速モートのonoff。トグル。
             if(msg->data == "r2")
             {
                 RCLCPP_INFO(this->get_logger(), "r2");
@@ -381,11 +392,13 @@ namespace controller_interface
                     is_move_autonomous = false;
                 }
             }
+            //l3でR1の状態確認
             if(msg->data == "l3")
             {
                 RCLCPP_INFO(this->get_logger(), "l3");
                 start_r1_main = true;
             }
+            //gは緊急。is_emergencyを使って、トグルになるようにしてる。
             if(msg->data == "g"){
                 RCLCPP_INFO(this->get_logger(), "g");
                 robotcontrol_flag = true;
@@ -409,7 +422,9 @@ namespace controller_interface
                 is_injection_calculator_convergence = defalt_injection_calculator_convergence;
                 is_injection_convergence = defalt_injection_convergence;
             }
-            //is_reset = msg->data == "s";
+            //リセットボタンを押しているか確認する
+            is_reset = msg->data == "s";
+
             //base_controlへ代入
             msg_base_control.is_restart = is_reset;
             msg_base_control.is_emergency = is_emergency;
@@ -436,9 +451,9 @@ namespace controller_interface
             }
             //l1を押すと射出情報をpublishする
 
-            if(start_r1_main)
+            if(start_r1_main == true)
             {
-                //c_strがポインタ型を返すためアスタリスクをつける
+                //c_strがポインタ型を返すためアス＝＝タリスクをつける
                 const char* char_ptr = initial_pickup_state.c_str();
                 //reinterpret_castでポインタ型の変換
                 //char_ptr1をconst unsigned charに置き換える
@@ -533,11 +548,40 @@ namespace controller_interface
                 _pub_sprine_pid->publish(*msg_sprine_pid);
             }
             if(msg->data == "L"){
+                RCLCPP_INFO(this->get_logger(), "L");
                 msg_sprine_pid->data = "L";
                 _pub_sprine_pid->publish(*msg_sprine_pid);
             }
             if(msg->data == "M"){
                 msg_sprine_pid->data = "M";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "N"){
+                msg_sprine_pid->data = "N";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "O"){
+                msg_sprine_pid->data = "O";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "P"){
+                msg_sprine_pid->data = "P";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "Q"){
+                msg_sprine_pid->data = "Q";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "R"){
+                msg_sprine_pid->data = "R";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "S"){
+                msg_sprine_pid->data = "S";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "T"){
+                msg_sprine_pid->data = "T";
                 _pub_sprine_pid->publish(*msg_sprine_pid);
             }
 
@@ -547,9 +591,11 @@ namespace controller_interface
             auto msg_coatstate = std::make_shared<std_msgs::msg::Bool>();
 
             if(msg->data == true){
+                RCLCPP_INFO(this->get_logger(), "true");
                 msg_coatstate->data = true;
                 _pub_coat_state->publish(*msg_coatstate);
             }else if(msg->data == false){
+                RCLCPP_INFO(this->get_logger(), "false");
                 msg_coatstate->data = false;
                 _pub_coat_state->publish(*msg_coatstate);
             }
@@ -559,30 +605,87 @@ namespace controller_interface
 
 
         void SmartphoneGamepad::callback_sub_pad(const std_msgs::msg::String::SharedPtr msg){
-        //     //ボタンの処理
-        //     //msg_btnにリスタートする際のcanidとcandlcのパラメータを格納
-        //     auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-        //     msg_btn->canid = can_sub_button_id;
-        //     msg_btn->candlc = 1;
+            auto msg_unity_sub_control = std::make_shared<std_msgs::msg::Bool>();
 
-        //     uint8_t _candata_btn;
+            if(msg->data == "A_red"){
+                RCLCPP_INFO(this->get_logger(), "color_red_A");
+                msg_colorball_info.color_info[0] = true;
+            }
+            if(msg->data == "A_purple"){
+                msg_colorball_info.color_info[1] = false;
+            }
+            if(msg->data == "B_red"){
+                msg_colorball_info.color_info[2] = true;
+            }
+            if(msg->data == "B_purple"){
+                msg_colorball_info.color_info[3] = false;
+            }
+            if(msg->data == "C_red"){
+                msg_colorball_info.color_info[4] = true;
+            }
+            if(msg->data == "C_purple"){
+                msg_colorball_info.color_info[5] = false;
+            }
+            if(msg->data == "D_red"){
+                msg_colorball_info.color_info[6] = true;
+            }
+            if(msg->data == "D_purple"){
+                msg_colorball_info.color_info[7] = false;
+            }
+            if(msg->data == "E_red"){
+                msg_colorball_info.color_info[8] = true;
+            }
+            if(msg->data == "E_purple"){
+                msg_colorball_info.color_info[9] = false;
+            }
+            if(msg->data == "F_red"){
+                msg_colorball_info.color_info[10] = true;
+            }
+            if(msg->data == "F_purple"){
+                msg_colorball_info.color_info[11] = false;
+            }
+            if(msg->data == "G_red"){
+                msg_colorball_info.color_info[12] = true;
+            }
+            if(msg->data == "G_purple"){
+                msg_colorball_info.color_info[13] = false;
+            }
+            if(msg->data == "H_red"){
+                msg_colorball_info.color_info[14] = true;
+            }
+            if(msg->data == "H_purple"){
+                msg_colorball_info.color_info[15] = false;
+            }
+            if(msg->data == "I_red"){
+                msg_colorball_info.color_info[16] = true;
+            }
+            if(msg->data == "I_purple"){
+                msg_colorball_info.color_info[17] = false;
+            }
+            if(msg->data == "J_red"){
+                msg_colorball_info.color_info[19] = true;
+            }
+            if(msg->data == "J_purple"){
+                msg_colorball_info.color_info[20] = false;
+            }
+            if(msg->data == "K_red"){
+                msg_colorball_info.color_info[21] = true;
+            }
+            if(msg->data == "K_purple"){
+                msg_colorball_info.color_info[22] = false;
+            }
+            if(msg->data == "L_red"){
+                msg_colorball_info.color_info[23] = true;
+            }
+            if(msg->data == "L_purple"){
+                msg_colorball_info.color_info[24] = false;
+            }
             
-        //     //mainへボタン情報を送る代入
-        //     if(msg->data == "a")_candata_btn = a;
-        //     if(msg->data == "b")_candata_btn = b;
-        //     if(msg->data == "x")_candata_btn = y;
-        //     if(msg->data == "y")_candata_btn = x;
-        //     if(msg->data == "rigit")_candata_btn = right;
-        //     if(msg->data == "left")_candata_btn = down;
-        //     if(msg->data == "down")_candata_btn = left;
-        //     if(msg->data == "up")_candata_btn = up;
+            if(msg->data == "Btn_info_msg"){
+                RCLCPP_INFO(this->get_logger(), "color_info_all");
+                _pub_color_ball->publish(msg_colorball_info);
+            }
 
-        //     //すべてのボタン情報をcanusbに送る
-        //     //どれか１つのボタンを押すとすべてのボタン情報がpublishされる
-        //     if( a == true ||b == true ||y == true ||x == true ||right == true ||down == true ||left == true ||up == true )
-        //     {
-        //         _pub_canusb->publish(*msg_btn);
-        //     }
         }
 
             //コントローラからスタート地点情報をsubscribe
@@ -600,19 +703,25 @@ namespace controller_interface
         void SmartphoneGamepad::callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg)
         {
             ///mainから射出可能司令のsub。上物の収束状況。
+            RCLCPP_INFO(this->get_logger(), "can_rx_201");
             is_injection_convergence = static_cast<bool>(msg->candata[0]);
         }
         //splineからの情報をsubsclib
         void SmartphoneGamepad::callback_spline(const std_msgs::msg::Bool::SharedPtr msg)
         {
             //spline_pidから足回り収束のsub。足回りの収束状況。
-            if(msg->data == false) is_spline_convergence = true;
-            else is_spline_convergence = false;
+            if(msg->data == false){
+            is_spline_convergence = true;
+            RCLCPP_INFO(this->get_logger(), "false");
+            }else{
+                is_spline_convergence = false;
+            }
         }
         //injection_param_calculatorの情報をsubscribe
         //この関数が2つあるのは射出機構が2つあるため
         void SmartphoneGamepad::callback_injection_calculator(const std_msgs::msg::Bool::SharedPtr msg)
         {
+            RCLCPP_INFO(this->get_logger(), "false");
              //injection_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
             is_injection_calculator_convergence = msg->data;
         }
@@ -681,6 +790,7 @@ namespace controller_interface
                     _pub_gazebo->publish(*msg_gazebo);
                     RCLCPP_INFO(this->get_logger(), "%f",slow_velPlanner_linear_y.vel());
                     RCLCPP_INFO(this->get_logger(), "%f",slow_velPlanner_linear_x.vel());
+                    RCLCPP_INFO(this->get_logger(),"%f",velPlanner_angular_z.vel());
                     
                 }
                 //高速モードのとき
