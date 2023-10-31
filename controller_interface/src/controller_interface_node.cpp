@@ -350,8 +350,8 @@ namespace controller_interface
             bool flag_restart = false;
 
             //upで射出機構の停止
-            if(msg->data == "up"){
-                RCLCPP_INFO(this->get_logger(), "up");
+            if(msg->data == "right"){
+                RCLCPP_INFO(this->get_logger(), "right");
                 robotcontrol_flag = true;
                 if(is_injection_mech_stop_m == true){
                     is_injection_mech_stop_m = false;
@@ -359,8 +359,17 @@ namespace controller_interface
                     is_injection_mech_stop_m = true;
                 }
             }
+
             //downでボールの射出する位置を決める
             auto msg_injection = std::make_shared<std_msgs::msg::Bool>();
+            if(msg->data == "up")
+            {
+                RCLCPP_INFO(this->get_logger(), "up");
+                
+                injection_flag = false;
+                msg_injection->data = injection_flag;
+                _pub_injection->publish(*msg_injection);
+            }
             if(msg->data == "down")
             {
                 RCLCPP_INFO(this->get_logger(), "down");
@@ -613,6 +622,7 @@ namespace controller_interface
             }
             if(msg->data == "A_purple"){
                 msg_colorball_info.color_info[1] = false;
+                RCLCPP_INFO(this->get_logger(), "color_purple_A");
             }
             if(msg->data == "B_red"){
                 msg_colorball_info.color_info[2] = true;
