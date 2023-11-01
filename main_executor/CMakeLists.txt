@@ -9,6 +9,7 @@ find_package(rclcpp REQUIRED)
 find_package(socketcan_interface REQUIRED)
 find_package(controller_interface REQUIRED)
 find_package(injection_interface REQUIRED)
+find_package(ransac_localization REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -19,6 +20,7 @@ ament_target_dependencies(main_exec
         socketcan_interface
         controller_interface
         injection_interface
+        ransac_localization
         )
 
 target_include_directories(main_exec

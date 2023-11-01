@@ -68,8 +68,8 @@
           <horizontal>
             <samples>2161</samples>
             <resolution>1/0.000218166156</resolution>
-            <min_angle>-2.35619</min_angle>
-            <max_angle>2.35619</max_angle>
+            <min_angle>-1.39626</min_angle> <!--lidarの視野角変更-->
+            <max_angle>1.39626</max_angle>
           </horizontal>
         </scan>
         <range>
