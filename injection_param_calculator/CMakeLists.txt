@@ -27,10 +27,11 @@ find_package(utilities REQUIRED)
 add_library(injection_param_calculator_node 
   src/injection_param_calculator.cpp
 )
-target_include_directories(injection_param_calculator_node PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+target_include_directories(injection_param_calculator_node PUBLIC 
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
   $<INSTALL_INTERFACE:include>)
-ament_target_dependencies(injection_param_calculator_node
+
+ament_target_depencies(injection_param_calculator_node
   rclcpp
   std_msgs
   socketcan_interface_msg

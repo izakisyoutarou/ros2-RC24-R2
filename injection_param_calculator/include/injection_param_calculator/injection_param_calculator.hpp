@@ -1,9 +1,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include "socketcan_interface_msg/msg/socketcan_if.hpp"
-#include "controller_interface_msg/msg/convergence.hpp"
-#include "controller_interface_msg/msg/pad.hpp"
-#include "injection_interface_msg/msg/injection_command.hpp"
+//↓コメント化してた
+// #include "socketcan_interface_msg/msg/socketcan_if.hpp"
+// #include "controller_interface_msg/msg/convergence.hpp"
+// #include "controller_interface_msg/msg/pad.hpp"
+// #include "injection_interface_msg/msg/injection_command.hpp"
+//↑コメント化してた
 #include "injection_param_calculator/my_visibility.h"
 
 namespace injection_param_calculator{
@@ -34,7 +36,7 @@ namespace injection_param_calculator{
             injection_interface_msg::msg::InjectionCommand injection_command;
             double velocity;
 
-            const std::vector<double> singular_point_coefficient;//初期値を求める関数の係数
+            const std::vector<double> singular_point_coefficient;//初期値を求める関数の係数 //コメント化してた
             const double mass; //リングの重量[kg]
             const double gravitational_accelerastion; //重力加速度[m/s^2]
             const double air_resistance; //空気抵抗係数[kg/s]
