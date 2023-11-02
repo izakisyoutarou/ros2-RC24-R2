@@ -12,6 +12,9 @@
   <test_depend>rclcpp</test_depend>
 
   <depend>socketcan_interface</depend>
+  <depend>controller_interface</depend>
+  <depend>injection_interface</depend>
+  <depend>ransac_localization</depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
