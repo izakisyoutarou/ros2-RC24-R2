@@ -72,6 +72,11 @@ namespace controller_interface
             rclcpp::Publisher<controller_interface_msg::msg::Colorball>::SharedPtr _pub_color_ball;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_injection;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_coat_state;
+
+            //ボールと苗の回収&設置
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_collection;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_installation;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_ball_collection;
             
 
             //gazebo_simulator用のpub

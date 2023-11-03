@@ -166,6 +166,12 @@ namespace controller_interface
             _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("injection_calcurator_unity", _qos);
             _pub_con_injection = this->create_publisher<std_msgs::msg::Bool>("injection_convergence_unity", _qos);
 
+            //ボールと苗の回収&設置
+            _pub_seedling_collection = this->create_publisher<std_msgs::msg::String>("Seedling_Collection", _qos);
+            _pub_seedling_installation = this->create_publisher<std_msgs::msg::String>("Seedling_Installation", _qos);
+            _pub_ball_collection = this->create_publisher<std_msgs::msg::String>("Ball_Collection", _qos);
+
+
             //デフォルト値をpub.。各種、boolに初期値を代入。
             //base_controlのmsgを宣言
             auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();
@@ -592,6 +598,43 @@ namespace controller_interface
             if(msg->data == "T"){
                 msg_sprine_pid->data = "T";
                 _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "U"){
+                msg_sprine_pid->data = "U";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "V"){
+                msg_sprine_pid->data = "V";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "W"){
+                msg_sprine_pid->data = "W";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "X"){
+                msg_sprine_pid->data = "X";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "Y"){
+                msg_sprine_pid->data = "Y";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "Z"){
+                msg_sprine_pid->data = "Z";
+                _pub_sprine_pid->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "Seedling_Collection"){
+                RCLCPP_INFO(this->get_logger(), "Seedling_Collection");
+                msg_sprine_pid->data = "Seedling_Collection";
+                _pub_seedling_collection->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "Seedling_Installation"){
+                msg_sprine_pid->data = "Seedling_Installation";
+                _pub_seedling_installation->publish(*msg_sprine_pid);
+            }
+            if(msg->data == "ball_Collection"){
+                msg_sprine_pid->data = "ball_Collection";
+                _pub_ball_collection->publish(*msg_sprine_pid);
             }
 
         }
