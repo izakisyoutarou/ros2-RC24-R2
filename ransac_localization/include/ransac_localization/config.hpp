@@ -99,12 +99,12 @@ inline int get_time_diff(chrono::system_clock::time_point &start){
 inline Vector3d transform_sensor_position(const Vector6d& sensor_pos){
   Vector3d sensor_basic_pos(sensor_pos[0], sensor_pos[1], sensor_pos[2]);
   
-  const double s_r = sin(sensor_pos[3]);
-  const double c_r = cos(sensor_pos[3]);
-  const double s_p = sin(sensor_pos[4]);
-  const double c_p = cos(sensor_pos[4]);
-  const double s_y = sin(sensor_pos[5]);
-  const double c_y = cos(sensor_pos[5]);
+  const double s_r = sin(sensor_pos[3]); //sinのroll角
+  const double c_r = cos(sensor_pos[3]); //cosのroll角
+  const double s_p = sin(sensor_pos[4]); //sinのpitch角
+  const double c_p = cos(sensor_pos[4]); //cosのpitch角
+  const double s_y = sin(sensor_pos[5]); //sinのyaw角
+  const double c_y = cos(sensor_pos[5]); //cosのyaw角
   
   Matrix3d Rx, Ry, Rz, R;
   
@@ -125,5 +125,5 @@ inline Vector3d transform_sensor_position(const Vector6d& sensor_pos){
   // センサの位置の変換
   Vector3d transformed_pos = R * sensor_basic_pos;
   
-  return Vector3d(transformed_pos[0], transformed_pos[1], sensor_pos[5]);
+  return Vector3d(transformed_pos[0], transformed_pos[1], sensor_pos[5]); //x, y, yaw
 }

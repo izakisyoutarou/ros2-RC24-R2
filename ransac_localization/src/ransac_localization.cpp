@@ -133,12 +133,15 @@ namespace self_localization{
     last_odom_received_time = odom_received_time;
     uint8_t _candata[8];
     for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
-    const double x = (double)bytes_to_float(_candata);
-    const double y = (double)bytes_to_float(_candata+4);
-    diff_odom[0] = x - last_odom[0];
-    diff_odom[1] = y - last_odom[1];
+    const double x = (double)bytes_to_float(_candata); //下層からのオドメトリx軸
+    const double y = (double)bytes_to_float(_candata+4); //下層からのオドメトリy軸
 
-    if(abs(diff_odom[0]) / dt_odom > 7) diff_odom[0] = 0.0;
+    //cout<<x<<"  "<<y<<endl;
+
+    diff_odom[0] = x - last_odom[0];//x軸の移動距離の差
+    diff_odom[1] = y - last_odom[1];//y軸の移動距離の差
+
+    if(abs(diff_odom[0]) / dt_odom > 7) diff_odom[0] = 0.0;//オドメトリが飛んだときの対策
     if(abs(diff_odom[1]) / dt_odom > 7) diff_odom[1] = 0.0;
 
     odom[0] += diff_odom[0];
@@ -156,9 +159,10 @@ namespace self_localization{
     last_jy_received_time = jy_received_time;
     uint8_t _candata[8];
     for(int i=0; i<msg->candlc; i++) _candata[i] = msg->candata[i];
-    const double yaw = (double)bytes_to_float(_candata);
+    const double yaw = (double)bytes_to_float(_candata);//下層からの角度
+    //cout<<yaw<<endl;
     diff_odom[2] = yaw - last_odom[2];
-    if(abs(diff_odom[2]) / dt_jy > 6*M_PI) diff_odom[2] = 0.0;
+    if(abs(diff_odom[2]) / dt_jy > 6*M_PI) diff_odom[2] = 0.0; //ジャイロが飛んだときの対策
     odom[2] += diff_odom[2];
     last_odom[2] = yaw;
 
@@ -170,8 +174,11 @@ namespace self_localization{
     vector_msg.x = odom[0] + est_diff_sum[0];
     vector_msg.y = odom[1] + est_diff_sum[1];
     vector_msg.z = odom[2] + est_diff_sum[2];
-    cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
-    //cout<<"x "<<odom[0]<<"  y "<<odom[1]<<"  z "<<odom[2]<<endl;
+    odom_msg.x = odom[0];
+    odom_msg.y = odom[1];
+    odom_msg.z = odom[2];
+    //cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
+    //cout<<"x "<<odom[0]+init_pose[0]<<"  y "<<odom[1]+init_pose[1]<<"  z "<<odom[2]+init_pose[2]<<endl;
     self_pose_publisher->publish(vector_msg);
   }
 
@@ -184,14 +191,15 @@ namespace self_localization{
     Vector3d current_scan_odom = odom + est_diff_sum;
     Vector3d scan_odom_motion = current_scan_odom - last_estimated; //前回scanからのオドメトリ移動量
 
-    if (scan_odom_motion[2] > M_PI) last_estimated[2] += 2*M_PI;
+    if (scan_odom_motion[2] > M_PI) last_estimated[2] += 2*M_PI; //Yaw角度を-πからπの範囲で表現
     else if (scan_odom_motion[2] < -M_PI) last_estimated[2] -= 2*M_PI;
     scan_odom_motion[2] = current_scan_odom[2] - last_estimated[2];
 
-    Vector3d laser = current_scan_odom + transform_sensor_position(tf_laser2robot);
+    Vector3d laser = current_scan_odom + transform_sensor_position(tf_laser2robot); //lidarの取り付け位置を回転行列した値をオドメトリの座標に足している
 
-    vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser);
-    vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points);
+    vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser); //点群格納
+    vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points); //点群を等間隔に補正(yamlのvoxel_sizeで変更可能)
+    //cout<<src_points.size()<<endl;
 
     detect_lines.fuse_inliers(filtered_points, laser);
     vector<LaserPoint> line_points = detect_lines.get_sum();
@@ -205,13 +213,13 @@ namespace self_localization{
     Vector3d est_diff = estimated - current_scan_odom;  //直線からの推定値がデフォルト
     est_diff_sum += est_diff;
     last_estimated = estimated;
-
     if(plot_mode_) publishers(line_points);
     time_end = chrono::system_clock::now();
 
-    // RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
-    // RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
-    // RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
+    //cout<<est_diff_sum[0]<<endl;
+    //RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
+    //RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
+    //RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
   }
 
   void ransaclocalization::publishers(vector<LaserPoint> &points){

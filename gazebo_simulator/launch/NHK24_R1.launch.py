@@ -45,7 +45,7 @@ def generate_launch_description():
     xml = xml.replace('"', '\\"')
 
     # this is argument format for spwan_entity service
-    spwan_args = '{name: \"r1\", xml: \"'  +  xml + '\" , initial_pose: {' + initial_pose_ + '}}'
+    spwan_args = '{name: \"er\", xml: \"'  +  xml + '\" , initial_pose: {' + initial_pose_ + '}}'
 
     # create and return launch description object
     return LaunchDescription([

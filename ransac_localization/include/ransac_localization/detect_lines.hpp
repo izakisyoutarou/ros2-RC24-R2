@@ -39,5 +39,5 @@ private:
   int trial_num_;
   double inlier_dist_threshold_;
   double points_num_threshold;
-  const double distance_threshold=1.0;
+  const double distance_threshold=0.8;
 };

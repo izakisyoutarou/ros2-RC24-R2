@@ -61,6 +61,7 @@ private:
   rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr init_angle_publisher;
 
   geometry_msgs::msg::Vector3 vector_msg;
+  geometry_msgs::msg::Vector3 odom_msg;
   sensor_msgs::msg::PointCloud2 map_cloud;
   geometry_msgs::msg::PoseStamped corrent_pose_stamped;
   geometry_msgs::msg::PoseStamped odom_stamped;
