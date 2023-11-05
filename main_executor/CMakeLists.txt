@@ -4,9 +4,11 @@ project(main_executor)
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -fPIC)
 endif()
+
 find_package(rclcpp REQUIRED)
 find_package(socketcan_interface REQUIRED)
 find_package(ransac_localization REQUIRED)
+find_package(injection_interface REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -16,6 +18,7 @@ ament_target_dependencies(main_exec
         rclcpp
         socketcan_interface
         ransac_localization
+        injection_interface
         )
 
 target_include_directories(main_exec

@@ -37,3 +37,9 @@ rasnac_localization:
     trial_num: 40
     inlier_dist_threshold: 0.01
     inlier_length_threshold: 1.0 #インライアのしきい値
+    
+injection_interface_node:
+  ros__parameters:
+    tf_injection2robot: [0.0, 0.0] #射出機構のTF[x, y]
+    strage_backside: [0.0, 0.0, 0.0] #ストレージエリアの[x, y, 高さ]
+    strage_front: [0.1, 0.0, 0.0]
