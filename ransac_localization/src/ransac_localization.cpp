@@ -111,8 +111,8 @@ namespace self_localization{
   void ransaclocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
     if(msg->is_restart){
       RCLCPP_INFO(this->get_logger(), "RESTART");
-      if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
-      else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
+      // if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+      // else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
 
       init_flag=true;
 
@@ -174,9 +174,6 @@ namespace self_localization{
     vector_msg.x = odom[0] + est_diff_sum[0];
     vector_msg.y = odom[1] + est_diff_sum[1];
     vector_msg.z = odom[2] + est_diff_sum[2];
-    odom_msg.x = odom[0];
-    odom_msg.y = odom[1];
-    odom_msg.z = odom[2];
     //cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
     //cout<<"x "<<odom[0]+init_pose[0]<<"  y "<<odom[1]+init_pose[1]<<"  z "<<odom[2]+init_pose[2]<<endl;
     self_pose_publisher->publish(vector_msg);
