@@ -52,6 +52,9 @@ private:
   5 : 3段目 y 奥の垂木
   6 : 3段目 x 右端
   7 : 3段目 y water Zoneの2段目と3段目の境目
+  8 : 2段目 x センター
+  9 : 2段目 y ２段目と３段目の境目
+  10: 1段目 x 右端
   */
 
   double laser_weight_;

@@ -13,10 +13,11 @@ public:
     vector<LaserPoint> src_points;
     for(size_t i=0; i< msg->ranges.size(); ++i) {
       LaserPoint src_point;
-      if(msg->ranges[i] > 12 || msg->ranges[i] < 0.5) continue;
-        double x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i);
+      if(msg->ranges[i] > 12 || msg->ranges[i] < 0.5) continue; //# 範囲データ [m] (注: range_min または > range_max の値は破棄する必要があります)
+        //msg->angle_min->スキャン開始角度 [rad, msg->->angle_increment->測定値間の角度距離 [rad］
+        double x = msg->ranges[i] * cos(msg->angle_min + msg->angle_increment * i);//極座標
         double y = -msg->ranges[i] * sin(msg->angle_min + msg->angle_increment * i);
-        src_point.x = x * cos(laser[2]) - y * sin(laser[2]) + laser[0];
+        src_point.x = x * cos(laser[2]) - y * sin(laser[2]) + laser[0];//直交座標
         src_point.y = x * sin(laser[2]) + y * cos(laser[2]) + laser[1];
         src_points.push_back(src_point);
     }

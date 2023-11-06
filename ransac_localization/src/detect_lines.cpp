@@ -25,7 +25,7 @@ void DetectLines::fuse_inliers(const vector<LaserPoint> &src_points, const Vecto
 }
 
 void DetectLines::calc_estimated_diff(){
-  // estimated_diff[2] = calc_diff_angle();
+  //estimated_diff[2] = calc_diff_angle();
   for (size_t i=0; i<lines.size(); i++){
     if(lines[i].ransac_inliers.size()==0) continue;
     if(lines[i].axis=='x') estimated_diff[1] = lines[i].p_1.y - calc_average(i);
@@ -47,6 +47,7 @@ double DetectLines::calc_diff_angle(){
   double best_diff_angle=100.0;
   int get_angle_count=0;
   for(size_t i=0; i<lines.size(); i++){
+    //cout<<lines[i].ransac_inliers.size()<<" "<<1.0/voxel_size_<<endl;
     if(lines[i].ransac_inliers.size() < 1.0/voxel_size_) continue;
     get_angle_count++;
     if(lines[i].axis=='x') diff_angle = lines[i].estimate_angle;
@@ -95,9 +96,9 @@ void DetectLines::input_points(const LineData &line){
 void DetectLines::ransac_line(LineData &line){
   if(line.ransac_input.size()==0)return;
   int best_inlier_num=0;
-  double best_diff_y=0;
-  double best_diff_x=0;
-  double best_diff_xy=0;
+  double best_diff_y=0.0;
+  double best_diff_x=0.0;
+  double best_diff_xy=0.0;
   double best_a = 0.0;
   double best_b = 0.0;
   double best_c = 0.0;
@@ -113,7 +114,7 @@ void DetectLines::ransac_line(LineData &line){
     // インライア数を計算する
     int inlier_num = 0;
     for (const auto& point : line.ransac_input) {
-      const double dist = abs(diff_y * point.x + diff_x * point.y + diff_xy) / sqrt(diff_y * diff_y + diff_x * diff_x);
+      const double dist = abs(diff_y * point.x + diff_x * point.y + diff_xy) / sqrt(diff_y * diff_y + diff_x * diff_x); //点と直線の距離
       if (dist < inlier_dist_threshold_) {
         inlier_num++;
       }
@@ -152,6 +153,7 @@ void DetectLines::clear_points(LineData &line){
     min_angle=M_PI/4;
     max_angle=M_PI/2;
   }
+  //cout<<"l "<<line.ransac_inliers.size()<<" p "<<points_num_threshold<<" ang "<<fabs(line.estimate_angle)<<" i "<<min_angle<<" a "<<max_angle<<endl;
   if(line.ransac_inliers.size()<points_num_threshold || fabs(line.estimate_angle) < min_angle || fabs(line.estimate_angle) > max_angle) line.ransac_inliers.clear();
 }
 
