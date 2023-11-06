@@ -15,15 +15,30 @@ namespace injection_param_calculator
           injection_angle(get_parameter("injection_angle").as_double()),                            // 射出角度[deg]
           max_loop(get_parameter("max_loop").as_int())                                              // ニュートン法のループ制限回数
         //   singular_point_coefficient(get_parameter("singular_point_coefficient").as_double_array()) // 初期値を求める関数の係数
-    {
-        _sub_is_convergence = this->create_subscription<controller_interface_msg::msg::Convergence>(
-            "pub_convergence",
-            _qos,
-            std::bind(&InjectionParamCalculator::callback_is_convergence, this, std::placeholders::_1));
+        {
+            // _sub_is_convergence = this->create_subscription<controller_interface_msg::msg::Convergence>(
+            //     "pub_convergence",
+            //     _qos,
+            //     std::bind(&InjectionParamCalculator::callback_is_convergence, this, std::placeholders::_1));
 
-        _pub_can = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
-        RCLCPP_INFO(this->get_logger(), "create injection_param");
-    }
+
+
+
+
+            // _sub_injection_command = this->create_subscription<injection_interface_msg::msg::InjectionCommand>(
+            //     _qos,
+            //     std::bind(&InjectionParamCalculator::callback_injection,this,std::placeholders::_1)
+            // );
+
+            // _sub_is_convergence = this->create_subscription<controller_interface_msg::msg::Convergence>(
+            //     "pub_convergence",
+            //     _qos,
+            //     std::bind(&InjectionParamCalculator::callback_is_convergence,this,std::placeholders::_1)
+            // );
+
+            _pub_can = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
+            RCLCPP_INFO(this->get_logger(), "create injection_param");
+        }
     void InjectionParamCalculator::callback_injection(const injection_interface_msg::msg::InjectionCommand::SharedPtr msg)
     {
         auto msg_injection = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
