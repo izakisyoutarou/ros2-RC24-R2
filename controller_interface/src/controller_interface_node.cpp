@@ -346,9 +346,9 @@ namespace controller_interface
             //msg_btnにリスタートする際のcanidとcandlcのパラメータを格納
             auto msg_btn = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_btn->canid = can_main_button_id;
-            msg_btn->candlc = 1;
+            msg_btn->candlc = 8;
 
-            uint8_t _candata_btn;
+            uint8_t _candata_btn[8];
             //base_control(手自動、緊急、リスタート)が押されたらpubする
             //robotcontrol_flagはtrueのときpublishできる
             bool robotcontrol_flag = false;
@@ -450,14 +450,18 @@ namespace controller_interface
             msg_base_control.is_injection_mech_stop_m = is_injection_mech_stop_m;
 
             //mainへボタン情報を送る代入
-            if(msg->data == "a")_candata_btn = a;
-            if(msg->data == "b")_candata_btn = b;
-            if(msg->data == "x")_candata_btn = y;
-            if(msg->data == "y")_candata_btn = x;
-            if(msg->data == "rigit")_candata_btn = right;
-            if(msg->data == "left")_candata_btn = down;
-            if(msg->data == "down")_candata_btn = left;
-            if(msg->data == "up")_candata_btn = up;
+            if(msg->data == "a")_candata_btn[0] = a;
+            if(msg->data == "b")_candata_btn[1] = b;
+            if(msg->data == "x")_candata_btn[2] = y;
+            if(msg->data == "y")_candata_btn[3] = x;
+            if(msg->data == "rigit")_candata_btn[4] = right;
+            if(msg->data == "left")_candata_btn[5] = down;
+            if(msg->data == "down")_candata_btn[6] = left;
+            if(msg->data == "up")_candata_btn[7] = up;
+            
+            for(int i=0; i<msg_btn->candlc; i++){
+                msg_btn->candata[i] = _candata_btn[i];
+            }
 
             //どれか１つのボタンを押すとすべてのボタン情報がpublishされる
             if( a == true ||b == true ||y == true ||x == true ||right == true ||down == true ||left == true ||up == true )
@@ -658,80 +662,85 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_sub_pad(const std_msgs::msg::String::SharedPtr msg){
             auto msg_unity_sub_control = std::make_shared<std_msgs::msg::Bool>();
+            int colordlc = 25;
+            bool color_data[25];
 
             if(msg->data == "A_red"){
                 RCLCPP_INFO(this->get_logger(), "color_red_A");
-                msg_colorball_info.color_info[0] = true;
+                color_data[0] = true;
             }
             if(msg->data == "A_purple"){
-                msg_colorball_info.color_info[1] = false;
+                color_data[1] = false;
                 RCLCPP_INFO(this->get_logger(), "color_purple_A");
             }
             if(msg->data == "B_red"){
-                msg_colorball_info.color_info[2] = true;
+                color_data[2] = true;
             }
             if(msg->data == "B_purple"){
-                msg_colorball_info.color_info[3] = false;
+                color_data[3] = false;
             }
             if(msg->data == "C_red"){
-                msg_colorball_info.color_info[4] = true;
+                color_data[4] = true;
             }
             if(msg->data == "C_purple"){
-                msg_colorball_info.color_info[5] = false;
+                color_data[5] = false;
             }
             if(msg->data == "D_red"){
-                msg_colorball_info.color_info[6] = true;
+                color_data[6] = true;
             }
             if(msg->data == "D_purple"){
-                msg_colorball_info.color_info[7] = false;
+                color_data[7] = false;
             }
             if(msg->data == "E_red"){
-                msg_colorball_info.color_info[8] = true;
+                color_data[8] = true;
             }
             if(msg->data == "E_purple"){
-                msg_colorball_info.color_info[9] = false;
+                color_data[9] = false;
             }
             if(msg->data == "F_red"){
-                msg_colorball_info.color_info[10] = true;
+                color_data[10] = true;
             }
             if(msg->data == "F_purple"){
-                msg_colorball_info.color_info[11] = false;
+                color_data[11] = false;
             }
             if(msg->data == "G_red"){
-                msg_colorball_info.color_info[12] = true;
+                color_data[12] = true;
             }
             if(msg->data == "G_purple"){
-                msg_colorball_info.color_info[13] = false;
+                color_data[13] = false;
             }
             if(msg->data == "H_red"){
-                msg_colorball_info.color_info[14] = true;
+                color_data[14] = true;
             }
             if(msg->data == "H_purple"){
-                msg_colorball_info.color_info[15] = false;
+                color_data[15] = false;
             }
             if(msg->data == "I_red"){
-                msg_colorball_info.color_info[16] = true;
+                color_data[16] = true;
             }
             if(msg->data == "I_purple"){
-                msg_colorball_info.color_info[17] = false;
+                color_data[17] = false;
             }
             if(msg->data == "J_red"){
-                msg_colorball_info.color_info[19] = true;
+                color_data[19] = true;
             }
             if(msg->data == "J_purple"){
-                msg_colorball_info.color_info[20] = false;
+                color_data[20] = false;
             }
             if(msg->data == "K_red"){
-                msg_colorball_info.color_info[21] = true;
+                color_data[21] = true;
             }
             if(msg->data == "K_purple"){
-                msg_colorball_info.color_info[22] = false;
+                color_data[22] = false;
             }
             if(msg->data == "L_red"){
-                msg_colorball_info.color_info[23] = true;
+                color_data[23] = true;
             }
             if(msg->data == "L_purple"){
-                msg_colorball_info.color_info[24] = false;
+                color_data[24] = false;
+            }
+            for(int k=0; k<colordlc;k++){
+                msg_colorball_info.color_info[k] = color_data[k];
             }
             
             if(msg->data == "Btn_info_msg"){

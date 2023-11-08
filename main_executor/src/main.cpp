@@ -25,7 +25,6 @@ int main(int argc, char * argv[]){
     exec.add_node(ransac_localization);
     //auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
 
-
     exec.spin();
     rclcpp::shutdown();
     return 0;
