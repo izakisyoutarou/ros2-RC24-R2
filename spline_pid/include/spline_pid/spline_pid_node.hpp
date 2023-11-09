@@ -60,6 +60,10 @@ private:
     VelPlanner velPlanner_angular;
     const VelPlannerLimit limit_angular;
 
+    //canid
+    const int can_linear_id;
+    const int can_angular_id;
+
     //ゲイン
     const double curvature_attenuation_rate;
     const double linear_planner_vel_limit_gain;
@@ -100,6 +104,7 @@ private:
     bool is_accurate_convergence = false;   //精確な最終収束と経路上の角度の補正
 
     double progress = 0.0;
+
 };
 
 }  // namespace spline_pid

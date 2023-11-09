@@ -30,13 +30,15 @@ angular_planner_gain(get_parameter("angular_planner_gain").as_double()),
 angular_pos_gain(get_parameter("angular_pos_gain").as_double()),
 angular_pos_integral_gain(get_parameter("angular_pos_integral_gain").as_double()),
 linear_pos_tolerance(get_parameter("linear_pos_tolerance").as_double()),
-angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
+angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double())),
+can_linear_id(get_parameter("canid.linear").as_int()),
+can_angular_id(get_parameter("canid.angular").as_int())
 {
 
     const auto interval_ms = this->get_parameter("interval_ms").as_int();
     sampling_time = interval_ms / 1000.0;
     const auto initial_pose = this->get_parameter("initial_pose").as_double_array();
-
+init_angular:
     _subscription_path = this->create_subscription<path_msg::msg::Path>(
         "spline_path",
         _qos,
@@ -79,10 +81,10 @@ angular_pos_tolerance(dtor(get_parameter("angular_pos_tolerance").as_double()))
 void SplinePid::_publisher_callback(){
     auto cmd_velocity = std::make_shared<geometry_msgs::msg::Twist>();
     auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_linear->canid = 0x100;
+    msg_linear->canid = can_linear_id;
     msg_linear->candlc = 8;
     auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_angular->canid = 0x101;
+    msg_angular->canid = can_angular_id;
     msg_angular->candlc = 4;
     auto msg_progress = std::make_shared<std_msgs::msg::Float64>();
 
