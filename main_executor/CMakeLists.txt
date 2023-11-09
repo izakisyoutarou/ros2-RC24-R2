@@ -10,6 +10,7 @@ find_package(socketcan_interface REQUIRED)
 find_package(controller_interface REQUIRED)
 find_package(injection_interface REQUIRED)
 find_package(ransac_localization REQUIRED)
+find_package(sequencer REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -21,6 +22,7 @@ ament_target_dependencies(main_exec
         controller_interface
         injection_interface
         ransac_localization
+        sequencer
         )
 
 target_include_directories(main_exec
