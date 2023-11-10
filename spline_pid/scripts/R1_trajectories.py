@@ -51,8 +51,19 @@ class SplineTrajectories(Node):
         'spline_pid',
         'R1_nodelist.cfg')
 
-        # パラメータの宣言
-        self.declare_parameter('resolution', 0.01)
+        # パラメータ
+        config_file_path = os.path.join(
+            get_package_share_directory('main_executor'),
+            'config',
+            'main_params.yaml'
+        )
+        
+        with open(config_file_path, 'r') as file:
+            trajectories_resolution = yaml.safe_load(file)['spline_trajectories_node']['ros__parameters']['resolution']
+            self.amount = 1.0/ trajectories_resolution
+
+        with open(config_file_path, 'r') as file:
+            self.court_color = yaml.safe_load(file)['/**']['ros__parameters']['court_color']
 
         self.current_node = 'O'
         self.target_node = 'O'
@@ -65,7 +76,6 @@ class SplineTrajectories(Node):
             try:
                 msg_tx, x,y,a,nodes = self.get_path(self.current_node, msg.data)
                 self.get_logger().info(str(msg_tx.accurate_convergence))
-
                 self.publisher_path.publish(msg_tx)
 
             except:
@@ -98,10 +108,7 @@ class SplineTrajectories(Node):
         print('角度 : ',input_a)
 
         path = Path()
-
-        trajectories_resolution = self.get_parameter('resolution').get_parameter_value().double_value
-        amount = 1.0/ trajectories_resolution
-        path.x, path.y, path.angle ,yaw, path.curvature, travel = calc_2d_spline_interpolation(input_x, input_y, input_a, num = int(float(length)*amount))
+        path.x, path.y, path.angle ,yaw, path.curvature, travel = calc_2d_spline_interpolation(input_x, input_y, input_a, int(float(length)*self.amount))
         path.length = [float(s) for s in travel]
 
         return path, input_x, input_y, input_a, nodes

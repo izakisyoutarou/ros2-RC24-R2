@@ -21,6 +21,8 @@ launch: #起動パラメータ
     angular_max_dec: 230.0
     angular_max_jer: 0.0
     
+    court_color: "blue"
+    
     canid:
       emergency: 0x000
       heartbeat: 0x001
