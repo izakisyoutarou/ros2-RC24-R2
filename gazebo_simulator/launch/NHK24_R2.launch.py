@@ -14,7 +14,7 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
     package_name = 'gazebo_simulator'
     world_file_name = 'NHK23_court.world'
-    urdf_file_name = 'rr.urdf' #R2
+    urdf_file_name = 'rr.urdf'
 
     config_file_path = os.path.join(
         get_package_share_directory('main_executor'),

@@ -25,7 +25,7 @@ private:
 
     double yaw;
     std::vector<double> pose_array;
-    std::string court_color_;
+    std::string court;
 
 
     void callback_velocity(const geometry_msgs::msg::Twist::SharedPtr msg);

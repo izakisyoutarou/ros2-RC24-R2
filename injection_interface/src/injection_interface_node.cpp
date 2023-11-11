@@ -48,7 +48,7 @@ namespace injection_interface{
                 self_pose.z = initial_pose[2];
             }else if(court_color_ == "red"){
                 self_pose.x = initial_pose[0];
-                self_pose.y = -1*initial_pose[1];
+                self_pose.y = -1.0*initial_pose[1];
                 self_pose.z = initial_pose[2];
             }
             

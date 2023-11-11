@@ -48,13 +48,15 @@ namespace self_localization{
       "self_pose", _qos);
 
     tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
-    court_color = court_color_;
+    // court_color = court_color_;
 
-    if(court_color == "blue"){
+    if(court_color_ == "blue"){
       init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
-    }else if(court_color == "red"){
+
+    }else if(court_color_ == "red"){
       init_pose << initial_pose_[0], -1.0*initial_pose_[1], initial_pose_[2];
     }
+    //RCLCPP_INFO(this->get_logger(), "init_pose x>%f y>%f a>%f°", init_pose[0], init_pose[1], radToDeg(init_pose[2]));
 
     init();
 
@@ -82,6 +84,7 @@ namespace self_localization{
   }
 
   void ransaclocalization::load_map_config(vector<LineData> &lines, const string color){
+    //cout<<"1"<<endl;
     if(color == "blue"){
       ifstream ifs(ament_index_cpp::get_package_share_directory("main_executor") + "/config/ransac_localization/lines_blue.cfg");
       string str;
@@ -125,10 +128,12 @@ namespace self_localization{
         line_count++;
       }
     }
+    //cout<<"2"<<endl;
     return;
   }
 
   void ransaclocalization::init(){
+    //cout<<"3"<<endl;
     odom = Vector3d::Zero();
     last_odom = Vector3d::Zero();
     diff_odom = Vector3d::Zero();
@@ -136,16 +141,19 @@ namespace self_localization{
     last_estimated = init_pose;
     pose_fuser.init();
     detect_lines.init();
+    //RCLCPP_INFO(this->get_logger(), "est_diff_sum x>%f y>%f a>%f°", est_diff_sum[0], est_diff_sum[1], radToDeg(est_diff_sum[2]));
+    //cout<<"4"<<endl;
   }
 
   void ransaclocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
+    //cout<<"5"<<endl;
     if(msg->is_restart){
       RCLCPP_INFO(this->get_logger(), "RESTART");
       // if(msg->initial_state=="O"){
       //   if(court_color == "blue"){
       //     init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
       //   }else if(court_color == "red"){
-      //     init_pose << initial_pose_[0], -1*initial_pose_[1], initial_pose_[2];
+          init_pose << initial_pose_[0], -1.0*initial_pose_[1], initial_pose_[2];
       //   } 
       // }
       // else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
@@ -156,14 +164,16 @@ namespace self_localization{
       uint8_t _candata[8];
       auto msg_angle = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
       msg_angle->canid = init_angular_can_id;
-      msg_angle->candlc = 4;
+      msg_angle->candlc = 4; //バイト数
       float_to_bytes(_candata, static_cast<float>(init_pose[2]));
       for(int i=0; i<msg_angle->candlc; i++) msg_angle->candata[i] = _candata[i];
       init_angle_publisher->publish(*msg_angle);
     }
+    //cout<<"6"<<endl;
   }
 
   void ransaclocalization::callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+    //cout<<"7"<<endl;
     double odom_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
     double dt_odom = odom_received_time - last_odom_received_time;
     last_odom_received_time = odom_received_time;
@@ -184,9 +194,11 @@ namespace self_localization{
     odom[1] += diff_odom[1];
     last_odom[0] = x;
     last_odom[1] = y;
+    //cout<<"8"<<endl;
   }
 
   void ransaclocalization::callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+    //cout<<"9"<<endl;
     //cout<<initial_pose_[0]<<" "<<initial_pose_[1]<<" "<<initial_pose_[2]<<endl;
     double jy_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
     if(init_jy_time_flag) last_jy_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
@@ -206,16 +218,19 @@ namespace self_localization{
       init_flag=false;
       init();
     }
-
+    //RCLCPP_INFO(this->get_logger(), "est_diff_sum x>%f y>%f a>%f°", est_diff_sum[0], est_diff_sum[1], radToDeg(est_diff_sum[2]));
     vector_msg.x = odom[0] + est_diff_sum[0];
     vector_msg.y = odom[1] + est_diff_sum[1];
     vector_msg.z = odom[2] + est_diff_sum[2];
     cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
     //cout<<"x "<<odom[0]+init_pose[0]<<"  y "<<odom[1]+init_pose[1]<<"  z "<<odom[2]+init_pose[2]<<endl;
+    //RCLCPP_INFO(this->get_logger(), "init_pose x>%f y>%f a>%f°", init_pose[0], init_pose[1], radToDeg(init_pose[2]));
     self_pose_publisher->publish(vector_msg);
+    //cout<<"10"<<endl;
   }
 
   void ransaclocalization::callback_scan(const sensor_msgs::msg::LaserScan::SharedPtr msg){
+    //cout<<"11"<<endl;
     time_start = chrono::system_clock::now();
     double current_scan_received_time = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
     dt_scan = current_scan_received_time - last_scan_received_time;
@@ -231,13 +246,13 @@ namespace self_localization{
     Vector3d laser = current_scan_odom + transform_sensor_position(tf_laser2robot); //lidarの取り付け位置を回転行列した値をオドメトリの座標に足している
 
     vector<LaserPoint> src_points = converter.scan_to_vector(msg, laser); //点群格納
-    vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points); //点群を等間隔に補正(yamlのvoxel_sizeで変更可能)
     //cout<<src_points.size()<<endl;
+    vector<LaserPoint> filtered_points = voxel_grid_filter.apply_voxel_grid_filter(src_points); //点群を等間隔に補正(yamlのvoxel_sizeで変更可能)
 
     detect_lines.fuse_inliers(filtered_points, laser);
     vector<LaserPoint> line_points = detect_lines.get_sum();
     trans = detect_lines.get_estimated_diff();
-
+    
     linear_vel = distance(0.0,scan_odom_motion[0],0.0,scan_odom_motion[1]) / dt_scan;
     angular_vel = abs(scan_odom_motion[2]/dt_scan);
 
@@ -253,9 +268,11 @@ namespace self_localization{
     //RCLCPP_INFO(this->get_logger(), "estimated x>%f y>%f a>%f°", estimated[0], estimated[1], radToDeg(estimated[2]));
     //RCLCPP_INFO(this->get_logger(), "trans x>%f y>%f a>%f°", trans[0], trans[1], radToDeg(trans[2]));
     //RCLCPP_INFO(this->get_logger(), "scan time->%d", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
+    //cout<<"12"<<endl;
   }
 
   void ransaclocalization::publishers(vector<LaserPoint> &points){
+    //cout<<"13"<<endl;
     sensor_msgs::msg::PointCloud2 cloud = converter.vector_to_PC2(points);
 
     corrent_pose_stamped.header.stamp = this->now();
@@ -276,9 +293,11 @@ namespace self_localization{
     ransaced_publisher->publish(cloud);
     pose_publisher->publish(corrent_pose_stamped);
     odom_publisher->publish(odom_stamped);
+    //cout<<"14"<<endl;
   }
 
   void ransaclocalization::create_map(vector<LineData> &lines){
+    //cout<<"15"<<endl;
     LaserPoint map_point;
     for(size_t i=0; i<lines.size(); i++){
       if(lines[i].axis=='x'){
@@ -297,5 +316,6 @@ namespace self_localization{
       }
     }
     map_cloud = converter.vector_to_PC2(map_points);
-  }
+    //cout<<"16"<<endl;
+  } 
 }
