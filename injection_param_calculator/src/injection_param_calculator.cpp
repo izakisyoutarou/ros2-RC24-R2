@@ -16,22 +16,13 @@ namespace injection_param_calculator
           max_loop(get_parameter("max_loop").as_int())                                              // ニュートン法のループ制限回数
         //   singular_point_coefficient(get_parameter("singular_point_coefficient").as_double_array()) // 初期値を求める関数の係数
         {
-            // _sub_is_convergence = this->create_subscription<controller_interface_msg::msg::Convergence>(
-            //     "pub_convergence",
-            //     _qos,
-            //     std::bind(&InjectionParamCalculator::callback_is_convergence, this, std::placeholders::_1));
-
-
-
-
-
-            // _sub_injection_command = this->create_subscription<injection_interface_msg::msg::InjectionCommand>(
-            //     _qos,
-            //     std::bind(&InjectionParamCalculator::callback_injection,this,std::placeholders::_1)
-            // );
+            _sub_injection_command = this->create_subscription<injection_interface_msg::msg::InjectionCommand>(
+                "parameters", _qos,
+                std::bind(&InjectionParamCalculator::callback_injection,this,std::placeholders::_1)
+            );
 
             // _sub_is_convergence = this->create_subscription<controller_interface_msg::msg::Convergence>(
-            //     "pub_convergence",
+            //     "convergence",
             //     _qos,
             //     std::bind(&InjectionParamCalculator::callback_is_convergence,this,std::placeholders::_1)
             // );
