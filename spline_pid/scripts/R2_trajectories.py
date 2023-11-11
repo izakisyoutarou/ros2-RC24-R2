@@ -132,9 +132,14 @@ class SplineTrajectories(Node):
                 for line in lines:
                     line_s = line.split(' ')
                     if(line_s[0]==node):
-                        input_x.append(float(line_s[1]))
-                        input_y.append(float(line_s[2]))
-                        input_a.append(math.radians(float(line_s[3])))
+                        if(self.court_color == "blue"):
+                            input_x.append(float(line_s[1]))
+                            input_y.append(float(line_s[2]))
+                            input_a.append(math.radians(float(line_s[3])))
+                        elif(self.court_color == "red"):
+                            input_x.append(float(line_s[1]))
+                            input_y.append(-1 * float(line_s[2]))
+                            input_a.append(-1 *math.radians(float(line_s[3])))
         print('角度 : ',input_a)
 
         path = Path()
