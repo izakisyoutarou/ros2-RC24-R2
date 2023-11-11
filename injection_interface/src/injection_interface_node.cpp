@@ -2,6 +2,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fstream>
 
+
 using namespace std;
 using namespace utils;
 
@@ -11,7 +12,8 @@ namespace injection_interface{
         : rclcpp::Node("injection_interface_node", name_space, options),
         tf_injection2robot(get_parameter("tf_injection2robot").as_double_array()),
         strage_backside(get_parameter("strage_backside").as_double_array()),
-        strage_front(get_parameter("strage_front").as_double_array())
+        strage_front(get_parameter("strage_front").as_double_array()),
+        court_color_(get_parameter("court_color").as_string())
         {
             _sub_aim_in_storage = this->create_subscription<std_msgs::msg::Bool>(
                 "is_backside",
@@ -40,9 +42,16 @@ namespace injection_interface{
             _pub_injection = this->create_publisher<injection_interface_msg::msg::InjectionCommand>("injection_command", 10);
 
             const auto initial_pose = this->get_parameter("initial_pose").as_double_array();
-            self_pose.x = initial_pose[0];
-            self_pose.y = initial_pose[1];
-            self_pose.z = initial_pose[2];
+            if(court_color_ == "blue"){
+                self_pose.x = initial_pose[0];
+                self_pose.y = initial_pose[1];
+                self_pose.z = initial_pose[2];
+            }else if(court_color_ == "red"){
+                self_pose.x = initial_pose[0];
+                self_pose.y = -1*initial_pose[1];
+                self_pose.z = initial_pose[2];
+            }
+            
         }
 
         void InjectionInterface::_callback_aim_in_storage(const std_msgs::msg::Bool::SharedPtr msg){

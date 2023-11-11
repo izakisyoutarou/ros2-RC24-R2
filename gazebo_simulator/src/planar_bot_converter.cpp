@@ -26,6 +26,10 @@ PlanarBotConverter::PlanarBotConverter(const std::string &name_space, const rclc
     publisher_odom_angular = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_rx_111", _qos);
     this->declare_parameter<std::vector<double>>("initial_pose", {0.0, 0.0, 0.0});
     pose_array = this->get_parameter("initial_pose").as_double_array();
+    court_color_ = this->get_parameter("court_color").as_string();
+    if(court_color_ == "red"){
+        pose_array[1]=-1*pose_array[1];
+    }
 }
 
 /*コールバック関数*/

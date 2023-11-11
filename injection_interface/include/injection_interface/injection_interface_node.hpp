@@ -9,6 +9,8 @@
 
 #include "injection_interface/visibility_control.h"
 
+#include <string>
+
 namespace injection_interface{
 
 class InjectionInterface : public rclcpp::Node {
@@ -48,6 +50,7 @@ private:
     bool is_move_tracking = false;
     bool is_correction_required = false;
     std::shared_ptr<std_msgs::msg::Bool> last_target;
+    const std::string court_color_;
 };
 
 }

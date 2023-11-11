@@ -21,10 +21,10 @@ namespace self_localization{
     inlier_length_threshold_(get_parameter("inlier_length_threshold").as_double()),
     odom_linear_can_id(get_parameter("canid.odom_linear").as_int()),
     odom_angular_can_id(get_parameter("canid.odom_angular").as_int()),
-    init_angular_can_id(get_parameter("canid.init_angular").as_int()){
+    init_angular_can_id(get_parameter("canid.init_angular").as_int()),
+    court_color_(get_parameter("court_color").as_string()){
 
     RCLCPP_INFO(this->get_logger(), "START");
-
     restart_subscriber = this->create_subscription<controller_interface_msg::msg::BaseControl>(
       "pub_base_control",_qos,
       bind(&ransaclocalization::callback_restart, this, std::placeholders::_1));
@@ -48,11 +48,18 @@ namespace self_localization{
       "self_pose", _qos);
 
     tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
-    init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+    court_color = court_color_;
+
+    if(court_color == "blue"){
+      init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+    }else if(court_color == "red"){
+      init_pose << initial_pose_[0], -1.0*initial_pose_[1], initial_pose_[2];
+    }
+
     init();
 
     vector<LineData> lines;
-    load_map_config(lines);
+    load_map_config(lines,court_color);
     create_map(lines);
 
     detect_lines.setup(lines, voxel_size_, trial_num_, inlier_dist_threshold_, inlier_length_threshold_);
@@ -74,26 +81,49 @@ namespace self_localization{
     }
   }
 
-  void ransaclocalization::load_map_config(vector<LineData> &lines){
-    ifstream ifs(ament_index_cpp::get_package_share_directory("main_executor") + "/config/ransac_localization/lines.cfg");
-    string str;
-    int line_count=0;
-    while(getline(ifs, str)){
-      string token;
-      istringstream stream(str);
-      int count = 0;
-      LineData line_data;
-      while(getline(stream, token, ' ')){   //istringstream型の入力文字列を半角空白で分割しtokenに格納
-        if(line_count==0) break;
-        if(count==0) line_data.p_1.x = stold(token); //文字として取得した値をdouble型に変換
-        else if(count==1) line_data.p_1.y = stold(token);
-        else if(count==2) line_data.p_2.x = stold(token);
-        else if(count==3) line_data.p_2.y = stold(token);
-        count++;
+  void ransaclocalization::load_map_config(vector<LineData> &lines, const string color){
+    if(color == "blue"){
+      ifstream ifs(ament_index_cpp::get_package_share_directory("main_executor") + "/config/ransac_localization/lines_blue.cfg");
+      string str;
+      int line_count=0;
+      while(getline(ifs, str)){
+        string token;
+        istringstream stream(str);
+        int count = 0;
+        LineData line_data;
+        while(getline(stream, token, ' ')){   //istringstream型の入力文字列を半角空白で分割しtokenに格納
+          if(line_count==0) break;
+          if(count==0) line_data.p_1.x = stold(token); //文字として取得した値をdouble型に変換
+          else if(count==1) line_data.p_1.y = stold(token);
+          else if(count==2) line_data.p_2.x = stold(token);
+          else if(count==3) line_data.p_2.y = stold(token);
+          count++;
+        }
+        line_data.set_data();
+        if(!(line_count==0)) lines.push_back(line_data);
+        line_count++;
       }
-      line_data.set_data();
-      if(!(line_count==0)) lines.push_back(line_data);
-      line_count++;
+    }else if(color == "red"){
+      ifstream ifs(ament_index_cpp::get_package_share_directory("main_executor") + "/config/ransac_localization/lines_red.cfg");
+      string str;
+      int line_count=0;
+      while(getline(ifs, str)){
+        string token;
+        istringstream stream(str);
+        int count = 0;
+        LineData line_data;
+        while(getline(stream, token, ' ')){   //istringstream型の入力文字列を半角空白で分割しtokenに格納
+          if(line_count==0) break;
+          if(count==0) line_data.p_1.x = stold(token); //文字として取得した値をdouble型に変換
+          else if(count==1) line_data.p_1.y = stold(token);
+          else if(count==2) line_data.p_2.x = stold(token);
+          else if(count==3) line_data.p_2.y = stold(token);
+          count++;
+        }
+        line_data.set_data();
+        if(!(line_count==0)) lines.push_back(line_data);
+        line_count++;
+      }
     }
     return;
   }
@@ -111,7 +141,13 @@ namespace self_localization{
   void ransaclocalization::callback_restart(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
     if(msg->is_restart){
       RCLCPP_INFO(this->get_logger(), "RESTART");
-      // if(msg->initial_state=="O") init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+      // if(msg->initial_state=="O"){
+      //   if(court_color == "blue"){
+      //     init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+      //   }else if(court_color == "red"){
+      //     init_pose << initial_pose_[0], -1*initial_pose_[1], initial_pose_[2];
+      //   } 
+      // }
       // else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
 
       init_flag=true;
@@ -174,7 +210,7 @@ namespace self_localization{
     vector_msg.x = odom[0] + est_diff_sum[0];
     vector_msg.y = odom[1] + est_diff_sum[1];
     vector_msg.z = odom[2] + est_diff_sum[2];
-    //cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
+    cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
     //cout<<"x "<<odom[0]+init_pose[0]<<"  y "<<odom[1]+init_pose[1]<<"  z "<<odom[2]+init_pose[2]<<endl;
     self_pose_publisher->publish(vector_msg);
   }

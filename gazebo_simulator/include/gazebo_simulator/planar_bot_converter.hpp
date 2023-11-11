@@ -25,6 +25,8 @@ private:
 
     double yaw;
     std::vector<double> pose_array;
+    std::string court_color_;
+
 
     void callback_velocity(const geometry_msgs::msg::Twist::SharedPtr msg);
     void callback_odom(const nav_msgs::msg::Odometry::SharedPtr msg);
