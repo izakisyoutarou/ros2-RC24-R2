@@ -49,8 +49,9 @@ namespace controller_interface
 
             //mainボードから
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_injection_possible;
-
-
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_ballhand0_possible;
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_ballhand1_possible;
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_Seedlinghand_possible;
 
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
@@ -74,9 +75,9 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_coat_state;
 
             //ボールと苗の回収&設置
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_collection;
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_installation;
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_ball_collection;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_seedling_collection;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_seedling_installation;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_ball_collection;
             
 
             //gazebo_simulator用のpub
@@ -163,6 +164,9 @@ namespace controller_interface
             bool spline_convergence = false;
             bool injection_calculator = false;
             bool injection = false;
+            bool seedlinghand = false;
+            bool ballhand0 = false;
+            bool ballhand1 = false;
             bool injection_flag = false;
 
 
@@ -190,6 +194,9 @@ namespace controller_interface
             bool is_spline_convergence;
             bool is_injection_calculator_convergence;
             bool is_injection_convergence;
+            bool is_seedlinghand_convergence;
+            bool is_ballhand0_convergence;
+            bool is_ballhand1_convergence;
 
             //初期化指定用
             const float high_manual_linear_max_vel;
@@ -207,6 +214,9 @@ namespace controller_interface
             const bool defalt_spline_convergence;
             const bool defalt_injection_calculator_convergence;
             const bool defalt_injection_convergence;
+            const bool defalt_seedlinghand_convergence;
+            const bool defalt_ballhand0_convergence;
+            const bool defalt_ballhand1_convergence;
             
             const int16_t can_emergency_id;
             const int16_t can_heartbeat_id;
