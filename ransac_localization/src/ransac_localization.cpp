@@ -48,12 +48,12 @@ namespace self_localization{
       "self_pose", _qos);
 
     tf_laser2robot << tf_array[0], tf_array[1], tf_array[2], tf_array[3], tf_array[4], tf_array[5];
-    // court_color = court_color_;
+    court_color = court_color_;
 
     if(court_color_ == "blue"){
       init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
 
-    }else if(court_color_ == "red"){
+    }else if(court_color == "red"){
       init_pose << initial_pose_[0], -1.0*initial_pose_[1], initial_pose_[2];
     }
     //RCLCPP_INFO(this->get_logger(), "init_pose x>%f y>%f a>%f°", init_pose[0], init_pose[1], radToDeg(init_pose[2]));
@@ -84,8 +84,8 @@ namespace self_localization{
   }
 
   void ransaclocalization::load_map_config(vector<LineData> &lines, const string color){
-    //cout<<"1"<<endl;
     if(color == "blue"){
+      //cout<<"1"<<endl;
       ifstream ifs(ament_index_cpp::get_package_share_directory("main_executor") + "/config/ransac_localization/lines_blue.cfg");
       string str;
       int line_count=0;
@@ -107,6 +107,7 @@ namespace self_localization{
         line_count++;
       }
     }else if(color == "red"){
+      //cout<<"1"<<endl;
       ifstream ifs(ament_index_cpp::get_package_share_directory("main_executor") + "/config/ransac_localization/lines_red.cfg");
       string str;
       int line_count=0;
@@ -222,7 +223,7 @@ namespace self_localization{
     vector_msg.x = odom[0] + est_diff_sum[0];
     vector_msg.y = odom[1] + est_diff_sum[1];
     vector_msg.z = odom[2] + est_diff_sum[2];
-    cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
+    //cout<<"x "<<vector_msg.x<<"   y "<<vector_msg.y<<"   z "<<vector_msg.z<<endl;
     //cout<<"x "<<odom[0]+init_pose[0]<<"  y "<<odom[1]+init_pose[1]<<"  z "<<odom[2]+init_pose[2]<<endl;
     //RCLCPP_INFO(this->get_logger(), "init_pose x>%f y>%f a>%f°", init_pose[0], init_pose[1], radToDeg(init_pose[2]));
     self_pose_publisher->publish(vector_msg);
