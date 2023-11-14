@@ -45,19 +45,19 @@ namespace injection_param_calculator
 
         msg_injection->candlc = 8;
 
-        //     //  送信
-        //     uint8_t _candata[8];
-        //     float_to_bytes(_candata, static_cast<float>(velocity * injection_command.velocity_gain));
-        //     float_to_bytes(_candata + 4, static_cast<float>(injection_command.direction));
-        //     for (int i = 0; i < msg_injection->candlc; i++)
-        //         msg_injection->candata[i] = _candata[i];
-        //     _pub_isConvergenced->publish(*msg_isConvergenced);
+            //  送信
+            // uint8_t _candata[8];
+            // float_to_bytes(_candata, static_cast<float>(velocity * injection_command.velocity_gain));
+            // float_to_bytes(_candata + 4, static_cast<float>(injection_command.direction));
+            // for (int i = 0; i < msg_injection->candlc; i++)
+            //     msg_injection->candata[i] = _candata[i];
+            // _pub_isConvergenced->publish(*msg_isConvergenced);
 
-        //     if (isConvergenced)
-        //     {
-        //         RCLCPP_INFO(get_logger(), "計算が収束しました");
-        //         _pub_can->publish(*msg_injection);
-        //     }
+            if (isConvergenced)
+            {
+                RCLCPP_INFO(get_logger(), "計算が収束しました");
+                _pub_can->publish(*msg_injection);
+            }
     }
 
     // double InjectionParamCalculator::calculateFirstVelocity()
