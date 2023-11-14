@@ -1,2 +1,2 @@
-bool[24] color_info
+bool[12] color_info
 

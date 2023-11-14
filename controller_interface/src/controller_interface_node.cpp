@@ -59,7 +59,12 @@ namespace controller_interface
 
         defalt_injection_calculator_convergence(get_parameter("defalt_injection_calculator_convergence").as_bool()),
         //射出のyaw軸が目標の値まで移動して停止した状態を保存するための変数
-        defalt_injection_convergence(get_parameter("defalt_injection_convergence").as_bool()),        
+        defalt_injection_convergence(get_parameter("defalt_injection_convergence").as_bool()),
+        //苗ハンドの収束状況を保存するための変数
+        defalt_seedlinghand_convergence(get_parameter("defalt_seedlinghand_convergence").as_bool()),
+        //ボール回収ハンドの収束状況を保存するための変数
+        defalt_ballhand0_convergence(get_parameter("defalt_ballhand0_convergence").as_bool()),
+        defalt_ballhand1_convergence(get_parameter("defalt_ballhand1_convergence").as_bool()),
         //通信系
         udp_port_state(get_parameter("port.robot_state").as_int()),
         udp_port_pole(get_parameter("port.pole_share").as_int()),
@@ -126,6 +131,21 @@ namespace controller_interface
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_main, this, std::placeholders::_1)
             );
+            _sub_main_Seedlinghand_possible = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+                "can_rx_212",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_main, this, std::placeholders::_1)
+            );
+            _sub_main_ballhand0_possible = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+                "can_rx_222",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_main, this, std::placeholders::_1)
+            );
+            _sub_main_ballhand1_possible = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+                "can_rx_223",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_main, this, std::placeholders::_1)
+            );
 
             //spline_pidからsub
             _sub_spline = this->create_subscription<std_msgs::msg::Bool>(
@@ -167,9 +187,9 @@ namespace controller_interface
             _pub_con_injection = this->create_publisher<std_msgs::msg::Bool>("injection_convergence_unity", _qos);
 
             //ボールと苗の回収&設置
-            _pub_seedling_collection = this->create_publisher<std_msgs::msg::String>("Seedling_Collection", _qos);
-            _pub_seedling_installation = this->create_publisher<std_msgs::msg::String>("Seedling_Installation", _qos);
-            _pub_ball_collection = this->create_publisher<std_msgs::msg::String>("Ball_Collection", _qos);
+            _pub_seedling_collection = this->create_publisher<std_msgs::msg::Bool>("Seedling_Collection", _qos);
+            _pub_seedling_installation = this->create_publisher<std_msgs::msg::Bool>("Seedling_Installation", _qos);
+            _pub_ball_collection = this->create_publisher<std_msgs::msg::Bool>("Ball_Collection", _qos);
 
 
             //デフォルト値をpub.。各種、boolに初期値を代入。
@@ -229,10 +249,16 @@ namespace controller_interface
             msg_convergence->spline_convergence = defalt_spline_convergence;
             msg_convergence->injection_calculator = defalt_injection_calculator_convergence;
             msg_convergence->injection = defalt_injection_convergence;
+            msg_convergence->seedlinghand = defalt_seedlinghand_convergence;
+            msg_convergence->ballhand0 = defalt_ballhand0_convergence;
+            msg_convergence->ballhand1 = defalt_ballhand1_convergence;
 
             this->spline_convergence = defalt_spline_convergence;
             this->injection_calculator = defalt_injection_calculator_convergence;
             this->injection = defalt_injection_convergence;
+            this->seedlinghand = defalt_seedlinghand_convergence;
+            this->ballhand0 = defalt_ballhand0_convergence;
+            this->ballhand1 = defalt_ballhand1_convergence;
 
             _pub_convergence->publish(*msg_convergence);
 
@@ -286,7 +312,10 @@ namespace controller_interface
                     msg_convergence->spline_convergence = is_spline_convergence;
                     msg_convergence->injection_calculator = is_injection_calculator_convergence;
                     msg_convergence->injection = is_injection_convergence;
-                    
+                    msg_convergence->seedlinghand = is_seedlinghand_convergence;
+                    msg_convergence->ballhand0 = is_ballhand0_convergence;
+                    msg_convergence->ballhand1 = is_ballhand1_convergence;
+
                     _pub_convergence->publish(*msg_convergence);
                 }
             );
@@ -436,6 +465,10 @@ namespace controller_interface
                 is_spline_convergence = defalt_spline_convergence;
                 is_injection_calculator_convergence = defalt_injection_calculator_convergence;
                 is_injection_convergence = defalt_injection_convergence;
+                is_seedlinghand_convergence = defalt_seedlinghand_convergence;
+                is_ballhand0_convergence = defalt_ballhand0_convergence;
+                is_ballhand1_convergence = defalt_ballhand1_convergence;
+                
             }
             //リセットボタンを押しているか確認する
             is_reset = msg->data == "s";
@@ -521,6 +554,7 @@ namespace controller_interface
         void SmartphoneGamepad::callback_screen_pad(const std_msgs::msg::String::SharedPtr msg){
 
             auto msg_sprine_pid = std::make_shared<std_msgs::msg::String>();
+            auto msg_sprine_pid_bool = std::make_shared<std_msgs::msg::Bool>();
             if(msg->data == "A"){
                 RCLCPP_INFO(this->get_logger(), "A");
                 msg_sprine_pid->data = "A";
@@ -629,16 +663,16 @@ namespace controller_interface
             }
             if(msg->data == "Seedling_Collection"){
                 RCLCPP_INFO(this->get_logger(), "Seedling_Collection");
-                msg_sprine_pid->data = "Seedling_Collection";
-                _pub_seedling_collection->publish(*msg_sprine_pid);
+                msg_sprine_pid_bool->data = true;
+                _pub_seedling_collection->publish(*msg_sprine_pid_bool);
             }
             if(msg->data == "Seedling_Installation"){
-                msg_sprine_pid->data = "Seedling_Installation";
-                _pub_seedling_installation->publish(*msg_sprine_pid);
+                msg_sprine_pid_bool->data = true;
+                _pub_seedling_installation->publish(*msg_sprine_pid_bool);
             }
             if(msg->data == "ball_Collection"){
-                msg_sprine_pid->data = "ball_Collection";
-                _pub_ball_collection->publish(*msg_sprine_pid);
+                msg_sprine_pid_bool->data = true;
+                _pub_ball_collection->publish(*msg_sprine_pid_bool);
             }
 
         }
@@ -662,86 +696,111 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_sub_pad(const std_msgs::msg::String::SharedPtr msg){
             auto msg_unity_sub_control = std::make_shared<std_msgs::msg::Bool>();
-            int colordlc = 25;
-            bool color_data[25];
+            int colordlc = 12;
+            bool color_data[12];
 
             if(msg->data == "A_red"){
                 RCLCPP_INFO(this->get_logger(), "color_red_A");
                 color_data[0] = true;
+                msg_colorball_info.color_info[0] = color_data[0];
             }
             if(msg->data == "A_purple"){
-                color_data[1] = false;
+                color_data[0] = false;
                 RCLCPP_INFO(this->get_logger(), "color_purple_A");
+                msg_colorball_info.color_info[0] = color_data[0];
             }
             if(msg->data == "B_red"){
-                color_data[2] = true;
+                color_data[1] = true;
+                msg_colorball_info.color_info[1] = color_data[1];                
             }
             if(msg->data == "B_purple"){
-                color_data[3] = false;
+                color_data[1] = false;
+                msg_colorball_info.color_info[1] = color_data[1];
             }
             if(msg->data == "C_red"){
-                color_data[4] = true;
+                color_data[2] = true;
+                msg_colorball_info.color_info[2] = color_data[2];
             }
             if(msg->data == "C_purple"){
-                color_data[5] = false;
+                color_data[2] = false;
+                msg_colorball_info.color_info[2] = color_data[2];
             }
             if(msg->data == "D_red"){
-                color_data[6] = true;
+                color_data[3] = true;
+                msg_colorball_info.color_info[3] = color_data[3];
             }
             if(msg->data == "D_purple"){
-                color_data[7] = false;
+                color_data[3] = false;
+                msg_colorball_info.color_info[3] = color_data[3];
             }
             if(msg->data == "E_red"){
-                color_data[8] = true;
+                color_data[4] = true;
+                msg_colorball_info.color_info[4] = color_data[4];
             }
             if(msg->data == "E_purple"){
-                color_data[9] = false;
+                color_data[4] = false;
+                msg_colorball_info.color_info[4] = color_data[4];
             }
             if(msg->data == "F_red"){
-                color_data[10] = true;
+                color_data[5] = true;
+                msg_colorball_info.color_info[5] = color_data[5];
             }
             if(msg->data == "F_purple"){
-                color_data[11] = false;
+                color_data[5] = false;
+                msg_colorball_info.color_info[5] = color_data[5];
             }
             if(msg->data == "G_red"){
-                color_data[12] = true;
+                color_data[6] = true;
+                msg_colorball_info.color_info[6] = color_data[6];
             }
             if(msg->data == "G_purple"){
-                color_data[13] = false;
+                color_data[6] = false;
+                msg_colorball_info.color_info[6] = color_data[6];
             }
             if(msg->data == "H_red"){
-                color_data[14] = true;
+                color_data[7] = true;
+                msg_colorball_info.color_info[7] = color_data[7];
             }
             if(msg->data == "H_purple"){
-                color_data[15] = false;
+                color_data[7] = false;
+                msg_colorball_info.color_info[7] = color_data[7];
             }
             if(msg->data == "I_red"){
-                color_data[16] = true;
+                color_data[8] = true;
+                msg_colorball_info.color_info[8] = color_data[8];
             }
             if(msg->data == "I_purple"){
-                color_data[17] = false;
+                color_data[8] = false;
+                msg_colorball_info.color_info[8] = color_data[8];
             }
             if(msg->data == "J_red"){
-                color_data[19] = true;
+                color_data[9] = true;
+                msg_colorball_info.color_info[9] = color_data[9];
             }
             if(msg->data == "J_purple"){
-                color_data[20] = false;
+                color_data[9] = false;
+                msg_colorball_info.color_info[9] = color_data[9];
             }
             if(msg->data == "K_red"){
-                color_data[21] = true;
+                color_data[10] = true;
+                msg_colorball_info.color_info[10] = color_data[10];
             }
             if(msg->data == "K_purple"){
-                color_data[22] = false;
+                color_data[10] = false;
+                msg_colorball_info.color_info[10] = color_data[10];
             }
             if(msg->data == "L_red"){
-                color_data[23] = true;
+                color_data[11] = true;
+                msg_colorball_info.color_info[11] = color_data[11];
             }
             if(msg->data == "L_purple"){
-                color_data[24] = false;
+                color_data[11] = false;
+                msg_colorball_info.color_info[11] = color_data[11];
             }
-            for(int k=0; k<colordlc;k++){
-                msg_colorball_info.color_info[k] = color_data[k];
-            }
+
+            // for(int k=0; k<colordlc;k++){
+            //     msg_colorball_info.color_info[k] = color_data[k];
+            // }
             
             if(msg->data == "Btn_info_msg"){
                 RCLCPP_INFO(this->get_logger(), "color_info_all");
@@ -766,7 +825,13 @@ namespace controller_interface
         {
             ///mainから射出可能司令のsub。上物の収束状況。
             RCLCPP_INFO(this->get_logger(), "can_rx_201");
+            RCLCPP_INFO(this->get_logger(), "can_rx_212");
+            RCLCPP_INFO(this->get_logger(), "can_rx_222");
+            RCLCPP_INFO(this->get_logger(), "can_rx_223");
             is_injection_convergence = static_cast<bool>(msg->candata[0]);
+            is_seedlinghand_convergence = static_cast<bool>(msg->candata[1]);
+            is_ballhand0_convergence = static_cast<bool>(msg->candata[2]);
+            is_ballhand0_convergence = static_cast<bool>(msg->candata[3]);
         }
         //splineからの情報をsubsclib
         void SmartphoneGamepad::callback_spline(const std_msgs::msg::Bool::SharedPtr msg)

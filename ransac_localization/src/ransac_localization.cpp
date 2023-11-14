@@ -150,14 +150,14 @@ namespace self_localization{
     //cout<<"5"<<endl;
     if(msg->is_restart){
       RCLCPP_INFO(this->get_logger(), "RESTART");
-      // if(msg->initial_state=="O"){
-      //   if(court_color == "blue"){
-      //     init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
-      //   }else if(court_color == "red"){
+      if(msg->initial_state=="O"){
+        if(court_color == "blue"){
+          init_pose << initial_pose_[0], initial_pose_[1], initial_pose_[2];
+        }else if(court_color == "red"){
           init_pose << initial_pose_[0], -1.0*initial_pose_[1], initial_pose_[2];
-      //   } 
-      // }
-      // else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
+        } 
+      }
+      else if(msg->initial_state=="P") init_pose << second_initial_pose_[0], second_initial_pose_[1], second_initial_pose_[2];
 
       init_flag=true;
 
