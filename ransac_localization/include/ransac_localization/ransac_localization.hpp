@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <iostream>
@@ -43,11 +42,10 @@ private:
   void callback_scan(const sensor_msgs::msg::LaserScan::SharedPtr msg);
   void callback_odom_linear(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
   void callback_odom_angular(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
-  void load_map_config(vector<LineData> &lines);
+  void load_map_config(vector<LineData> &lines, const string color);
   void init();
   void create_map(vector<LineData> &lines);
   void publishers(vector<LaserPoint> &points);
-  void update(const Vector3d &estimated, const Vector3d &current_scan_odom);
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber;
   rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr odom_linear_subscriber;
@@ -100,6 +98,8 @@ private:
   vector<double> initial_pose_;
   vector<double> second_initial_pose_;
   vector<double> tf_array;
+  string court_color_;
+  string court_color;
 
   const bool plot_mode_;
   const double laser_weight_;

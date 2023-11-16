@@ -14,7 +14,7 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
     package_name = 'gazebo_simulator'
     world_file_name = 'NHK23_court.world'
-    urdf_file_name = 'er.urdf'
+    urdf_file_name = 'er.urdf' 
 
     config_file_path = os.path.join(
         get_package_share_directory('main_executor'),
@@ -24,10 +24,16 @@ def generate_launch_description():
 
     with open(config_file_path, 'r') as file:
         initial_pose = yaml.safe_load(file)['/**']['ros__parameters']['initial_pose']
+        
+    with open(config_file_path, 'r') as file:
+        court_color = yaml.safe_load(file)['/**']['ros__parameters']['court_color']
 
-    # オイラー角からクオータニオンにする - https://ken3susume.com/archives/12958
-    initial_pose_ = 'position: {{x: {:.2f}, y: {:.2f}, z: 0.1}}, orientation: {{x: 0.0, y: 0.0, z: 0.0, w: 1.0}}'.format(initial_pose[0], initial_pose[1], initial_pose[2])
-
+    if court_color == "blue":
+        # オイラー角からクオータニオンにする - https://ken3susume.com/archives/12958
+        initial_pose_ = 'position: {{x: {:.2f}, y: {:.2f}, z: 0.1}}, orientation: {{x: 0.0, y: 0.0, z: 0.0, w: 1.0}}'.format(initial_pose[0], initial_pose[1], initial_pose[2])
+    elif court_color == "red":
+        initial_pose_ = 'position: {{x: {:.2f}, y: {:.2f}, z: 0.1}}, orientation: {{x: 0.0, y: 0.0, z: 0.0, w: 1.0}}'.format(initial_pose[0], -1.0*initial_pose[1], initial_pose[2])
+    
     # full  path to urdf and world file
 
     world = os.path.join(get_package_share_directory(package_name), 'worlds', world_file_name)
