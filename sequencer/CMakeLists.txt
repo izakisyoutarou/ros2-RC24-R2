@@ -9,18 +9,26 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(controller_interface_msg REQUIRED)
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-add_library(sequencer_node src/sequencer_node.cpp)
+add_library(sequencer_node 
+  src/sequencer_node.cpp
+)
 
 target_include_directories(sequencer_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
+  $<INSTALL_INTERFACE:include>
+)
 
 ament_target_dependencies(sequencer_node
   rclcpp
+  std_msgs
+  controller_interface_msg
 )
 
 target_compile_definitions(sequencer_node PRIVATE "SEQUENCER_BUILDING_LIBRARY")
@@ -36,6 +44,7 @@ install(
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
+  DESTINATION include/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
@@ -53,9 +62,11 @@ endif()
 ament_export_include_directories(
   include
 )
+
 ament_export_libraries(
   sequencer_node
 )
+
 ament_export_targets(
   export_${PROJECT_NAME}
 )

@@ -50,8 +50,6 @@ namespace controller_interface
             //mainボードから
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_injection_possible;
 
-
-
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
 
