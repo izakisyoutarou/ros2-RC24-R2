@@ -3,6 +3,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "controller_interface_msg/msg/convergence.hpp"
 #include "controller_interface_msg/msg/colorball.hpp"
 
@@ -32,8 +33,10 @@ private:
     void callback_color_information(const controller_interface_msg::msg::Colorball::SharedPtr msg);
 
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _publisher_in_process;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_node;
 
     void set_in_process(bool flag);
+    void pub_move_node(std::string node);
 
     //QoS
     rclcpp::QoS _qos = rclcpp::QoS(10);
