@@ -10,6 +10,7 @@ find_package(socketcan_interface REQUIRED)
 find_package(controller_interface REQUIRED)
 find_package(injection_interface REQUIRED)
 find_package(ransac_localization REQUIRED)
+find_package(injection_param_calculator REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -21,6 +22,7 @@ ament_target_dependencies(main_exec
         controller_interface
         injection_interface
         ransac_localization
+        injection_param_calculator
         )
 
 target_include_directories(main_exec
@@ -40,10 +42,10 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
   # uncomment the line when a copyright and license is not present in all source files
-  #set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_copyright_FOUND TRUE)
   # the following line skips cpplint (only works in a git repo)
   # uncomment the line when this package is not in a git repo
-  #set(ament_cmake_cpplint_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
