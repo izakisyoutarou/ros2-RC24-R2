@@ -14,6 +14,7 @@ find_package(ransac_localization REQUIRED)
 find_package(controller_interface REQUIRED)
 find_package(injection_interface REQUIRED)
 find_package(sequencer REQUIRED)
+find_package(injection_param_calculator REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -28,6 +29,7 @@ ament_target_dependencies(main_exec
         injection_interface
         ransac_localization
         sequencer
+        injection_param_calculator
         )
 
 target_include_directories(main_exec
