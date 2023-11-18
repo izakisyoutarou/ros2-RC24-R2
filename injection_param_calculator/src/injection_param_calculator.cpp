@@ -14,7 +14,6 @@ namespace injection_param_calculator
           velocity_lim_max(get_parameter("velocity_lim_max").as_double()),                          // 最大初速度[m/s]
           injection_angle(get_parameter("injection_angle").as_double()),                            // 射出角度[deg]
           max_loop(get_parameter("max_loop").as_int())                                              // ニュートン法のループ制限回数
-        //   singular_point_coefficient(get_parameter("singular_point_coefficient").as_double_array()) // 初期値を求める関数の係数
         {
             _sub_injection_command = this->create_subscription<injection_interface_msg::msg::InjectionCommand>(
                 "parameters", _qos,
@@ -43,30 +42,21 @@ namespace injection_param_calculator
         isConvergenced = calculateVelocity();
         msg_isConvergenced->data = isConvergenced;
 
-        msg_injection->candlc = 8;
+        msg_injection->candlc = 4/*8*/;
 
-            //  送信
-            // uint8_t _candata[8];
-            // float_to_bytes(_candata, static_cast<float>(velocity * injection_command.velocity_gain));
-            // float_to_bytes(_candata + 4, static_cast<float>(injection_command.direction));
-            // for (int i = 0; i < msg_injection->candlc; i++)
-            //     msg_injection->candata[i] = _candata[i];
-            // _pub_isConvergenced->publish(*msg_isConvergenced);
+        //送信
+        uint8_t _candata[4/*8*/];
+        float_to_bytes(_candata, static_cast<float>(velocity/* * injection_command.velocity_gain*/));
+        //float_to_bytes(_candata + 4, static_cast<float>(injection_command.direction));
+        for (int i = 0; i < msg_injection->candlc; i++)msg_injection->candata[i] = _candata[i];
+        _pub_isConvergenced->publish(*msg_isConvergenced);
 
-            if (isConvergenced)
-            {
-                RCLCPP_INFO(get_logger(), "計算が収束しました");
-                _pub_can->publish(*msg_injection);
-            }
+        if (isConvergenced)
+        {
+            RCLCPP_INFO(get_logger(), "計算が収束しました");
+            _pub_can->publish(*msg_injection);
+        }
     }
-
-    // double InjectionParamCalculator::calculateFirstVelocity()
-    // {
-    //     double first_velocity;
-    //     first_velocity = singular_point_coefficient[0] * injection_command.distance + singular_point_coefficient[1];
-    //     first_velocity = round(first_velocity);
-    //     return first_velocity;
-    // }
 
     // void InjectionParamCalculator::callback_is_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg)
     // {
@@ -78,14 +68,7 @@ namespace injection_param_calculator
         bool isConvergenced = false;
         bool isAiming = false;
         int num_loop = 0;
-        double old_velocity = 1 /*calculateFirstVelocity()*/;
-
-        // if (!(yaw_limit[0] < injection_command.direction && injection_command.direction < yaw_limit[1]))
-        // {
-        //     RCLCPP_INFO(get_logger(), " 範囲外です!");
-        //     isConvergenced = false;
-        //     return isConvergenced;
-        // }
+        double old_velocity = 1;
 
         while (!isAiming)
         {
