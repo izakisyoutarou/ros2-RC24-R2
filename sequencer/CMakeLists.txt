@@ -11,6 +11,7 @@ find_package(ament_cmake_ros REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(controller_interface_msg REQUIRED)
+find_package(socketcan_interface_msg REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -29,6 +30,7 @@ ament_target_dependencies(sequencer_node
   rclcpp
   std_msgs
   controller_interface_msg
+  socketcan_interface_msg
 )
 
 target_compile_definitions(sequencer_node PRIVATE "SEQUENCER_BUILDING_LIBRARY")

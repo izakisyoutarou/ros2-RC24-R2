@@ -24,21 +24,34 @@ launch: #起動パラメータ
     angular_max_jer: 0.0
     
     canid:
+      #000番台(根幹情報)
       emergency: 0x000
       heartbeat: 0x001
       restart: 0x002
+      calibrate: 0x003
+      #100番台(足回り)
       linear: 0x100
       angular: 0x101
       odom_linear: 0x110
       odom_angular: 0x111
-      init_angular: 0x120
-      movable: 0x130
-      inject: 0x200
-      injectable: 0x201
-      cancel_inject: 0x202
-      calculatable: 0x203
-      main_digital_button: 0x220
-      sub_digital_button: 0x221
+      steer_reset: 0x120
+      #200番台(上物)
+      #射出
+      inject_spinning: 0x200
+      inject: 0x201
+      inject_vel: 0x202
+      inject_convergence: 0x203
+      #苗
+      seedling_collect: 0x210
+      seedling_install: 0x211
+      seedling_convergence: 0x212
+      #籾
+      paddy_collect: 0x220
+      paddy_install: 0x221
+      paddy_convergence: 0x222
+      #デジタルボタン
+      main_digital_button: 0x230
+      sub_digital_button: 0x231
         
     port:
       joy_main: 50000
@@ -49,7 +62,6 @@ launch: #起動パラメータ
     ip:
       r1_pc: "192.168.1.2"
       r2_pc: "192.168.1.3"
-
 
 spline_pid_node:
   ros__parameters:
@@ -130,6 +142,9 @@ rasnac_localization:
     inlier_dist_threshold: 0.01
     inlier_length_threshold: 1.0 #インライアのしきい値
 
-sequencer:
+sequencer_node:
   ros__parameters:
-    seedling_order: true
+    select_algorithm: 0
+    seedling_order: ["S0", "S1", "S2", "S3"]
+    planting_order: ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7"]
+    harvesting_order: ["H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11"]
