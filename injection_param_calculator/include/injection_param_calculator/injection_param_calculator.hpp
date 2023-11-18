@@ -19,7 +19,6 @@ namespace injection_param_calculator
     private:
         rclcpp::Subscription<injection_interface_msg::msg::InjectionCommand>::SharedPtr _sub_injection_command;
         rclcpp::QoS _qos = rclcpp::QoS(10);
-
         rclcpp::Subscription<controller_interface_msg::msg::Convergence>::SharedPtr _sub_is_convergence; // convergence == 収束
 
         rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_can;
@@ -35,7 +34,6 @@ namespace injection_param_calculator
         injection_interface_msg::msg::InjectionCommand injection_command;
         double velocity;
 
-        // const std::vector<double> singular_point_coefficient; // 初期値を求める関数の係数 //コメント化してた
         const double mass;                                    // リングの重量[kg]
         const double gravitational_accelerastion;             // 重力加速度[m/s^2]
         const double air_resistance;                          // 空気抵抗係数[kg/s]
