@@ -31,6 +31,7 @@ set(dependencies
   socketcan_interface_msg
   controller_interface_msg
   Eigen3
+  std_msgs
 )
 
 include_directories(ransac_localization

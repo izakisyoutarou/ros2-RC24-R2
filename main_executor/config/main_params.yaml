@@ -2,14 +2,15 @@ launch: #起動パラメータ
   ros__parameters:
     slcan: false
     scan: false
-    tcp_endpoint: false
     trajectory_planner: true
+    
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
-    initial_pose: [0.35, 1.25, 0.0]  #初期位置[x,y,yaw]
+    initial_pose: [0.35, 0.5, 0.0]  #初期位置[x,y,yaw]
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
-    tf_laser2robot: [0.1975,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    tf_laser2robot: [0.3,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    court_color: "red" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
     linear_max_vel: 3.0
@@ -21,13 +22,16 @@ launch: #起動パラメータ
     angular_max_acc: 230.0
     angular_max_dec: 230.0
     angular_max_jer: 0.0
-
+    
     canid:
       emergency: 0x000
       heartbeat: 0x001
       restart: 0x002
       linear: 0x100
       angular: 0x101
+      odom_linear: 0x110
+      odom_angular: 0x111
+      init_angular: 0x120
       movable: 0x130
       inject: 0x200
       injectable: 0x201
@@ -35,10 +39,7 @@ launch: #起動パラメータ
       calculatable: 0x203
       main_digital_button: 0x220
       sub_digital_button: 0x221
-      odom_linear: 0x110
-      odom_angular: 0x111
-      init_angular: 0x120
-      
+        
     port:
       joy_main: 50000
       pole_share: 53000
@@ -48,6 +49,29 @@ launch: #起動パラメータ
     ip:
       r1_pc: "192.168.1.2"
       r2_pc: "192.168.1.3"
+
+
+spline_pid_node:
+  ros__parameters:
+    interval_ms: 20     #サイクル周期[ms]
+    curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
+    linear_planner_vel_limit_gain: 0.6  #速度計画機の速度上限値にかけるゲイン
+
+    linear_planner_gain: 0.1 #並進速度計画機ゲイン
+    linear_pos_gain: 10.0  #並進位置ズレのゲイン
+    linear_pos_diff_gain: 1.0
+    linear_pos_integral_gain: 0.03  #並進位置ズレの積分ゲイン
+
+    angular_planner_gain: 1.0 #回転速度計画機ゲイン
+    angular_pos_gain: 2.3 #回転位置ズレのゲイン
+    angular_pos_integral_gain: 0.03  #回転位置ズレの積分ゲイン
+
+    linear_pos_tolerance: 0.03  #並進到達位置の許容誤差[m]
+    angular_pos_tolerance: 3.0  #回転到達位置の許容誤差[deg]
+
+spline_trajectories_node:
+  ros__parameters:
+    resolution: 0.01  #起動点の分解能[m]
 
 controller_interface_node:
   ros__parameters:
@@ -82,6 +106,9 @@ controller_interface_node:
     defalt_spline_convergence: false
     defalt_injection_calculator_convergence: false
     defalt_injection_convergence: false
+    defalt_seedlinghand_convergence: false
+    defalt_ballhand0_convergence: false
+    defalt_ballhand1_convergence: false
 
     initial_pickup_state: "A"
     initial_inject_state: "B"
@@ -94,15 +121,14 @@ injection_interface_node:
 
 rasnac_localization:
   ros__parameters:
-    robot_type: "R1"
-    plot_mode: false
-    laser_weight: 1.0 #lidarの重み
-    odom_weight_liner: 1.0e-2
+    plot_mode: true #実機のときはfalse
+    laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
+    odom_weight_liner: 1.0e-5 #値が大きくなると共分散が小さくなる
     odom_weight_angler: 1.0e-5
     voxel_size: 0.05
     trial_num: 40
     inlier_dist_threshold: 0.01
-    inlier_length_threshold: 0.6
+    inlier_length_threshold: 1.0 #インライアのしきい値
 
 injection_param_calculator_node:
   ros__parameters:

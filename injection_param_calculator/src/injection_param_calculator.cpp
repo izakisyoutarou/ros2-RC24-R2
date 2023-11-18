@@ -35,19 +35,17 @@ namespace injection_param_calculator
         auto msg_isConvergenced = std::make_shared<std_msgs::msg::Bool>();
         bool isConvergenced = false;
         injection_command.distance = msg->distance;
-        // injection_command.direction = msg->direction;
         injection_command.height = msg->height;
         // injection_command.velocity_gain = msg->velocity_gain; //実験して使うか決める
 
         isConvergenced = calculateVelocity();
         msg_isConvergenced->data = isConvergenced;
 
-        msg_injection->candlc = 4/*8*/;
+        msg_injection->candlc = 4;
 
         //送信
-        uint8_t _candata[4/*8*/];
-        float_to_bytes(_candata, static_cast<float>(velocity/* * injection_command.velocity_gain*/));
-        //float_to_bytes(_candata + 4, static_cast<float>(injection_command.direction));
+        uint8_t _candata[4];
+        float_to_bytes(_candata, static_cast<float>(velocity));
         for (int i = 0; i < msg_injection->candlc; i++)msg_injection->candata[i] = _candata[i];
         _pub_isConvergenced->publish(*msg_isConvergenced);
 

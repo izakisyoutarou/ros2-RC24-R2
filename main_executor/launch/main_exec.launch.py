@@ -21,11 +21,11 @@ def generate_launch_description():
         'urg_node2.launch.py'
     )
     # USB CAN起動ファイルのパス設定
-    slcan_launch_path = os.path.join(
-        get_package_share_directory('socketcan_interface'),
-        'config',
-        'slcan_add.sh'
-    )
+    # slcan_launch_path = os.path.join(
+    #     get_package_share_directory('socketcan_interface'),
+    #     'config',
+    #     'slcan_add.sh'
+    # )
 
     # 起動パラメータファイルのロード
     with open(config_file_path, 'r') as file:
@@ -43,6 +43,14 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([urg_launch_path])
     )
 
+    # 軌道計画機ノードの作成
+    trajectory_planner_node = Node(
+        package = 'spline_pid',
+        executable = 'R1_trajectories.py',
+        parameters= [config_file_path],
+        output='screen'
+    )
+
     # 起動エンティティクラスの作成
     launch_discription = LaunchDescription()
 
@@ -51,7 +59,9 @@ def generate_launch_description():
         subprocess.run(['sudo', 'sh', slcan_launch_path])
     if(launch_params['scan'] is True):
         launch_discription.add_entity(urg_launch)
-
+    if(launch_params['trajectory_planner'] is True):
+        launch_discription.add_entity(trajectory_planner_node)
+        
     launch_discription.add_entity(main_exec_node)
 
     return launch_discription

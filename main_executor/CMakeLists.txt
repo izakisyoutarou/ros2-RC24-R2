@@ -7,9 +7,12 @@ endif()
 
 find_package(rclcpp REQUIRED)
 find_package(socketcan_interface REQUIRED)
+find_package(spline_pid REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(utilities REQUIRED)
+find_package(ransac_localization REQUIRED)
 find_package(controller_interface REQUIRED)
 find_package(injection_interface REQUIRED)
-find_package(ransac_localization REQUIRED)
 find_package(injection_param_calculator REQUIRED)
 
 add_executable(main_exec
@@ -19,9 +22,10 @@ add_executable(main_exec
 ament_target_dependencies(main_exec
         rclcpp
         socketcan_interface
+        spline_pid
+        ransac_localization
         controller_interface
         injection_interface
-        ransac_localization
         injection_param_calculator
         )
 
@@ -50,7 +54,8 @@ if(BUILD_TESTING)
 endif()
 
 install(DIRECTORY launch config
- DESTINATION share/${PROJECT_NAME})
+        DESTINATION share/${PROJECT_NAME}
+        )
 
 install(TARGETS
         main_exec
