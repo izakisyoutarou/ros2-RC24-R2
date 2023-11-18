@@ -4,6 +4,7 @@
 #include "controller_interface/controller_interface_node.hpp"
 #include "injection_interface/injection_interface_node.hpp"
 #include "ransac_localization/ransac_localization.hpp"
+#include "injection_param_calculator/injection_param_calculator.hpp"
 #include <iostream>
 
 int main(int argc, char * argv[]){
@@ -16,13 +17,16 @@ int main(int argc, char * argv[]){
 
     auto controller_node = std::make_shared<controller_interface::SmartphoneGamepad>(nodes_option);
     auto injection_interface_node = std::make_shared<injection_interface::InjectionInterface>(nodes_option);
-    //auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
+    auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
     auto ransac_localization = std::make_shared<self_localization::ransaclocalization>(nodes_option);
+    auto injection_param_calculator_node = std::make_shared<injection_param_calculator::InjectionParamCalculator>(nodes_option);
 
     exec.add_node(controller_node);
     exec.add_node(injection_interface_node);
-    //exec.add_node(socketcan_node);
+    exec.add_node(socketcan_node);
     exec.add_node(ransac_localization);
+    exec.add_node(injection_param_calculator_node);
+
 
     exec.spin();
     rclcpp::shutdown();
