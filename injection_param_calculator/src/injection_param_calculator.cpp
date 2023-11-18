@@ -27,6 +27,7 @@ namespace injection_param_calculator
             // );
 
             _pub_can = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
+            _pub_isConvergenced = this->create_publisher<std_msgs::msg::Bool>("calculator_convergenced_", _qos);
             RCLCPP_INFO(this->get_logger(), "create injection_param");
         }
     void InjectionParamCalculator::callback_injection(const injection_interface_msg::msg::InjectionCommand::SharedPtr msg)
@@ -41,7 +42,7 @@ namespace injection_param_calculator
         isConvergenced = calculateVelocity();
         msg_isConvergenced->data = isConvergenced;
 
-        msg_injection->candlc = 4;
+        msg_injection->candlc = 8;
 
         //送信
         uint8_t _candata[4];
