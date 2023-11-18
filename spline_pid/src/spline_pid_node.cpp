@@ -45,7 +45,7 @@ init_angular:
         std::bind(&SplinePid::_subscriber_callback_path, this, std::placeholders::_1)
     );
     _subscription_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
-        "pub_base_control",
+        "base_control",
         _qos,
         std::bind(&SplinePid::_subscriber_callback_base_control, this, std::placeholders::_1)
     );
