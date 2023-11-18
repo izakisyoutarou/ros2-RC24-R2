@@ -42,6 +42,12 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
 
     );
 
+    _subscription_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+        "base_control",
+        _qos,
+        std::bind(&Sequencer::_subscriber_callback_base_control, this, std::placeholders::_1)
+    );
+
     _publisher_in_process = this->create_publisher<std_msgs::msg::Bool>("in_process", _qos);
     _publisher_move_node = this->create_publisher<std_msgs::msg::String>("move_node", _qos);
 
@@ -76,7 +82,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         int n  = 0;
         if(sequence_process == n++) {
             RCLCPP_INFO(this->get_logger(), "苗回収シーケンス[%s]_起動", seedling_order[seedling_step].c_str());
-            pub_move_node(seedling_order[seedling_step]);
+            set_move_node(seedling_order[seedling_step]);
             sequence_process++;
         }
         else if(sequence_process == n++ && msg->spline_convergence){
@@ -91,7 +97,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         int n  = 0;
         if(sequence_process == n++) {
             RCLCPP_INFO(this->get_logger(), "苗設置シーケンス[%s]_起動", planting_order[planting_step].c_str());
-            pub_move_node(planting_order[planting_step]);
+            set_move_node(planting_order[planting_step]);
             sequence_process++;
         }
         else if(sequence_process == n++ && msg->spline_convergence){
@@ -106,7 +112,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         int n  = 0;
         if(sequence_process == n++) {
             RCLCPP_INFO(this->get_logger(), "籾回収シーケンス[%s]_起動", harvesting_order[harvesting_step].c_str());
-            pub_move_node(harvesting_order[harvesting_step]);
+            set_move_node(harvesting_order[harvesting_step]);
             sequence_process++;
         }
         else if(sequence_process == n++ && msg->spline_convergence){
@@ -150,6 +156,13 @@ void Sequencer::callback_color_information(const controller_interface_msg::msg::
     }
 }
 
+void Sequencer::_subscriber_callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
+    if(msg->is_restart){
+            set_in_process(false);
+            sequence_mode = SEQUENCE_MODE::stop;
+    }
+}
+
 void Sequencer::set_in_process(bool flag){
     auto msg_in_process = std::make_shared<std_msgs::msg::Bool>();
     msg_in_process->data = flag;
@@ -158,7 +171,7 @@ void Sequencer::set_in_process(bool flag){
     sequence_process = 0;
 }
 
-void Sequencer::pub_move_node(std::string node){
+void Sequencer::set_move_node(std::string node){
     auto msg_move_node = std::make_shared<std_msgs::msg::String>();
     msg_move_node->data = node;
     _publisher_move_node->publish(*msg_move_node);
