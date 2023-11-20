@@ -1,3 +1,0 @@
-#!/usr/bin/env python3
-
-from spline_pid.import_module import ....
