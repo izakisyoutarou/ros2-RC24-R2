@@ -34,7 +34,6 @@ int main(int argc, char * argv[]){
     exec.add_node(spline_pid_node);   
     exec.add_node(injection_param_calculator_node);
 
-
     exec.spin();
     rclcpp::shutdown();
     return 0;
