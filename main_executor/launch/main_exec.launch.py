@@ -21,11 +21,11 @@ def generate_launch_description():
         'urg_node2.launch.py'
     )
     # USB CAN起動ファイルのパス設定
-    # slcan_launch_path = os.path.join(
-    #     get_package_share_directory('socketcan_interface'),
-    #     'config',
-    #     'slcan_add.sh'
-    # )
+    slcan_launch_path = os.path.join(
+        get_package_share_directory('socketcan_interface'),
+        'config',
+        'slcan_add.sh'
+    )
 
     # 起動パラメータファイルのロード
     with open(config_file_path, 'r') as file:

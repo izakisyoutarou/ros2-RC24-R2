@@ -3,6 +3,7 @@
 #include "socketcan_interface/socketcan_interface_node.hpp"
 #include "spline_pid/spline_pid_node.hpp"
 #include "ransac_localization/ransac_localization.hpp"
+#include "logger_converter/logger_converter_node.hpp"
 #include <iostream>
 
 int main(int argc, char * argv[]){
@@ -16,10 +17,12 @@ int main(int argc, char * argv[]){
     auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
     auto ransac_localization = std::make_shared<self_localization::ransaclocalization>(nodes_option);
     auto spline_pid_node = std::make_shared<spline_pid::SplinePid>(nodes_option);
+    auto logger_converter_node = std::make_shared<logger_converter::LoggerConverter>(nodes_option);
 
     exec.add_node(socketcan_node);
     exec.add_node(ransac_localization);
-    exec.add_node(spline_pid_node);   
+    exec.add_node(spline_pid_node);
+    exec.add_node(logger_converter_node);
 
     exec.spin();
     rclcpp::shutdown();
