@@ -142,7 +142,7 @@ namespace controller_interface
             //各nodeへ共有。
             _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("base_control",_qos);
             _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("convergence" , _qos);
-            _pub_color_ball_R2 = this->create_publisher<controller_interface_msg::msg::Colorball>("color_information_R2", _qos);
+            _pub_color_ball_R2 = this->create_publisher<controller_interface_msg::msg::Colorball>("color_ball_R2", _qos);
             _pub_injection = this->create_publisher<std_msgs::msg::Bool>("is_backside", _qos);
             _pub_arm = this->create_publisher<std_msgs::msg::Bool>("arm_info", _qos);
             //sprine_pid
