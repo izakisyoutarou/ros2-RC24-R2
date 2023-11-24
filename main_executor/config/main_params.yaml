@@ -38,14 +38,9 @@ launch: #起動パラメータ
       steer_reset: 0x130
       #200番台(上物)
       #射出
-      inject_spinning: 0x200
-      inject: 0x201
-      inject_vel: 0x202
-      inject_convergence: 0x203
-      #苗
-      seedling_collect: 0x210
-      seedling_install: 0x211
-      seedling_convergence: 0x212
+      arm_collection: 0x200
+      arm_silo: 0x201
+      arm_convergence: 0x202
       #籾
       paddy_collect: 0x220
       paddy_install: 0x221
@@ -111,24 +106,21 @@ controller_interface_node:
     defalt_restart_flag: false
     defalt_emergency_flag: true
     defalt_move_autonomous_flag: true
-    defalt_injection_autonomous_flag: true
+    defalt_arm_autonomous_flag: true
     defalt_slow_speed_flag: true
     defalt_color_information_flag: true
 
     #収束の初期値
     defalt_spline_convergence: false
-    defalt_injection_calculator_convergence: false
-    defalt_injection_convergence: false
-    defalt_seedlinghand_convergence: false
-    defalt_ballhand0_convergence: false
-    defalt_ballhand1_convergence: false
+    defalt_arm_calculator_convergence: false
+    defalt_arm_convergence: false
 
     initial_pickup_state: "A"
     initial_inject_state: "B"
 
-injection_interface_node:
+arm_interface_node:
   ros__parameters:
-    tf_injection2robot: [0.0, 0.0] #射出機構のTF[x, y]
+    tf_arm2robot: [0.0, 0.0] #射出機構のTF[x, y]
     strage_backside: [0.0, 0.0, 0.0] #ストレージエリアの[x, y, 高さ]
     strage_front: [0.1, 0.0, 0.0]
 
