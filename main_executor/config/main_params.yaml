@@ -103,7 +103,7 @@ controller_interface_node:
     start_ms: 3000
     
     #リスタート、緊急、足回りの手自動、上物の手自動、手動の射角、ボタンのカラー情報
-    defalt_restart_flag: false
+    defalt_restart_flag: true
     defalt_emergency_flag: true
     defalt_move_autonomous_flag: true
     defalt_arm_autonomous_flag: true
@@ -111,9 +111,9 @@ controller_interface_node:
     defalt_color_information_flag: true
 
     #収束の初期値
-    defalt_spline_convergence: false
-    defalt_arm_calculator_convergence: false
-    defalt_arm_convergence: false
+    defalt_spline_convergence: true
+    defalt_arm_calculator_convergence: true
+    defalt_arm_convergence: true
 
     initial_pickup_state: "A"
     initial_inject_state: "B"

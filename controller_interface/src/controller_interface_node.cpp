@@ -496,6 +496,8 @@ namespace controller_interface
                 start_flag = true;
                 start_r2_main = false;
             }
+            msg_emergency->candata[0] = is_emergency;
+            
             if(msg->data=="g")
             {
                 _pub_canusb->publish(*msg_emergency);
