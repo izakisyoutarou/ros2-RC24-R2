@@ -11,6 +11,7 @@ find_package(spline_pid REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(utilities REQUIRED)
 find_package(ransac_localization REQUIRED)
+find_package(controller_interface REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -21,6 +22,7 @@ ament_target_dependencies(main_exec
         socketcan_interface
         spline_pid
         ransac_localization
+        controller_interface
         )
 
 target_include_directories(main_exec
