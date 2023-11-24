@@ -41,10 +41,6 @@ launch: #起動パラメータ
       arm_collection: 0x200
       arm_silo: 0x201
       arm_convergence: 0x202
-      #苗
-      seedling_collect: 0x210
-      seedling_install: 0x211
-      seedling_convergence: 0x212
       #籾
       paddy_collect: 0x220
       paddy_install: 0x221
