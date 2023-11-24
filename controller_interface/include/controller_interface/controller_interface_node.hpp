@@ -47,7 +47,7 @@ namespace controller_interface
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_pad_sub;
 
             //mainボードから
-            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_injection_possible;
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_arm_possible;
 
 
 
@@ -55,10 +55,10 @@ namespace controller_interface
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
 
 
-            //injection_param_calculatorから
-            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_injection_calculator;
+            //arm_param_calculatorから
+            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_arm_calculator;
             //sequencerから
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_injection_strange;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_arm_strange;
 
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_collection_ball;
 
@@ -69,7 +69,7 @@ namespace controller_interface
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
             rclcpp::Publisher<controller_interface_msg::msg::Colorball>::SharedPtr _pub_color_ball_R2;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_injection;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_arm;
             //ボールと苗の回収&設置
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_collection;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_installation;
@@ -84,17 +84,16 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_restart;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_emergency;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_move_auto;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_injection;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_arm;
             
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_spline;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_colcurator;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_injection;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_arm;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_arm;
             //arm情報
 
 
             //sprine_pid
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_sprine_pid;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_move_node;
 
             //timer
             rclcpp::TimerBase::SharedPtr _pub_heartbeat;
@@ -116,18 +115,18 @@ namespace controller_interface
 
             //mainからのcallback
             void callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
-            void callback_injection_complete(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+            void callback_arm_complete(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
 
             //splineからのcallback
             void callback_spline(const std_msgs::msg::Bool::SharedPtr msg);
 
-            //injection_param_calculatorからのcallback
-            void callback_injection_calculator(const std_msgs::msg::Bool::SharedPtr msg);
+            //arm_param_calculatorからのcallback
+            void callback_arm_calculator(const std_msgs::msg::Bool::SharedPtr msg);
             //void callback_calculator_convergenced_arm(const std_msgs::Bool::SharedPtr msg);
             void callback_initial_state(const std_msgs::msg::String::SharedPtr msg);
 
             //sequencerからのcallback
-            void callback_injection_strage(const std_msgs::msg::String::SharedPtr msg);
+            void callback_arm_strage(const std_msgs::msg::String::SharedPtr msg);
             void callback_collecting_ball(const std_msgs::msg::String::SharedPtr msg);
             void _recv_callback();
 
@@ -146,9 +145,8 @@ namespace controller_interface
             bool is_reset = false;
             bool is_emergency = false;
             bool is_move_autonomous = false;
-            bool is_injection_autonomous = false;
+            bool is_arm_autonomous = false;
             bool is_slow_speed = false;
-            bool is_injection_mech_stop_m = false;
             bool is_arm_mech_stop_m = false;
             std::string initial_state = "";
 
@@ -156,15 +154,14 @@ namespace controller_interface
             bool is_reset_unity = false;
             bool is_emergency_unity = false;
             bool is_move_autonomous_unity = false;
-            bool is_injection_autonomous_unity = false;
+            bool is_arm_autonomous_unity = false;
             bool is_slow_speed_unity = false;
-            bool is_injection_mech_stop_m_unity = false;
+            bool is_arm_mech_stop_m_unity = false;
             std::string initial_state_unity = "";
             
             bool spline_convergence = false;
-            bool injection_calculator = false;
-            bool injection = false;
-            bool injection_flag = false;
+            bool arm_calculator = false;
+            bool arm = false;
             bool arm_flag = false;
 
 
@@ -190,8 +187,8 @@ namespace controller_interface
 
             //convergence用
             bool is_spline_convergence;
-            bool is_injection_calculator_convergence;
-            bool is_injection_convergence;
+            bool is_arm_calculator_convergence;
+            bool is_arm_convergence;
 
             //初期化指定用
             const float high_manual_linear_max_vel;
@@ -200,15 +197,15 @@ namespace controller_interface
             
             const bool defalt_restart_flag;
             const bool defalt_move_autonomous_flag;
-            const bool defalt_injection_autonomous_flag;
+            const bool defalt_arm_autonomous_flag;
             const bool defalt_emergency_flag;
             const bool defalt_slow_speed_flag;
             //subcontrollerのカラー情報
             const bool defalt_color_information_flag;
 
             const bool defalt_spline_convergence;
-            const bool defalt_injection_calculator_convergence;
-            const bool defalt_injection_convergence;
+            const bool defalt_arm_calculator_convergence;
+            const bool defalt_arm_convergence;
             
             const int16_t can_emergency_id;
             const int16_t can_heartbeat_id;
@@ -217,6 +214,8 @@ namespace controller_interface
             const int16_t can_angular_id;
             const int16_t can_main_button_id;
             const int16_t can_sub_button_id;
+            const int16_t can_arm_silo_id;
+            const int16_t can_arm_collection_id;
 
             const std::string r1_pc;
             const std::string r2_pc;

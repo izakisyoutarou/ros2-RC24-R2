@@ -47,19 +47,23 @@ namespace controller_interface
         //自動化のパラメータを取得
         defalt_move_autonomous_flag(get_parameter("defalt_move_autonomous_flag").as_bool()),
         //自動射出パラメータを取得
-        defalt_injection_autonomous_flag(get_parameter("defalt_injection_autonomous_flag").as_bool()),
+        defalt_arm_autonomous_flag(get_parameter("defalt_arm_autonomous_flag").as_bool()),
         //低速モードのパラメータを取得
         defalt_slow_speed_flag(get_parameter("defalt_slow_speed_flag").as_bool()),
         //ボールの色情報を取得
         defalt_color_information_flag(get_parameter("defalt_color_information_flag").as_bool()),
 
+
+
+
+
+
         //足回りが目標の値まで移動して停止した状態を保存するための変数
         //要するに収束の確認
         defalt_spline_convergence(get_parameter("defalt_spline_convergence").as_bool()),
-
-        defalt_injection_calculator_convergence(get_parameter("defalt_injection_calculator_convergence").as_bool()),
+        defalt_arm_calculator_convergence(get_parameter("defalt_arm_calculator_convergence").as_bool()),
         //射出のyaw軸が目標の値まで移動して停止した状態を保存するための変数
-        defalt_injection_convergence(get_parameter("defalt_injection_convergence").as_bool()),        
+        defalt_arm_convergence(get_parameter("defalt_arm_convergence").as_bool()),        
         //通信系
         udp_port_state(get_parameter("port.robot_state").as_int()),
         udp_port_pole(get_parameter("port.pole_share").as_int()),
@@ -74,6 +78,8 @@ namespace controller_interface
         can_angular_id(get_parameter("canid.angular").as_int()),
         can_main_button_id(get_parameter("canid.main_digital_button").as_int()),
         can_sub_button_id(get_parameter("canid.sub_digital_button").as_int()),
+        can_arm_silo_id(get_parameter("canid.arm_silo").as_int()),
+        can_arm_collection_id(get_parameter("canid.arm_collection").as_int()),
 
         //ipアドレスの取得
         r1_pc(get_parameter("ip.r1_pc").as_string()),
@@ -115,8 +121,8 @@ namespace controller_interface
             );
 
             //mainからsub
-            _sub_main_injection_possible = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-                "can_rx_201",
+            _sub_main_arm_possible = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+                "can_rx_202",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_main, this, std::placeholders::_1)
             );
@@ -128,25 +134,24 @@ namespace controller_interface
                 std::bind(&SmartphoneGamepad::callback_spline, this, std::placeholders::_1)
             );
 
-            //injection_param_calculatorからsub
-            _sub_injection_calculator = this->create_subscription<std_msgs::msg::Bool>(
-                "is_injection_calculator_convergenced",
+            //arm_param_calculatorからsub
+            _sub_arm_calculator = this->create_subscription<std_msgs::msg::Bool>(
+                "is_arm_calculator_convergenced",
                 _qos,
-                std::bind(&SmartphoneGamepad::callback_injection_calculator, this, std::placeholders::_1)
+                std::bind(&SmartphoneGamepad::callback_arm_calculator, this, std::placeholders::_1)
             );
 
             //canusbへpub
             //txは送信でrxは受信
             _pub_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
-            //injectionへpub
+            //armへpub
             //各nodeへ共有。
             _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("base_control",_qos);
             _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("convergence" , _qos);
-            _pub_color_ball_R2 = this->create_publisher<controller_interface_msg::msg::Colorball>("color_ball_R2", _qos);
-            _pub_injection = this->create_publisher<std_msgs::msg::Bool>("is_backside", _qos);
+            _pub_color_ball_R2 = this->create_publisher<controller_interface_msg::msg::Colorball>("color_information_R2", _qos);
             _pub_arm = this->create_publisher<std_msgs::msg::Bool>("arm_info", _qos);
             //sprine_pid
-            _pub_sprine_pid = this->create_publisher<std_msgs::msg::String>("move_node", _qos);
+            _pub_move_node = this->create_publisher<std_msgs::msg::String>("move_node", _qos);
             //gazebo用のpub
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
@@ -154,17 +159,11 @@ namespace controller_interface
             _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("R2_restart_unity", _qos);
             _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("R2_emergency_unity", _qos);
             _pub_move_auto = this->create_publisher<std_msgs::msg::Bool>("R2_move_autonomous_unity", _qos);
-            _pub_base_injection = this->create_publisher<std_msgs::msg::Bool>("R2_injection_autonomous_unity", _qos);
+            _pub_base_arm = this->create_publisher<std_msgs::msg::Bool>("R2_arm_autonomous_unity", _qos);
 
             _pub_con_spline = this->create_publisher<std_msgs::msg::Bool>("R2_spline_convergence_unity", _qos);
-            _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("R2_injection_calcurator_unity", _qos);
-            _pub_con_injection = this->create_publisher<std_msgs::msg::Bool>("R2_injection_convergence_unity", _qos);
-
-            //ボールと苗の回収&設置
-            _pub_seedling_collection = this->create_publisher<std_msgs::msg::String>("Seedling_Collection", _qos);
-            _pub_seedling_installation = this->create_publisher<std_msgs::msg::String>("Seedling_Installation", _qos);
-            _pub_ball_collection = this->create_publisher<std_msgs::msg::String>("Ball_Collection", _qos);
-
+            _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("R2_arm_calcurator_unity", _qos);
+            _pub_con_arm = this->create_publisher<std_msgs::msg::Bool>("R2_arm_convergence_unity", _qos);
 
             //デフォルト値をpub.。各種、boolに初期値を代入。
             //base_controlのmsgを宣言
@@ -173,7 +172,7 @@ namespace controller_interface
             msg_base_control->is_restart = defalt_restart_flag;
             msg_base_control->is_emergency = defalt_emergency_flag;
             msg_base_control->is_move_autonomous = defalt_move_autonomous_flag;
-            msg_base_control->is_injection_autonomous = defalt_injection_autonomous_flag;
+            msg_base_control->is_arm_autonomous = defalt_arm_autonomous_flag;
             msg_base_control->is_slow_speed = defalt_slow_speed_flag;
             msg_base_control->initial_state = "O";
             //hppファイルに宣言されたbool型の変数に格納
@@ -181,16 +180,11 @@ namespace controller_interface
             this->is_reset = defalt_restart_flag;
             this->is_emergency = defalt_emergency_flag;
             this->is_move_autonomous = defalt_move_autonomous_flag;
-            this->is_injection_autonomous = defalt_injection_autonomous_flag;
+            this->is_arm_autonomous = defalt_arm_autonomous_flag;
             this->is_slow_speed = defalt_slow_speed_flag;
             this->initial_state = "O";
             //格納された値をpublish
             _pub_base_control->publish(*msg_base_control);
-
-            //コンストラクタ限定
-            auto msg_injection_con = std::make_shared<std_msgs::msg::Bool>();
-            msg_injection_con->data = injection_flag;
-            _pub_injection->publish(*msg_injection_con);
 
             //armの初期情報
             auto msg_arm_con = std::make_shared<std_msgs::msg::Bool>();
@@ -211,8 +205,8 @@ namespace controller_interface
             msg_unity_control->data = is_move_autonomous;
             _pub_move_auto->publish(*msg_unity_control);
 
-            msg_unity_control->data = is_injection_autonomous;
-            _pub_base_injection->publish(*msg_unity_control);
+            msg_unity_control->data = is_arm_autonomous;
+            _pub_base_arm->publish(*msg_unity_control);
 
             auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             //get_parametorで取得したパラメータをrc23pkgsのmsgに格納
@@ -226,23 +220,23 @@ namespace controller_interface
             auto msg_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
             //get_parametorで取得したパラメータをrc23pkgsのmsgに格納
             msg_convergence->spline_convergence = defalt_spline_convergence;
-            msg_convergence->injection_calculator = defalt_injection_calculator_convergence;
-            msg_convergence->injection = defalt_injection_convergence;
+            msg_convergence->arm_calculator = defalt_arm_calculator_convergence;
+            msg_convergence->arm = defalt_arm_convergence;
 
             this->spline_convergence = defalt_spline_convergence;
-            this->injection_calculator = defalt_injection_calculator_convergence;
-            this->injection = defalt_injection_convergence;
+            this->arm_calculator = defalt_arm_calculator_convergence;
+            this->arm = defalt_arm_convergence;
 
             _pub_convergence->publish(*msg_convergence);
 
             msg_unity_control->data = spline_convergence;
             _pub_con_spline->publish(*msg_unity_control);
 
-            msg_unity_control->data = injection_calculator;
+            msg_unity_control->data = arm_calculator;
             _pub_con_colcurator->publish(*msg_unity_control);
 
-            msg_unity_control->data = injection;
-            _pub_con_injection->publish(*msg_unity_control);
+            msg_unity_control->data = arm;
+            _pub_con_arm->publish(*msg_unity_control);
 
             auto msg_colorball_info = std::make_shared<controller_interface_msg::msg::Colorball>();
 
@@ -287,8 +281,8 @@ namespace controller_interface
                     auto msg_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
                     //get_parametorで取得したパラメータをrc23pkgsのmsgに格納
                     msg_convergence->spline_convergence = is_spline_convergence;
-                    msg_convergence->injection_calculator = is_injection_calculator_convergence;
-                    msg_convergence->injection = is_injection_convergence;
+                    msg_convergence->arm_calculator = is_arm_calculator_convergence;
+                    msg_convergence->arm = is_arm_convergence;
                     
                     _pub_convergence->publish(*msg_convergence);
                 }
@@ -358,34 +352,50 @@ namespace controller_interface
             //resertがtureをpubした後にfalseをpubする
             bool flag_restart = false;
 
+            auto msg_arm_move = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+            msg_arm_move->canid = can_arm_collection_id;
+            msg_arm_move->candlc = 1;
+
             //rightで射出機構の停止
             if(msg->data == "right"){
                 RCLCPP_INFO(this->get_logger(), "right");
-                robotcontrol_flag = true;
-                if(is_arm_mech_stop_m == true){
-                    is_arm_mech_stop_m = false;
-                }else{
-                    is_arm_mech_stop_m = true;
-                }
+                is_arm_mech_stop_m = true;
+                msg_arm_move->candata[0] = false;
+                _pub_canusb->publish(*msg_arm_move);
             }
 
             //up,downでアームがボールを回収する位置を決める
+            if(msg->data == "left")
+            {
+                if(is_arm_convergence){
+                    auto msg_arm_con = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                    msg_arm_con->canid = can_arm_silo_id;
+                    msg_arm_con->candlc = 0;
+                    _pub_canusb->publish(*msg_arm_con);
+                }
+            }
             auto msg_arm = std::make_shared<std_msgs::msg::Bool>();
+
             if(msg->data == "up")
             {
                 RCLCPP_INFO(this->get_logger(), "up");
-                
                 arm_flag = false;
                 msg_arm->data = arm_flag;
-                _pub_arm ->publish(*msg_arm);
+                _pub_arm->publish(*msg_arm);
+                msg_arm_move->candata[0] = true;
+                _pub_canusb->publish(*msg_arm_move);
+                is_arm_mech_stop_m = false;
             }
+
             if(msg->data == "down")
             {
                 RCLCPP_INFO(this->get_logger(), "down");
-                
                 arm_flag = true;
                 msg_arm->data = arm_flag;
-                _pub_arm ->publish(*msg_arm);
+                _pub_arm->publish(*msg_arm);
+                msg_arm_move->candata[0] = true;
+                _pub_canusb->publish(*msg_arm_move);
+                is_arm_mech_stop_m = false;
             }
             //r2で低速モートのonoff。トグル。
             if(msg->data == "r2")
@@ -432,13 +442,13 @@ namespace controller_interface
                 is_emergency = false;
                 is_arm_mech_stop_m = false;
                 is_move_autonomous = defalt_move_autonomous_flag;
-                is_injection_autonomous = defalt_injection_autonomous_flag;
+                is_arm_autonomous = defalt_arm_autonomous_flag;
                 is_slow_speed = defalt_slow_speed_flag;
                 initial_state = "O";
 
                 is_spline_convergence = defalt_spline_convergence;
-                is_injection_calculator_convergence = defalt_injection_calculator_convergence;
-                is_injection_convergence = defalt_injection_convergence;
+                is_arm_calculator_convergence = defalt_arm_calculator_convergence;
+                is_arm_convergence = defalt_arm_convergence;
             }
             //リセットボタンを押しているか確認する
             is_reset = msg->data == "s";
@@ -447,7 +457,7 @@ namespace controller_interface
             msg_base_control.is_restart = is_reset;
             msg_base_control.is_emergency = is_emergency;
             msg_base_control.is_move_autonomous = is_move_autonomous;
-            msg_base_control.is_injection_autonomous = is_injection_autonomous;
+            msg_base_control.is_arm_autonomous = is_arm_autonomous;
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
             msg_base_control.is_arm_mech_stop_m = is_arm_mech_stop_m;
@@ -494,20 +504,17 @@ namespace controller_interface
             {
                 _pub_base_control->publish(msg_base_control);
 
-                msg_unity_initial_state.data = initial_state_unity;
-                _pub_initial_state->publish(msg_unity_initial_state);
-
-                msg_unity_control.data = is_reset_unity;
+                msg_unity_control.data = is_reset;
                 _pub_base_restart->publish(msg_unity_control);
 
-                msg_unity_control.data = is_emergency_unity;
+                msg_unity_control.data = is_emergency;
                 _pub_base_emergency->publish(msg_unity_control);
 
-                msg_unity_control.data = is_move_autonomous_unity;
+                msg_unity_control.data = is_move_autonomous;
                 _pub_move_auto->publish(msg_unity_control);
 
-                msg_unity_control.data = is_injection_autonomous_unity;
-                _pub_base_injection->publish(msg_unity_control);
+                msg_unity_control.data = is_arm_autonomous;
+                _pub_base_arm->publish(msg_unity_control);
             }
             if(msg->data == "s")
             {
@@ -523,75 +530,75 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_screen_pad(const std_msgs::msg::String::SharedPtr msg){
 
-            auto msg_sprine_pid = std::make_shared<std_msgs::msg::String>();
+            auto msg_move_node = std::make_shared<std_msgs::msg::String>();
             if(msg->data == "A"){
                 RCLCPP_INFO(this->get_logger(), "A");
-                msg_sprine_pid->data = "A";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "A";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "B"){
-                msg_sprine_pid->data = "B";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "B";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "O"){
-                msg_sprine_pid->data = "O";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "O";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "S0"){
-                msg_sprine_pid->data = "S0";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "S0";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "S1"){
-                msg_sprine_pid->data = "S1";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "S1";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "S2"){
-                msg_sprine_pid->data = "S2";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "S2";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "S3"){
-                msg_sprine_pid->data = "S3";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "S3";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "S4"){
-                msg_sprine_pid->data = "S4";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "S4";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST0"){
-                msg_sprine_pid->data = "ST0";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST0";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST1"){
-                msg_sprine_pid->data = "ST1";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST1";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST2"){
-                msg_sprine_pid->data = "ST2";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST2";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST3"){
-                msg_sprine_pid->data = "ST3";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST3";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST4"){
-                msg_sprine_pid->data = "ST4";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST4";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST5"){
-                msg_sprine_pid->data = "ST5";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST5";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST6"){
-                msg_sprine_pid->data = "ST6";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST6";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST7"){
-                msg_sprine_pid->data = "ST7";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST7";
+                _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST8"){
-                msg_sprine_pid->data = "ST8";
-                _pub_sprine_pid->publish(*msg_sprine_pid);
+                msg_move_node->data = "ST8";
+                _pub_move_node->publish(*msg_move_node);
             }
             
         }
@@ -759,27 +766,21 @@ namespace controller_interface
         void SmartphoneGamepad::callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg)
         {
             ///mainから射出可能司令のsub。上物の収束状況。
-            RCLCPP_INFO(this->get_logger(), "can_rx_201");
-            is_injection_convergence = static_cast<bool>(msg->candata[0]);
+            RCLCPP_INFO(this->get_logger(), "can_rx_202");
+            is_arm_convergence = static_cast<bool>(msg->candata[0]);
         }
         //splineからの情報をsubsclib
         void SmartphoneGamepad::callback_spline(const std_msgs::msg::Bool::SharedPtr msg)
         {
-            //spline_pidから足回り収束のsub。足回りの収束状況。
-            if(msg->data == false){
-            is_spline_convergence = true;
-            RCLCPP_INFO(this->get_logger(), "false");
-            }else{
-                is_spline_convergence = false;
-            }
+            is_spline_convergence = msg->data;
         }
-        //injection_param_calculatorの情報をsubscribe
+        //arm_param_calculatorの情報をsubscribe
         //この関数が2つあるのは射出機構が2つあるため
-        void SmartphoneGamepad::callback_injection_calculator(const std_msgs::msg::Bool::SharedPtr msg)
+        void SmartphoneGamepad::callback_arm_calculator(const std_msgs::msg::Bool::SharedPtr msg)
         {
             RCLCPP_INFO(this->get_logger(), "false");
-             //injection_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
-            is_injection_calculator_convergence = msg->data;
+             //arm_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
+            is_arm_calculator_convergence = msg->data;
         }
         //スティックの値をUDP通信でsubscribしている
         void SmartphoneGamepad::_recv_callback()
@@ -875,9 +876,9 @@ namespace controller_interface
                     msg_gazebo->angular.z = velPlanner_angular_z.vel();
                     _pub_gazebo->publish(*msg_gazebo);
                 }
-                // _pub_canusb->publish(*msg_linear);
-                // _pub_canusb->publish(*msg_angular);
-                // _pub_gazebo->publish(*msg_gazebo);
+                _pub_canusb->publish(*msg_linear);
+                _pub_canusb->publish(*msg_angular);
+                _pub_gazebo->publish(*msg_gazebo);
             }
         }
 
