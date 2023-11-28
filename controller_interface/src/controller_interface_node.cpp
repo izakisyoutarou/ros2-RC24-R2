@@ -92,13 +92,13 @@ namespace controller_interface
             //hppファイルでオブジェクト化したpublisherとsubscriberの設定
             //controller_mainからsub
             _sub_main_pad = this->create_subscription<std_msgs::msg::String>(
-                "R2_main_pad",
+                "main_pad",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_main_pad, this, std::placeholders::_1)
             );
 
             _sub_screen_pad = this->create_subscription<std_msgs::msg::String>(
-                "R2SCRN_info",
+                "SCRN_info",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_screen_pad, this, std::placeholders::_1)
             );
@@ -111,7 +111,7 @@ namespace controller_interface
 
             //controller_subからsub
             _sub_pad_sub = this->create_subscription<std_msgs::msg::String>(
-                "R2_sub_pad",
+                "sub_pad",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_sub_pad, this, std::placeholders::_1)
             );
@@ -151,15 +151,15 @@ namespace controller_interface
             //gazebo用のpub
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
-            _pub_initial_state = this->create_publisher<std_msgs::msg::String>("R2_initial_state_unity", _qos);
-            _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("R2_restart_unity", _qos);
-            _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("R2_emergency_unity", _qos);
-            _pub_move_auto = this->create_publisher<std_msgs::msg::Bool>("R2_move_autonomous_unity", _qos);
-            _pub_base_arm = this->create_publisher<std_msgs::msg::Bool>("R2_arm_autonomous_unity", _qos);
+            _pub_initial_state = this->create_publisher<std_msgs::msg::String>("initial_state_unity", _qos);
+            _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("restart_unity", _qos);
+            _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("emergency_unity", _qos);
+            _pub_move_auto = this->create_publisher<std_msgs::msg::Bool>("move_autonomous_unity", _qos);
+            _pub_base_arm = this->create_publisher<std_msgs::msg::Bool>("arm_autonomous_unity", _qos);
 
-            _pub_con_spline = this->create_publisher<std_msgs::msg::Bool>("R2_spline_convergence_unity", _qos);
-            _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("R2_arm_calcurator_unity", _qos);
-            _pub_con_arm = this->create_publisher<std_msgs::msg::Bool>("R2_arm_convergence_unity", _qos);
+            _pub_con_spline = this->create_publisher<std_msgs::msg::Bool>("spline_convergence_unity", _qos);
+            _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("arm_calcurator_unity", _qos);
+            _pub_con_arm = this->create_publisher<std_msgs::msg::Bool>("arm_convergence_unity", _qos);
 
             //デフォルト値をpub.。各種、boolに初期値を代入。
             //base_controlのmsgを宣言
