@@ -53,11 +53,6 @@ namespace controller_interface
         //ボールの色情報を取得
         defalt_color_information_flag(get_parameter("defalt_color_information_flag").as_bool()),
 
-
-
-
-
-
         //足回りが目標の値まで移動して停止した状態を保存するための変数
         //要するに収束の確認
         defalt_spline_convergence(get_parameter("defalt_spline_convergence").as_bool()),
@@ -107,10 +102,11 @@ namespace controller_interface
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_screen_pad, this, std::placeholders::_1)
             );
-            _sub_state_num_R2 = this->create_subscription<std_msgs::msg::String>(
-                "state_num_R2",
+
+            _sub_initial_state = this->create_subscription<std_msgs::msg::String>(
+                "initial_state",
                 _qos,
-                std::bind(&SmartphoneGamepad::callback_state_num_R2, this, std::placeholders::_1)
+                std::bind(&SmartphoneGamepad::callback_initial_state, this, std::placeholders::_1)
             );
 
             //controller_subからsub
@@ -522,6 +518,7 @@ namespace controller_interface
             {
                 _pub_canusb->publish(*msg_restart);
                 _pub_canusb->publish(*msg_emergency);
+
             }
             if(flag_restart == true)
             {
@@ -531,19 +528,17 @@ namespace controller_interface
         }
 
         void SmartphoneGamepad::callback_screen_pad(const std_msgs::msg::String::SharedPtr msg){
-
             auto msg_move_node = std::make_shared<std_msgs::msg::String>();
+            if(msg->data == "O"){
+                msg_move_node->data = "O";
+                _pub_move_node->publish(*msg_move_node);
+            }
             if(msg->data == "A"){
-                RCLCPP_INFO(this->get_logger(), "A");
                 msg_move_node->data = "A";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "B"){
-                msg_move_node->data = "B";
-                _pub_move_node->publish(*msg_move_node);
-            }
-            if(msg->data == "O"){
-                msg_move_node->data = "O";
+            if(msg->data == "c1"){
+                msg_move_node->data = "c1";
                 _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "S0"){
@@ -601,11 +596,8 @@ namespace controller_interface
             if(msg->data == "ST8"){
                 msg_move_node->data = "ST8";
                 _pub_move_node->publish(*msg_move_node);
-            }
-            
+            }   
         }
-
-
 
         void SmartphoneGamepad::callback_sub_pad(const std_msgs::msg::String::SharedPtr msg){
             auto msg_unity_sub_control = std::make_shared<std_msgs::msg::Bool>();
@@ -757,7 +749,11 @@ namespace controller_interface
         void SmartphoneGamepad::callback_initial_state(const std_msgs::msg::String::SharedPtr msg)
         {
             initial_state = msg->data[0];
+            auto msg_unity_initial_state = std::make_shared<std_msgs::msg::String>();
+            msg_unity_initial_state->data = initial_state;
+            _pub_initial_state->publish(*msg_unity_initial_state);
         }
+        
         //コントローラから回収情報をsubscribe
         void SmartphoneGamepad::callback_state_num_R2(const std_msgs::msg::String::SharedPtr msg)
         {
@@ -771,6 +767,7 @@ namespace controller_interface
             RCLCPP_INFO(this->get_logger(), "can_rx_202");
             is_arm_convergence = static_cast<bool>(msg->candata[0]);
         }
+
         //splineからの情報をsubsclib
         void SmartphoneGamepad::callback_spline(const std_msgs::msg::Bool::SharedPtr msg)
         {
@@ -778,12 +775,14 @@ namespace controller_interface
         }
         //arm_param_calculatorの情報をsubscribe
         //この関数が2つあるのは射出機構が2つあるため
+
         void SmartphoneGamepad::callback_arm_calculator(const std_msgs::msg::Bool::SharedPtr msg)
         {
             RCLCPP_INFO(this->get_logger(), "false");
              //arm_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
             is_arm_calculator_convergence = msg->data;
         }
+
         //スティックの値をUDP通信でsubscribしている
         void SmartphoneGamepad::_recv_callback()
         {
@@ -795,6 +794,7 @@ namespace controller_interface
                 _recv_joy_main(joy_main.data(data, sizeof(data)));
             }
         }
+
         //ジョイスティックの値
         void SmartphoneGamepad::_recv_joy_main(const unsigned char data[16])
         {
@@ -838,9 +838,6 @@ namespace controller_interface
 
                     float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
-                    //canusbに速度、回転、加速度の値をpublish
-                    _pub_canusb->publish(*msg_linear);
-                    _pub_canusb->publish(*msg_angular);
                     
                     //msg_gazeboに速度計画機の値を格納
                     msg_gazebo->linear.x = slow_velPlanner_linear_x.vel();
@@ -870,9 +867,6 @@ namespace controller_interface
                     float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
-                    _pub_canusb->publish(*msg_linear);
-                    _pub_canusb->publish(*msg_angular);
-                    
                     msg_gazebo->linear.x = high_velPlanner_linear_x.vel();
                     msg_gazebo->linear.y = high_velPlanner_linear_y.vel();
                     msg_gazebo->angular.z = velPlanner_angular_z.vel();

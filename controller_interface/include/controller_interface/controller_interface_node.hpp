@@ -42,6 +42,7 @@ namespace controller_interface
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_main_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_screen_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_state_num_R2;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_initial_state;
 
             //R2_subのcontrollerから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_pad_sub;
@@ -49,11 +50,8 @@ namespace controller_interface
             //mainボードから
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_arm_possible;
 
-
-
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
-
 
             //arm_param_calculatorから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_arm_calculator;
