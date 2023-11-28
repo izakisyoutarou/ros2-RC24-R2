@@ -1,13 +1,13 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: false
-    scan: false
-    trajectory_planner: false
+    slcan: true
+    scan: true
+    trajectory_planner: true
     
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
-    initial_pose: [0.35, 0.5, 0.0]  #初期位置[x,y,yaw]
+    initial_pose: [0.5, 0.5, 0.0]  #初期位置[x,y,yaw]
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
     tf_laser2robot: [0.3,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
     court_color: "red" #コート情報
