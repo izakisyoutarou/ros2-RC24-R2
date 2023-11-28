@@ -440,7 +440,6 @@ namespace controller_interface
                 is_move_autonomous = defalt_move_autonomous_flag;
                 is_arm_autonomous = defalt_arm_autonomous_flag;
                 is_slow_speed = defalt_slow_speed_flag;
-                initial_state = "O";
 
                 is_spline_convergence = defalt_spline_convergence;
                 is_arm_calculator_convergence = defalt_arm_calculator_convergence;
@@ -456,7 +455,7 @@ namespace controller_interface
             msg_base_control.is_arm_autonomous = is_arm_autonomous;
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
-            msg_base_control.is_arm_mech_stop_m = is_arm_mech_stop_m;
+            msg_base_control.is_arm_mech_stop_m = is_arm_mech_stop_m;           
 
             //mainへボタン情報を送る代入
             if(msg->data == "a")_candata_btn[0] = a;
@@ -541,24 +540,24 @@ namespace controller_interface
                 msg_move_node->data = "c1";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S0"){
-                msg_move_node->data = "S0";
+            if(msg->data == "SI0"){
+                msg_move_node->data = "SI0";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S1"){
-                msg_move_node->data = "S1";
+            if(msg->data == "SI1"){
+                msg_move_node->data = "SI1";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S2"){
-                msg_move_node->data = "S2";
+            if(msg->data == "SI2"){
+                msg_move_node->data = "SI2";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S3"){
-                msg_move_node->data = "S3";
+            if(msg->data == "SI3"){
+                msg_move_node->data = "SI3";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S4"){
-                msg_move_node->data = "S4";
+            if(msg->data == "SI4"){
+                msg_move_node->data = "SI4";
                 _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST0"){
