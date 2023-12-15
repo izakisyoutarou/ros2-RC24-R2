@@ -49,14 +49,11 @@ namespace controller_interface
             //mainボードから
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_arm_possible;
 
-
-
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
 
-
             //arm_param_calculatorから
-            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_arm_calculator;
+            // rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_arm_calculator;
             //sequencerから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_arm_strange;
 
@@ -75,7 +72,6 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_installation;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_ball_collection;
             
-
             //gazebo_simulator用のpub
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
 
@@ -90,7 +86,6 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_colcurator;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_arm;
             //arm情報
-
 
             //sprine_pid
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_move_node;
@@ -115,14 +110,14 @@ namespace controller_interface
 
             //mainからのcallback
             void callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
-            void callback_arm_complete(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+            // void callback_arm_complete(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
 
             //splineからのcallback
             void callback_spline(const std_msgs::msg::Bool::SharedPtr msg);
 
             //arm_param_calculatorからのcallback
-            void callback_arm_calculator(const std_msgs::msg::Bool::SharedPtr msg);
-            //void callback_calculator_convergenced_arm(const std_msgs::Bool::SharedPtr msg);
+            // void callback_arm_calculator(const std_msgs::msg::Bool::SharedPtr msg);
+            // void callback_calculator_convergenced_arm(const std_msgs::Bool::SharedPtr msg);
             void callback_initial_state(const std_msgs::msg::String::SharedPtr msg);
 
             //sequencerからのcallback
@@ -183,11 +178,9 @@ namespace controller_interface
             bool down;
             bool right;
 
-
-
             //convergence用
             bool is_spline_convergence;
-            bool is_arm_calculator_convergence;
+            // bool is_arm_calculator_convergence;
             bool is_arm_convergence;
 
             //初期化指定用
@@ -210,12 +203,14 @@ namespace controller_interface
             const int16_t can_emergency_id;
             const int16_t can_heartbeat_id;
             const int16_t can_restart_id;
+            const int16_t can_calibrate_id;
+            const int16_t can_reset_id;
             const int16_t can_linear_id;
             const int16_t can_angular_id;
+            const int16_t can_steer_reset_id;
+            const int16_t can_paddy_collect_id;
+            const int16_t can_paddy_install_id;
             const int16_t can_main_button_id;
-            const int16_t can_sub_button_id;
-            const int16_t can_arm_silo_id;
-            const int16_t can_arm_collection_id;
 
             const std::string r1_pc;
             const std::string r2_pc;

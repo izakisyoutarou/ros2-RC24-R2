@@ -53,11 +53,6 @@ namespace controller_interface
         //ボールの色情報を取得
         defalt_color_information_flag(get_parameter("defalt_color_information_flag").as_bool()),
 
-
-
-
-
-
         //足回りが目標の値まで移動して停止した状態を保存するための変数
         //要するに収束の確認
         defalt_spline_convergence(get_parameter("defalt_spline_convergence").as_bool()),
@@ -74,12 +69,14 @@ namespace controller_interface
         can_emergency_id(get_parameter("canid.emergency").as_int()),
         can_heartbeat_id(get_parameter("canid.heartbeat").as_int()),
         can_restart_id(get_parameter("canid.restart").as_int()),
+        can_calibrate_id(get_parameter("canid.calibrate").as_int()),
+        can_reset_id(get_parameter("canid.reset").as_int()),
         can_linear_id(get_parameter("canid.linear").as_int()),
         can_angular_id(get_parameter("canid.angular").as_int()),
-        can_main_button_id(get_parameter("canid.main_digital_button").as_int()),
-        can_sub_button_id(get_parameter("canid.sub_digital_button").as_int()),
-        can_arm_silo_id(get_parameter("canid.arm_silo").as_int()),
-        can_arm_collection_id(get_parameter("canid.arm_collection").as_int()),
+        can_steer_reset_id(get_parameter("canid.steer_reset").as_int()),
+        can_paddy_collect_id(get_parameter("canid.paddy_collect").as_int()),
+        can_paddy_install_id(get_parameter("canid.paddy_install").as_int()),
+        can_main_button_id(get_parameter("canid.main_button").as_int()),
 
         //ipアドレスの取得
         r1_pc(get_parameter("ip.r1_pc").as_string()),
@@ -97,13 +94,13 @@ namespace controller_interface
             //hppファイルでオブジェクト化したpublisherとsubscriberの設定
             //controller_mainからsub
             _sub_main_pad = this->create_subscription<std_msgs::msg::String>(
-                "R2_main_pad",
+                "main_pad",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_main_pad, this, std::placeholders::_1)
             );
 
             _sub_screen_pad = this->create_subscription<std_msgs::msg::String>(
-                "R2SCRN_info",
+                "SCRN_info",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_screen_pad, this, std::placeholders::_1)
             );
@@ -115,7 +112,7 @@ namespace controller_interface
 
             //controller_subからsub
             _sub_pad_sub = this->create_subscription<std_msgs::msg::String>(
-                "R2_sub_pad",
+                "sub_pad",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_sub_pad, this, std::placeholders::_1)
             );
@@ -134,12 +131,12 @@ namespace controller_interface
                 std::bind(&SmartphoneGamepad::callback_spline, this, std::placeholders::_1)
             );
 
-            //arm_param_calculatorからsub
-            _sub_arm_calculator = this->create_subscription<std_msgs::msg::Bool>(
-                "is_arm_calculator_convergenced",
-                _qos,
-                std::bind(&SmartphoneGamepad::callback_arm_calculator, this, std::placeholders::_1)
-            );
+            // //arm_param_calculatorからsub
+            // _sub_arm_calculator = this->create_subscription<std_msgs::msg::Bool>(
+            //     "is_arm_calculator_convergenced",
+            //     _qos,
+            //     std::bind(&SmartphoneGamepad::callback_arm_calculator, this, std::placeholders::_1)
+            // );
 
             //canusbへpub
             //txは送信でrxは受信
@@ -281,7 +278,7 @@ namespace controller_interface
                     auto msg_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
                     //get_parametorで取得したパラメータをrc23pkgsのmsgに格納
                     msg_convergence->spline_convergence = is_spline_convergence;
-                    msg_convergence->arm_calculator = is_arm_calculator_convergence;
+                    // msg_convergence->arm_calculator = is_arm_calculator_convergence;
                     msg_convergence->arm = is_arm_convergence;
                     
                     _pub_convergence->publish(*msg_convergence);
@@ -352,54 +349,110 @@ namespace controller_interface
             //resertがtureをpubした後にfalseをpubする
             bool flag_restart = false;
 
-            auto msg_arm_move = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_arm_move->canid = can_arm_collection_id;
-            msg_arm_move->candlc = 1;
+            //gは緊急。is_emergencyを使って、トグルになるようにしてる。
+            if(msg->data == "g"){
+                RCLCPP_INFO(this->get_logger(), "g");
+                robotcontrol_flag = true;
+                is_emergency = true;                
+            }
 
-            //rightで射出機構の停止
+            //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
+            //msgがsだったときのみ以下の変数にパラメータが代入される
+            if(msg->data == "s")
+            {
+                RCLCPP_INFO(this->get_logger(), "s");
+                robotcontrol_flag = true;
+                flag_restart = true;
+                is_emergency = false;
+                is_move_autonomous = defalt_move_autonomous_flag;
+                is_arm_autonomous = defalt_arm_autonomous_flag;
+                is_slow_speed = defalt_slow_speed_flag;
+                initial_state = "O";
+
+                is_spline_convergence = defalt_spline_convergence;
+                // is_arm_calculator_convergence = defalt_arm_calculator_convergence;
+                is_arm_convergence = defalt_arm_convergence;
+            }
+
+            //ステアリセット
+            if(msg->data == "up"){
+                RCLCPP_INFO(this->get_logger(), "up");
+                auto msg_steer_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                msg_steer_reset->canid = can_steer_reset_id;
+                msg_steer_reset->candlc = 0;
+                _pub_canusb->publish(*msg_steer_reset);
+            }
+
+            //キャリブレーション
+            if(msg->data == "down"){
+                RCLCPP_INFO(this->get_logger(), "down");
+                auto msg_calibrate = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                msg_calibrate->canid = can_calibrate_id;
+                msg_calibrate->candlc = 0;
+                _pub_canusb->publish(*msg_calibrate);
+            }
+
+            if(msg->data == "left"){
+                RCLCPP_INFO(this->get_logger(), "left");
+                auto msg_main_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                msg_main_reset->canid = can_reset_id;
+                msg_main_reset->candlc = 1;
+                msg_main_reset->candata[0] = 0;
+                _pub_canusb->publish(*msg_main_reset);
+            }
+
+            //キャリブレーション
             if(msg->data == "right"){
                 RCLCPP_INFO(this->get_logger(), "right");
-                is_arm_mech_stop_m = true;
-                msg_arm_move->candata[0] = false;
-                _pub_canusb->publish(*msg_arm_move);
+                auto msg_io_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                msg_io_reset->canid = can_reset_id;
+                msg_io_reset->candlc = 1;
+                msg_io_reset->candata[0] = 1;
+                _pub_canusb->publish(*msg_io_reset);
             }
 
-            //up,downでアームがボールを回収する位置を決める
-            if(msg->data == "left")
-            {
-                if(is_arm_convergence){
-                    auto msg_arm_con = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-                    msg_arm_con->canid = can_arm_silo_id;
-                    msg_arm_con->candlc = 0;
-                    _pub_canusb->publish(*msg_arm_con);
+            if(msg->data == "a"){
+                RCLCPP_INFO(this->get_logger(), "a");
+                if(!is_arm_convergence){
+                    auto msg_paddy_install = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                    msg_paddy_install->canid = can_paddy_install_id;
+                    msg_paddy_install->candlc = 0;
+                    _pub_canusb->publish(*msg_paddy_install);     
+                } 
+            }
+
+            if(msg->data == "b"){
+                RCLCPP_INFO(this->get_logger(), "b");
+                if(!is_arm_convergence){
+                    auto msg_paddy_collect = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                    msg_paddy_collect->canid = can_paddy_collect_id;
+                    msg_paddy_collect->candlc = 1;
+                    msg_paddy_collect->candata[0] = 0;
+                    _pub_canusb->publish(*msg_paddy_collect);
                 }
             }
-            auto msg_arm = std::make_shared<std_msgs::msg::Bool>();
-
-            if(msg->data == "up")
-            {
-                RCLCPP_INFO(this->get_logger(), "up");
-                arm_flag = false;
-                msg_arm->data = arm_flag;
-                _pub_arm->publish(*msg_arm);
-                msg_arm_move->candata[0] = true;
-                _pub_canusb->publish(*msg_arm_move);
-                is_arm_mech_stop_m = false;
+            
+            if(msg->data == "x"){
+                RCLCPP_INFO(this->get_logger(), "x");
+                if(!is_arm_convergence){
+                    auto msg_paddy_collect = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                    msg_paddy_collect->canid = can_paddy_collect_id;
+                    msg_paddy_collect->candlc = 1;
+                    msg_paddy_collect->candata[0] = 1;
+                    _pub_canusb->publish(*msg_paddy_collect);
+                }
+            }
+            
+            if(msg->data == "y"){
+                RCLCPP_INFO(this->get_logger(), "y");
             }
 
-            if(msg->data == "down")
-            {
-                RCLCPP_INFO(this->get_logger(), "down");
-                arm_flag = true;
-                msg_arm->data = arm_flag;
-                _pub_arm->publish(*msg_arm);
-                msg_arm_move->candata[0] = true;
-                _pub_canusb->publish(*msg_arm_move);
-                is_arm_mech_stop_m = false;
+            if(msg->data == "r1"){
+                RCLCPP_INFO(this->get_logger(), "r1");
             }
+
             //r2で低速モートのonoff。トグル。
-            if(msg->data == "r2")
-            {
+            if(msg->data == "r2"){
                 RCLCPP_INFO(this->get_logger(), "r2");
                 robotcontrol_flag = true;
                 if(is_slow_speed == true ){
@@ -408,9 +461,9 @@ namespace controller_interface
                     is_slow_speed = true;
                 }
             }
+
             //r3は足回りの手自動の切り替え。is_move_autonomousを使って、トグルになるようにしてる。R1の上物からもらう必要はない。
-            if(msg->data == "r3")
-            {
+            if(msg->data == "r3"){
                 RCLCPP_INFO(this->get_logger(), "r3");
                 robotcontrol_flag = true;
                 if(is_move_autonomous == false){
@@ -420,36 +473,21 @@ namespace controller_interface
                     is_move_autonomous = false;
                 }
             }
+
+            if(msg->data == "l1"){
+                RCLCPP_INFO(this->get_logger(), "l1");
+            }
+
+            if(msg->data == "l2"){
+                RCLCPP_INFO(this->get_logger(), "l2");
+            }
+
             //l3でR1の状態確認
-            if(msg->data == "l3")
-            {
+            if(msg->data == "l3"){
                 RCLCPP_INFO(this->get_logger(), "l3");
                 start_r2_main = true;
             }
-            //gは緊急。is_emergencyを使って、トグルになるようにしてる。
-            if(msg->data == "g"){
-                RCLCPP_INFO(this->get_logger(), "g");
-                robotcontrol_flag = true;
-                is_emergency = true;                
-            }
-            //sはリスタート。緊急と手自動のboolをfalseにしてリセットしている。
-            //msgがsだったときのみ以下の変数にパラメータが代入される
-            if(msg->data == "s")
-            {
-                RCLCPP_INFO(this->get_logger(), "s");
-                robotcontrol_flag = true;
-                flag_restart = true;
-                is_emergency = false;
-                is_arm_mech_stop_m = false;
-                is_move_autonomous = defalt_move_autonomous_flag;
-                is_arm_autonomous = defalt_arm_autonomous_flag;
-                is_slow_speed = defalt_slow_speed_flag;
-                initial_state = "O";
 
-                is_spline_convergence = defalt_spline_convergence;
-                is_arm_calculator_convergence = defalt_arm_calculator_convergence;
-                is_arm_convergence = defalt_arm_convergence;
-            }
             //リセットボタンを押しているか確認する
             is_reset = msg->data == "s";
 
@@ -460,17 +498,16 @@ namespace controller_interface
             msg_base_control.is_arm_autonomous = is_arm_autonomous;
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
-            msg_base_control.is_arm_mech_stop_m = is_arm_mech_stop_m;
 
             //mainへボタン情報を送る代入
-            if(msg->data == "a")_candata_btn[0] = a;
-            if(msg->data == "b")_candata_btn[1] = b;
-            if(msg->data == "x")_candata_btn[2] = y;
-            if(msg->data == "y")_candata_btn[3] = x;
-            if(msg->data == "rigit")_candata_btn[4] = right;
-            if(msg->data == "left")_candata_btn[5] = down;
-            if(msg->data == "down")_candata_btn[6] = left;
-            if(msg->data == "up")_candata_btn[7] = up;
+            // if(msg->data == "a")_candata_btn[0] = a;
+            // if(msg->data == "b")_candata_btn[1] = b;
+            // if(msg->data == "x")_candata_btn[2] = y;
+            // if(msg->data == "y")_candata_btn[3] = x;
+            // if(msg->data == "rigit")_candata_btn[4] = right;
+            // if(msg->data == "left")_candata_btn[5] = down;
+            // if(msg->data == "down")_candata_btn[6] = left;
+            // if(msg->data == "up")_candata_btn[7] = up;
             
             for(int i=0; i<msg_btn->candlc; i++){
                 msg_btn->candata[i] = _candata_btn[i];
@@ -774,14 +811,14 @@ namespace controller_interface
         {
             is_spline_convergence = msg->data;
         }
-        //arm_param_calculatorの情報をsubscribe
-        //この関数が2つあるのは射出機構が2つあるため
-        void SmartphoneGamepad::callback_arm_calculator(const std_msgs::msg::Bool::SharedPtr msg)
-        {
-            RCLCPP_INFO(this->get_logger(), "false");
-             //arm_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
-            is_arm_calculator_convergence = msg->data;
-        }
+        // //arm_param_calculatorの情報をsubscribe
+        // //この関数が2つあるのは射出機構が2つあるため
+        // void SmartphoneGamepad::callback_arm_calculator(const std_msgs::msg::Bool::SharedPtr msg)
+        // {
+        //     RCLCPP_INFO(this->get_logger(), "false");
+        //      //arm_calculatorから上モノ指令値計算収束のsub。上物の指令値の収束情報。
+        //     is_arm_calculator_convergence = msg->data;
+        // }
         //スティックの値をUDP通信でsubscribしている
         void SmartphoneGamepad::_recv_callback()
         {

@@ -29,6 +29,7 @@ launch: #起動パラメータ
       heartbeat: 0x001
       restart: 0x002
       calibrate: 0x003
+      reset: 0x004
       #100番台(足回り)
       linear: 0x100
       angular: 0x101
@@ -37,17 +38,11 @@ launch: #起動パラメータ
       init_angular: 0x120
       steer_reset: 0x130
       #200番台(上物)
-      #射出
-      arm_collection: 0x200
-      arm_silo: 0x201
-      arm_convergence: 0x202
-      #籾
-      paddy_collect: 0x220
-      paddy_install: 0x221
-      paddy_convergence: 0x222
+      #ハンド
+      paddy_collect: 0x200
+      paddy_install: 0x201
       #デジタルボタン
-      main_digital_button: 0x230
-      sub_digital_button: 0x231
+      main_button: 0x230
         
     port:
       joy_main: 50000
