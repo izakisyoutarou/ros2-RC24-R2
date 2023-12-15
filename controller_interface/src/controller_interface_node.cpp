@@ -104,10 +104,11 @@ namespace controller_interface
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_screen_pad, this, std::placeholders::_1)
             );
-            _sub_state_num_R2 = this->create_subscription<std_msgs::msg::String>(
-                "state_num_R2",
+
+            _sub_initial_state = this->create_subscription<std_msgs::msg::String>(
+                "initial_state",
                 _qos,
-                std::bind(&SmartphoneGamepad::callback_state_num_R2, this, std::placeholders::_1)
+                std::bind(&SmartphoneGamepad::callback_initial_state, this, std::placeholders::_1)
             );
 
             //controller_subからsub
@@ -152,15 +153,15 @@ namespace controller_interface
             //gazebo用のpub
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
-            _pub_initial_state = this->create_publisher<std_msgs::msg::String>("R2_initial_state_unity", _qos);
-            _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("R2_restart_unity", _qos);
-            _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("R2_emergency_unity", _qos);
-            _pub_move_auto = this->create_publisher<std_msgs::msg::Bool>("R2_move_autonomous_unity", _qos);
-            _pub_base_arm = this->create_publisher<std_msgs::msg::Bool>("R2_arm_autonomous_unity", _qos);
+            _pub_initial_state = this->create_publisher<std_msgs::msg::String>("initial_state_unity", _qos);
+            _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("restart_unity", _qos);
+            _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("emergency_unity", _qos);
+            _pub_move_auto = this->create_publisher<std_msgs::msg::Bool>("move_autonomous_unity", _qos);
+            _pub_base_arm = this->create_publisher<std_msgs::msg::Bool>("arm_autonomous_unity", _qos);
 
-            _pub_con_spline = this->create_publisher<std_msgs::msg::Bool>("R2_spline_convergence_unity", _qos);
-            _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("R2_arm_calcurator_unity", _qos);
-            _pub_con_arm = this->create_publisher<std_msgs::msg::Bool>("R2_arm_convergence_unity", _qos);
+            _pub_con_spline = this->create_publisher<std_msgs::msg::Bool>("spline_convergence_unity", _qos);
+            _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("arm_calcurator_unity", _qos);
+            _pub_con_arm = this->create_publisher<std_msgs::msg::Bool>("arm_convergence_unity", _qos);
 
             //デフォルト値をpub.。各種、boolに初期値を代入。
             //base_controlのmsgを宣言
@@ -533,6 +534,8 @@ namespace controller_interface
                 start_flag = true;
                 start_r2_main = false;
             }
+            msg_emergency->candata[0] = is_emergency;
+            
             if(msg->data=="g")
             {
                 _pub_canusb->publish(*msg_emergency);
@@ -557,6 +560,7 @@ namespace controller_interface
             {
                 _pub_canusb->publish(*msg_restart);
                 _pub_canusb->publish(*msg_emergency);
+
             }
             if(flag_restart == true)
             {
@@ -566,39 +570,37 @@ namespace controller_interface
         }
 
         void SmartphoneGamepad::callback_screen_pad(const std_msgs::msg::String::SharedPtr msg){
-
             auto msg_move_node = std::make_shared<std_msgs::msg::String>();
-            if(msg->data == "A"){
-                RCLCPP_INFO(this->get_logger(), "A");
-                msg_move_node->data = "A";
-                _pub_move_node->publish(*msg_move_node);
-            }
-            if(msg->data == "B"){
-                msg_move_node->data = "B";
-                _pub_move_node->publish(*msg_move_node);
-            }
             if(msg->data == "O"){
                 msg_move_node->data = "O";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S0"){
-                msg_move_node->data = "S0";
+            if(msg->data == "A"){
+                msg_move_node->data = "A";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S1"){
-                msg_move_node->data = "S1";
+            if(msg->data == "c1"){
+                msg_move_node->data = "c1";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S2"){
-                msg_move_node->data = "S2";
+            if(msg->data == "SI0"){
+                msg_move_node->data = "SI0";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S3"){
-                msg_move_node->data = "S3";
+            if(msg->data == "SI1"){
+                msg_move_node->data = "SI1";
                 _pub_move_node->publish(*msg_move_node);
             }
-            if(msg->data == "S4"){
-                msg_move_node->data = "S4";
+            if(msg->data == "SI2"){
+                msg_move_node->data = "SI2";
+                _pub_move_node->publish(*msg_move_node);
+            }
+            if(msg->data == "SI3"){
+                msg_move_node->data = "SI3";
+                _pub_move_node->publish(*msg_move_node);
+            }
+            if(msg->data == "SI4"){
+                msg_move_node->data = "SI4";
                 _pub_move_node->publish(*msg_move_node);
             }
             if(msg->data == "ST0"){
@@ -636,11 +638,8 @@ namespace controller_interface
             if(msg->data == "ST8"){
                 msg_move_node->data = "ST8";
                 _pub_move_node->publish(*msg_move_node);
-            }
-            
+            }   
         }
-
-
 
         void SmartphoneGamepad::callback_sub_pad(const std_msgs::msg::String::SharedPtr msg){
             auto msg_unity_sub_control = std::make_shared<std_msgs::msg::Bool>();
@@ -792,7 +791,11 @@ namespace controller_interface
         void SmartphoneGamepad::callback_initial_state(const std_msgs::msg::String::SharedPtr msg)
         {
             initial_state = msg->data[0];
+            auto msg_unity_initial_state = std::make_shared<std_msgs::msg::String>();
+            msg_unity_initial_state->data = initial_state;
+            _pub_initial_state->publish(*msg_unity_initial_state);
         }
+        
         //コントローラから回収情報をsubscribe
         void SmartphoneGamepad::callback_state_num_R2(const std_msgs::msg::String::SharedPtr msg)
         {
@@ -806,6 +809,7 @@ namespace controller_interface
             RCLCPP_INFO(this->get_logger(), "can_rx_202");
             is_arm_convergence = static_cast<bool>(msg->candata[0]);
         }
+
         //splineからの情報をsubsclib
         void SmartphoneGamepad::callback_spline(const std_msgs::msg::Bool::SharedPtr msg)
         {
@@ -830,6 +834,7 @@ namespace controller_interface
                 _recv_joy_main(joy_main.data(data, sizeof(data)));
             }
         }
+
         //ジョイスティックの値
         void SmartphoneGamepad::_recv_joy_main(const unsigned char data[16])
         {
@@ -873,9 +878,6 @@ namespace controller_interface
 
                     float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
-                    //canusbに速度、回転、加速度の値をpublish
-                    _pub_canusb->publish(*msg_linear);
-                    _pub_canusb->publish(*msg_angular);
                     
                     //msg_gazeboに速度計画機の値を格納
                     msg_gazebo->linear.x = slow_velPlanner_linear_x.vel();
@@ -905,9 +907,6 @@ namespace controller_interface
                     float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
-                    _pub_canusb->publish(*msg_linear);
-                    _pub_canusb->publish(*msg_angular);
-                    
                     msg_gazebo->linear.x = high_velPlanner_linear_x.vel();
                     msg_gazebo->linear.y = high_velPlanner_linear_y.vel();
                     msg_gazebo->angular.z = velPlanner_angular_z.vel();
