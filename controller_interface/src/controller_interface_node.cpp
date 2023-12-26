@@ -392,9 +392,9 @@ namespace controller_interface
                 msg_calibrate->candlc = 0;
                 _pub_canusb->publish(*msg_calibrate);
             }
-
-            if(msg->data == "left"){
-                RCLCPP_INFO(this->get_logger(), "left");
+            //main基盤リセット
+            if(msg->data == "right"){
+                RCLCPP_INFO(this->get_logger(), "right");
                 auto msg_main_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                 msg_main_reset->canid = can_reset_id;
                 msg_main_reset->candlc = 1;
@@ -402,9 +402,9 @@ namespace controller_interface
                 _pub_canusb->publish(*msg_main_reset);
             }
 
-            //キャリブレーション
-            if(msg->data == "right"){
-                RCLCPP_INFO(this->get_logger(), "right");
+            //IO基盤リセット
+            if(msg->data == "left"){
+                RCLCPP_INFO(this->get_logger(), "left");
                 auto msg_io_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                 msg_io_reset->canid = can_reset_id;
                 msg_io_reset->candlc = 1;
