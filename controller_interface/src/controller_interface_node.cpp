@@ -90,6 +90,7 @@ namespace controller_interface
             //収束の状態を確認するための周期
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
             const auto convergence_ms = this->get_parameter("convergence_ms").as_int();
+            const auto base_state_communication_ms = this->get_parameter("base_state_communication_ms").as_int();
 
             //hppファイルでオブジェクト化したpublisherとsubscriberの設定
             //controller_mainからsub
@@ -158,6 +159,7 @@ namespace controller_interface
             _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("emergency_unity", _qos);
             _pub_move_auto = this->create_publisher<std_msgs::msg::Bool>("move_autonomous_unity", _qos);
             _pub_base_arm = this->create_publisher<std_msgs::msg::Bool>("arm_autonomous_unity", _qos);
+            _pub_base_state_communication = this->create_publisher<std_msgs::msg::Empty>("state_communication_unity" , _qos);
 
             _pub_con_spline = this->create_publisher<std_msgs::msg::Bool>("spline_convergence_unity", _qos);
             _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("arm_calcurator_unity", _qos);
@@ -267,6 +269,14 @@ namespace controller_interface
                     msg_heartbeat->canid = can_heartbeat_id;
                     msg_heartbeat->candlc = 0;
                     _pub_canusb->publish(*msg_heartbeat);
+                }
+            );
+            //スマホコントローラとの通信状況を確認
+            _pub_state_communication_timer = create_wall_timer(
+                std::chrono::milliseconds(base_state_communication_ms),
+                [this] {
+                    auto msg_base_state_communication = std::make_shared<std_msgs::msg::Empty>();
+                    _pub_base_state_communication->publish(*msg_base_state_communication);
                 }
             );
 

@@ -86,7 +86,7 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_spline;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_colcurator;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_arm;
-            //arm情報
+            rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_base_state_communication;
 
             //sprine_pid
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_move_node;
@@ -96,6 +96,8 @@ namespace controller_interface
             rclcpp::TimerBase::SharedPtr _pub_timer_convergence;
             rclcpp::TimerBase::SharedPtr _socket_timer;
             rclcpp::TimerBase::SharedPtr _start_timer;
+            rclcpp::TimerBase::SharedPtr _pub_state_communication_timer;
+
 
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
