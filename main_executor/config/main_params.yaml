@@ -94,6 +94,8 @@ controller_interface_node:
     heartbeat_ms: 100 #ハートビート周期[ms]
     convergence_ms: 100 #収束周期[ms]
 
+    base_state_communication_ms: 100
+
     interval_ms: 50
     start_ms: 3000
     
