@@ -33,8 +33,9 @@ launch: #起動パラメータ
       #100番台(足回り)
       linear: 0x100
       angular: 0x101
-      odom_linear: 0x110
-      odom_angular: 0x111
+      odom_linear_x: 0x110
+      odom_linear_y: 0x111
+      odom_angular: 0x112
       init_angular: 0x120
       steer_reset: 0x130
       #200番台(上物)
