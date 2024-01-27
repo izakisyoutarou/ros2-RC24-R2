@@ -1,8 +1,8 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: false
-    scan: false
-    trajectory_planner: false
+    slcan: true
+    scan: true
+    trajectory_planner: true
     
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
@@ -33,8 +33,9 @@ launch: #起動パラメータ
       #100番台(足回り)
       linear: 0x100
       angular: 0x101
-      odom_linear: 0x110
-      odom_angular: 0x111
+      odom_linear_x: 0x110
+      odom_linear_y: 0x111
+      odom_angular: 0x112
       init_angular: 0x120
       steer_reset: 0x130
       #200番台(上物)
@@ -124,13 +125,13 @@ arm_interface_node:
 rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
-    laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 1.0e-2 #値が大きくなると共分散が小さくなる
+    laser_weight: 0.7 #lidarの重み->値を大きくするとlidarが優先される
+    odom_weight_liner: 1.0e-4 #値が大きくなると共分散が小さくなる
     odom_weight_angler: 1.0e-5
     voxel_size: 0.03
     trial_num: 50
-    inlier_dist_threshold: 0.013
-    inlier_length_threshold: 0.6 #インライアのしきい値
+    inlier_dist_threshold: 0.015
+    inlier_length_threshold: 0.7 #インライアのしきい値
 
 sequencer_node:
   ros__parameters:
