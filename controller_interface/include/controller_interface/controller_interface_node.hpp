@@ -17,9 +17,6 @@
 #include "socket_udp.hpp"
 #include "trapezoidal_velocity_planner.hpp"
 
-#include "send_udp.hpp"
-#include "super_command.hpp"
-
 #include "visibility_control.h"
 
 
@@ -58,6 +55,8 @@ namespace controller_interface
             //sequencerから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_arm_strange;
 
+            
+
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_collection_ball;
 
             //CanUsbへ
@@ -72,6 +71,9 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_collection;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_installation;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_ball_collection;
+
+            //sequenserから他のノードへ
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_initial_sequense;
             
             //gazebo_simulator用のpub
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
@@ -106,7 +108,6 @@ namespace controller_interface
             void callback_main_pad(const std_msgs::msg::String::SharedPtr msg);
             void callback_screen_pad(const std_msgs::msg::String::SharedPtr msg);
             void callback_coatstate_pad(const std_msgs::msg::Bool::SharedPtr msg);
-            void callback_state_num_R2(const std_msgs::msg::String::SharedPtr msg);
 
             //controller_subからのcallback
             void callback_sub_pad(const std_msgs::msg::String::SharedPtr msg);
@@ -241,9 +242,6 @@ namespace controller_interface
 
             VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
-
-            send_udp send;
-            super_command command;
 
             RecvUDP joy_main;
     };

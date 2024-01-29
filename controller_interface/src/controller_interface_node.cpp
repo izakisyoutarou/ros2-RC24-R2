@@ -154,6 +154,9 @@ namespace controller_interface
             //gazebo用のpub
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
+            //sequenserへ
+            _pub_initial_sequense = this->create_publisher<std_msgs::msg::String>("initial_sequense", _qos);
+
             _pub_initial_state = this->create_publisher<std_msgs::msg::String>("initial_state_unity", _qos);
             _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("restart_unity", _qos);
             _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("emergency_unity", _qos);
@@ -310,15 +313,9 @@ namespace controller_interface
                 [this] {
                     if(start_flag)
                     {
-                        const string initial_inject_state_with_null = initial_inject_state + '\0';
-                        //c_strがポインタを返すためアスタリスクをつける
-                        const char* char_ptr2 = initial_inject_state_with_null.c_str();
-                        //reinterpret_castでポインタ型の変換
-                        //char_ptr2をconst unsigned charに置き換える
-                        const unsigned char* inject = reinterpret_cast<const unsigned char*>(char_ptr2);
-                        //commandクラスのudp通信で一番最初に回収するデータをコントローラーに送り、コントローラ側で処理が行われる
-                        command.state_num_R2(inject, r2_pc,udp_port_state);
-                        start_flag = false;
+                        auto initial_sequense_injection = std::make_shared<std_msgs::msg::String>();
+                        initial_sequense_injection->data = initial_inject_state;
+                        _pub_initial_sequense->publish(*initial_sequense_injection);
                     }
                 }
             );
@@ -493,10 +490,11 @@ namespace controller_interface
                 RCLCPP_INFO(this->get_logger(), "l2");
             }
 
-            //l3でR1の状態確認
+            //l3を押すと射出情報をpublishする
             if(msg->data == "l3"){
-                RCLCPP_INFO(this->get_logger(), "l3");
-                start_r2_main = true;
+                auto initial_sequense_pickup = std::make_shared<std_msgs::msg::String>();
+                initial_sequense_pickup->data = initial_pickup_state;
+                _pub_initial_sequense->publish(*initial_sequense_pickup);
             }
 
             //リセットボタンを押しているか確認する
@@ -509,16 +507,6 @@ namespace controller_interface
             msg_base_control.is_arm_autonomous = is_arm_autonomous;
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
-
-            //mainへボタン情報を送る代入
-            // if(msg->data == "a")_candata_btn[0] = a;
-            // if(msg->data == "b")_candata_btn[1] = b;
-            // if(msg->data == "x")_candata_btn[2] = y;
-            // if(msg->data == "y")_candata_btn[3] = x;
-            // if(msg->data == "rigit")_candata_btn[4] = right;
-            // if(msg->data == "left")_candata_btn[5] = down;
-            // if(msg->data == "down")_candata_btn[6] = left;
-            // if(msg->data == "up")_candata_btn[7] = up;
             
             for(int i=0; i<msg_btn->candlc; i++){
                 msg_btn->candata[i] = _candata_btn[i];
@@ -528,21 +516,6 @@ namespace controller_interface
             if( a == true ||b == true ||y == true ||x == true ||right == true ||down == true ||left == true ||up == true )
             {
                 _pub_canusb->publish(*msg_btn);
-            }
-            //l3を押すと射出情報をpublishする
-
-            if(start_r2_main == true)
-            {
-                //c_strがポインタ型を返すためアス＝＝タリスクをつける
-                const char* char_ptr = initial_pickup_state.c_str();
-                //reinterpret_castでポインタ型の変換
-                //char_ptr1をconst unsigned charに置き換える
-                const unsigned char* pickup = reinterpret_cast<const unsigned char*>(char_ptr);
-                //commandクラスのudp通信で一番最初に回収するデータをコントローラーに送り、コントローラ側で処理が行われる
-                command.state_num_R2(pickup, r2_pc,udp_port_state);
-                //同じ処理が連続で起きないようにfalseでもとの状態に戻す
-                start_flag = true;
-                start_r2_main = false;
             }
             msg_emergency->candata[0] = is_emergency;
             
@@ -806,12 +779,6 @@ namespace controller_interface
             _pub_initial_state->publish(*msg_unity_initial_state);
         }
         
-        //コントローラから回収情報をsubscribe
-        void SmartphoneGamepad::callback_state_num_R2(const std_msgs::msg::String::SharedPtr msg)
-        {
-            const unsigned char data[2] = {msg->data[0], msg->data[1]};
-            command.state_num_R2(data, r2_pc,udp_port_state);
-        }
         //コントローラから射出情報をsubsclib
         void SmartphoneGamepad::callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg)
         {
