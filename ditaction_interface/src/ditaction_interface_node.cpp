@@ -11,8 +11,9 @@ namespace ditaction_interface
         str_range_point1(get_parameter("str_range_point1").as_double_array()),
         str_range_point2(get_parameter("str_range_point2").as_double_array()),
         str_range_x_C3orC5(get_parameter("str_range_x_C3orC5").as_double_array()),
-        siro_range_y(get_parameter("siro_range_y").as_double_array()),
-        siro_range_x(get_parameter("siro_range_x").as_double_array())
+        str_ball_range_y(get_parameter("str_ball_range_y").as_double()),
+        siro_ball_range_y(get_parameter("siro_ball_range_y").as_double_array()),
+        siro_ball_range_x(get_parameter("siro_ball_range_x").as_double_array())
         {
             //yolox_ros_cppのrealsenseから
             _sub_realsense = this->create_subscription<bboxes_ex_msgs::msg::BoundingBox>(
@@ -57,6 +58,7 @@ namespace ditaction_interface
 
             //sequnserへ
             _pub_siro_param = this->create_publisher<ditaction_interface_msg::msg::SiroParam>("siro_param", _qos);
+            _pub_front_ball = this->create_publisher<std_msgs::msg::Bool>("front_ball", _qos);
         }
 
         void DitactionInterface::callback_c1(const bboxes_ex_msgs::msg::BoundingBox::SharedPtr msg){
@@ -84,17 +86,17 @@ namespace ditaction_interface
                 center_y = msg->ymax - msg->ymin;
 
                 //ボールの段数
-                if(center_y < siro_range_y[0]) msg_siro_param->ball_stage = 1;
-                else if(center_y > siro_range_y[0] && center_y < siro_range_y[1]) msg_siro_param->ball_stage = 2;
-                else if(center_y > siro_range_y[1]) msg_siro_param->ball_stage = 3;
+                if(center_y < siro_ball_range_y[0]) msg_siro_param->ball_stage = 1;
+                else if(center_y > siro_ball_range_y[0] && center_y < siro_ball_range_y[1]) msg_siro_param->ball_stage = 2;
+                else if(center_y > siro_ball_range_y[1]) msg_siro_param->ball_stage = 3;
 
                 //どのサイロか
                 if(msg_siro_param->ball_stage != 0){
-                    if(center_x < siro_range_x[0]) msg_siro_param->siro_num = 1;
-                    else if(center_x > siro_range_x[0] && center_x < siro_range_x[1]) msg_siro_param->siro_num = 2;
-                    else if(center_x > siro_range_x[1] && center_x < siro_range_x[2]) msg_siro_param->siro_num = 3;
-                    else if(center_x > siro_range_x[2] && center_x < siro_range_x[3]) msg_siro_param->siro_num = 4;
-                    else if(center_x > siro_range_x[3]) msg_siro_param->siro_num = 5;
+                    if(center_x < siro_ball_range_x[0]) msg_siro_param->siro_num = 1;
+                    else if(center_x > siro_ball_range_x[0] && center_x < siro_ball_range_x[1]) msg_siro_param->siro_num = 2;
+                    else if(center_x > siro_ball_range_x[1] && center_x < siro_ball_range_x[2]) msg_siro_param->siro_num = 3;
+                    else if(center_x > siro_ball_range_x[2] && center_x < siro_ball_range_x[3]) msg_siro_param->siro_num = 4;
+                    else if(center_x > siro_ball_range_x[3]) msg_siro_param->siro_num = 5;
                 }
 
                 //どの色か
@@ -108,6 +110,8 @@ namespace ditaction_interface
 
         void DitactionInterface::callback_realsense(const bboxes_ex_msgs::msg::BoundingBox::SharedPtr msg){
             auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
+            auto msg_front_ball = std::make_shared<std_msgs::msg::Bool>();
+
             center_x = msg->xmax - msg->xmin;
             center_y = msg->ymax - msg->ymin;
 
@@ -123,9 +127,15 @@ namespace ditaction_interface
                 else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST6";
                 else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
             }
+
+            if(!msg_collection_point->data.empty()){
+                if(center_y < str_ball_range_y) msg_front_ball->data = true;
+                // else msg_front_ball->data = false;
+            }
             
             way_point = "";
             _pub_collection_point->publish(*msg_collection_point);
+            _pub_front_ball->publish(*msg_front_ball);
         }
 
         void DitactionInterface::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg){
@@ -142,8 +152,6 @@ namespace ditaction_interface
                 way_point = "";
                 now_sequence = "";
             }
-            
-
         }
 
         void DitactionInterface::callback_now_sequence(const std_msgs::msg::String::SharedPtr msg){

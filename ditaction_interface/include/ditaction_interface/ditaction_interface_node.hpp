@@ -5,6 +5,7 @@
 #include <math.h>
 //使うmsg
 #include <std_msgs/msg/string.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include "bboxes_ex_msgs/msg/bounding_box.hpp"
 #include "bboxes_ex_msgs/msg/bounding_boxes.hpp"
@@ -51,6 +52,7 @@ namespace ditaction_interface
 
             //sequnserへ
             rclcpp::Publisher<ditaction_interface_msg::msg::SiroParam>::SharedPtr _pub_siro_param;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_front_ball;
 
             //Qos
             rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -76,8 +78,8 @@ namespace ditaction_interface
             //坂上から見たときにC3かC5かをみる境界線の計算
             bool bounday_line(int x, int y);
 
-            int center_x;
-            int center_y;
+            double center_x;
+            double center_y;
             std::string now_sequence;
             std::string way_point;
 
@@ -95,8 +97,9 @@ namespace ditaction_interface
             const std::vector<double> str_range_point1;
             const std::vector<double> str_range_point2;
             const std::vector<double> str_range_x_C3orC5;
-            const std::vector<double> siro_range_y;
-            const std::vector<double> siro_range_x;
+            const double str_ball_range_y;
+            const std::vector<double> siro_ball_range_y;
+            const std::vector<double> siro_ball_range_x;
 
             //フィールド
             geometry_msgs::msg::Vector3 self_pose;
