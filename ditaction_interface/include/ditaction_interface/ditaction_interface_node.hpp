@@ -35,7 +35,7 @@ namespace ditaction_interface
             //ransacから
             rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _sub_self_pose;
 
-            //cntroller_interfaceから
+            //controller_interfaceから
             rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_base_control;
 
             //sequncerから
@@ -46,13 +46,11 @@ namespace ditaction_interface
 
             //sequncerへ
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_collection_point;
+            rclcpp::Publisher<ditaction_interface_msg::msg::SiroParam>::SharedPtr _pub_siro_param;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_front_ball;
 
             //arm_param_caluculatorへ
             rclcpp::Publisher<ditaction_interface_msg::msg::ArmParam>::SharedPtr _pub_arm_param;
-
-            //sequnserへ
-            rclcpp::Publisher<ditaction_interface_msg::msg::SiroParam>::SharedPtr _pub_siro_param;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_front_ball;
 
             //Qos
             rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -91,18 +89,27 @@ namespace ditaction_interface
             bool is_self_pose_range_z_siro;
 
             //定数
+            //坂上の自己位置の範囲
             const std::vector<double> str_self_pose_range;
             const std::vector<double> siro_self_pose_range;
 
+            //坂上の画像認識の範囲
             const std::vector<double> str_range_point1;
             const std::vector<double> str_range_point2;
+
+            //C3かC5についたときの画像認識の範囲
             const std::vector<double> str_range_x_C3orC5;
-            const double str_ball_range_y;
+
+            //サイロのボールが何段目か
             const std::vector<double> siro_ball_range_y;
+
+            //サイロのボールの画像認識の範囲
             const std::vector<double> siro_ball_range_x;
+
+            //ひし形のボールが手前か奥か
+            const double str_ball_range_y;
 
             //フィールド
             geometry_msgs::msg::Vector3 self_pose;
-
     };
 }

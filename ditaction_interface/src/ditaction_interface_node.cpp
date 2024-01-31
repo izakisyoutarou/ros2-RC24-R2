@@ -36,6 +36,12 @@ namespace ditaction_interface
                 std::bind(&DitactionInterface::callback_self_pose, this, std::placeholders::_1)
             );
 
+            _sub_base_control = this->create_subscription<controller_interface_msg::msg::BaseControl>(
+                "base_control",
+                _qos,
+                std::bind(&DitactionInterface::callback_base_control, this, std::placeholders::_1)
+            );
+
             //sequncerから
             _sub_now_sequence = this->create_subscription<std_msgs::msg::String>(
                 "now_sequence",
@@ -52,13 +58,11 @@ namespace ditaction_interface
         
             //sequncerへ
             _pub_collection_point = this->create_publisher<std_msgs::msg::String>("collection_point", _qos);
+            _pub_siro_param = this->create_publisher<ditaction_interface_msg::msg::SiroParam>("siro_param", _qos);
+            _pub_front_ball = this->create_publisher<std_msgs::msg::Bool>("front_ball", _qos);
 
             //arm_param_caluculatorへ
             _pub_arm_param = this->create_publisher<ditaction_interface_msg::msg::ArmParam>("arm_param", _qos);
-
-            //sequnserへ
-            _pub_siro_param = this->create_publisher<ditaction_interface_msg::msg::SiroParam>("siro_param", _qos);
-            _pub_front_ball = this->create_publisher<std_msgs::msg::Bool>("front_ball", _qos);
         }
 
         void DitactionInterface::callback_c1(const bboxes_ex_msgs::msg::BoundingBox::SharedPtr msg){
@@ -120,17 +124,19 @@ namespace ditaction_interface
                 else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
                 else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
                 else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
+                way_point = "";
             }
             else if(way_point == "C5"){
                 if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST8";
                 else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST7";
                 else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST6";
                 else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
+                way_point = "";
             }
 
-            if(!msg_collection_point->data.empty()){
+            if(!way_point.empty()){
                 if(center_y < str_ball_range_y) msg_front_ball->data = true;
-                // else msg_front_ball->data = false;
+                else msg_front_ball->data = false;
             }
             
             way_point = "";
