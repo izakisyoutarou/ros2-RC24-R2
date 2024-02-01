@@ -23,6 +23,7 @@ target_compile_definitions(ditaction_interface_node
 )
 
 target_compile_options(ditaction_interface_node PUBLIC -Wall)
+
 ament_target_dependencies(ditaction_interface_node
   rclcpp
   bboxes_ex_msgs
@@ -69,5 +70,7 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 ament_package()
