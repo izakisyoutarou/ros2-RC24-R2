@@ -4,7 +4,7 @@ launch: #起動パラメータ
     scan: false
     trajectory_planner: false
     yolox_c1: true
-    yolox_realsense: false
+    yolox_realsense: true
     
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
