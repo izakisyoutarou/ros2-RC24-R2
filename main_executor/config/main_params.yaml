@@ -132,6 +132,7 @@ rasnac_localization:
     trial_num: 50
     inlier_dist_threshold: 0.015
     inlier_length_threshold: 0.7 #インライアのしきい値
+    second_ransac: true
 
 sequencer_node:
   ros__parameters:
