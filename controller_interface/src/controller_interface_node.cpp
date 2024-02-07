@@ -90,6 +90,7 @@ namespace controller_interface
             //収束の状態を確認するための周期
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
             const auto convergence_ms = this->get_parameter("convergence_ms").as_int();
+            const auto base_state_communication_ms = this->get_parameter("base_state_communication_ms").as_int();
 
             //hppファイルでオブジェクト化したpublisherとsubscriberの設定
             //controller_mainからsub
@@ -153,11 +154,15 @@ namespace controller_interface
             //gazebo用のpub
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
+            //sequenserへ
+            _pub_initial_sequense = this->create_publisher<std_msgs::msg::String>("initial_sequense", _qos);
+
             _pub_initial_state = this->create_publisher<std_msgs::msg::String>("initial_state_unity", _qos);
             _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("restart_unity", _qos);
             _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("emergency_unity", _qos);
             _pub_move_auto = this->create_publisher<std_msgs::msg::Bool>("move_autonomous_unity", _qos);
             _pub_base_arm = this->create_publisher<std_msgs::msg::Bool>("arm_autonomous_unity", _qos);
+            _pub_base_state_communication = this->create_publisher<std_msgs::msg::Empty>("state_communication_unity" , _qos);
 
             _pub_con_spline = this->create_publisher<std_msgs::msg::Bool>("spline_convergence_unity", _qos);
             _pub_con_colcurator = this->create_publisher<std_msgs::msg::Bool>("arm_calcurator_unity", _qos);
@@ -269,6 +274,14 @@ namespace controller_interface
                     _pub_canusb->publish(*msg_heartbeat);
                 }
             );
+            //スマホコントローラとの通信状況を確認
+            _pub_state_communication_timer = create_wall_timer(
+                std::chrono::milliseconds(base_state_communication_ms),
+                [this] {
+                    auto msg_base_state_communication = std::make_shared<std_msgs::msg::Empty>();
+                    _pub_base_state_communication->publish(*msg_base_state_communication);
+                }
+            );
 
             //convergence
             //収束状況
@@ -300,15 +313,9 @@ namespace controller_interface
                 [this] {
                     if(start_flag)
                     {
-                        const string initial_inject_state_with_null = initial_inject_state + '\0';
-                        //c_strがポインタを返すためアスタリスクをつける
-                        const char* char_ptr2 = initial_inject_state_with_null.c_str();
-                        //reinterpret_castでポインタ型の変換
-                        //char_ptr2をconst unsigned charに置き換える
-                        const unsigned char* inject = reinterpret_cast<const unsigned char*>(char_ptr2);
-                        //commandクラスのudp通信で一番最初に回収するデータをコントローラーに送り、コントローラ側で処理が行われる
-                        command.state_num_R2(inject, r2_pc,udp_port_state);
-                        start_flag = false;
+                        auto initial_sequense_injection = std::make_shared<std_msgs::msg::String>();
+                        initial_sequense_injection->data = initial_inject_state;
+                        _pub_initial_sequense->publish(*initial_sequense_injection);
                     }
                 }
             );
@@ -483,10 +490,11 @@ namespace controller_interface
                 RCLCPP_INFO(this->get_logger(), "l2");
             }
 
-            //l3でR1の状態確認
+            //l3を押すと射出情報をpublishする
             if(msg->data == "l3"){
-                RCLCPP_INFO(this->get_logger(), "l3");
-                start_r2_main = true;
+                auto initial_sequense_pickup = std::make_shared<std_msgs::msg::String>();
+                initial_sequense_pickup->data = initial_pickup_state;
+                _pub_initial_sequense->publish(*initial_sequense_pickup);
             }
 
             //リセットボタンを押しているか確認する
@@ -499,16 +507,6 @@ namespace controller_interface
             msg_base_control.is_arm_autonomous = is_arm_autonomous;
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
-
-            //mainへボタン情報を送る代入
-            // if(msg->data == "a")_candata_btn[0] = a;
-            // if(msg->data == "b")_candata_btn[1] = b;
-            // if(msg->data == "x")_candata_btn[2] = y;
-            // if(msg->data == "y")_candata_btn[3] = x;
-            // if(msg->data == "rigit")_candata_btn[4] = right;
-            // if(msg->data == "left")_candata_btn[5] = down;
-            // if(msg->data == "down")_candata_btn[6] = left;
-            // if(msg->data == "up")_candata_btn[7] = up;
             
             for(int i=0; i<msg_btn->candlc; i++){
                 msg_btn->candata[i] = _candata_btn[i];
@@ -518,21 +516,6 @@ namespace controller_interface
             if( a == true ||b == true ||y == true ||x == true ||right == true ||down == true ||left == true ||up == true )
             {
                 _pub_canusb->publish(*msg_btn);
-            }
-            //l3を押すと射出情報をpublishする
-
-            if(start_r2_main == true)
-            {
-                //c_strがポインタ型を返すためアス＝＝タリスクをつける
-                const char* char_ptr = initial_pickup_state.c_str();
-                //reinterpret_castでポインタ型の変換
-                //char_ptr1をconst unsigned charに置き換える
-                const unsigned char* pickup = reinterpret_cast<const unsigned char*>(char_ptr);
-                //commandクラスのudp通信で一番最初に回収するデータをコントローラーに送り、コントローラ側で処理が行われる
-                command.state_num_R2(pickup, r2_pc,udp_port_state);
-                //同じ処理が連続で起きないようにfalseでもとの状態に戻す
-                start_flag = true;
-                start_r2_main = false;
             }
             msg_emergency->candata[0] = is_emergency;
             
@@ -796,17 +779,11 @@ namespace controller_interface
             _pub_initial_state->publish(*msg_unity_initial_state);
         }
         
-        //コントローラから回収情報をsubscribe
-        void SmartphoneGamepad::callback_state_num_R2(const std_msgs::msg::String::SharedPtr msg)
-        {
-            const unsigned char data[2] = {msg->data[0], msg->data[1]};
-            command.state_num_R2(data, r2_pc,udp_port_state);
-        }
         //コントローラから射出情報をsubsclib
         void SmartphoneGamepad::callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg)
         {
             ///mainから射出可能司令のsub。上物の収束状況。
-            RCLCPP_INFO(this->get_logger(), "can_rx_202");
+            //RCLCPP_INFO(this->get_logger(), "can_rx_202");
             is_arm_convergence = static_cast<bool>(msg->candata[0]);
         }
 
@@ -872,11 +849,11 @@ namespace controller_interface
                     slow_velPlanner_linear_y.cycle();
                     velPlanner_angular_z.cycle();
                     //floatからバイト(メモリ)に変換
-                    float_to_bytes(_candata_joy, static_cast<float>(slow_velPlanner_linear_x.vel()) * slow_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(-slow_velPlanner_linear_x.vel()) * slow_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(-slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
                     
                     //msg_gazeboに速度計画機の値を格納
@@ -900,11 +877,11 @@ namespace controller_interface
                     high_velPlanner_linear_y.cycle();
                     velPlanner_angular_z.cycle();
 
-                    float_to_bytes(_candata_joy, static_cast<float>(high_velPlanner_linear_x.vel()) * high_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(-high_velPlanner_linear_x.vel()) * high_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(-high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
                     msg_gazebo->linear.x = high_velPlanner_linear_x.vel();
