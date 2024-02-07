@@ -16,6 +16,8 @@
   <depend>ransac_localization</depend>
   <depend>logger_converter</depend>
   <depend>controller_interface</depend>
+  <depend>sequencer</depend>
+  
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

@@ -13,6 +13,7 @@ find_package(utilities REQUIRED)
 find_package(ransac_localization REQUIRED)
 find_package(logger_converter REQUIRED)
 find_package(controller_interface REQUIRED)
+find_package(sequencer REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -25,6 +26,7 @@ ament_target_dependencies(main_exec
         ransac_localization
         logger_converter
         controller_interface
+        sequencer
         )
 
 target_include_directories(main_exec
