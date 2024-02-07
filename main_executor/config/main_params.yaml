@@ -1,6 +1,6 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: true
+    slcan: false
     scan: false
     trajectory_planner: true
     
@@ -129,13 +129,6 @@ rasnac_localization:
     trial_num: 40
     inlier_dist_threshold: 0.01
     inlier_length_threshold: 1.0 #インライアのしきい値
-
-sequencer_node:
-  ros__parameters:
-    select_algorithm: 0
-    seedling_order: ["S0", "S1", "S2", "S3"]
-    planting_order: ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7"]
-    harvesting_order: ["H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11"]
 
 injection_param_calculator_node:
   ros__parameters:
