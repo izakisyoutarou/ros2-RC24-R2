@@ -1,15 +1,18 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: true
-    scan: true
+    slcan: false
+    scan: false
     trajectory_planner: true
     
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
-    initial_pose: [0.35, 0.4, 0.0]  #初期位置[x,y,yaw]
+    initial_pose: [0.67, 1.35, 0.0]  #初期位置[x,y,yaw]
+    # initial_pose: [0.35, 0.4, 0.0]  #初期位置[x,y,yaw]
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
-    tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,-1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    tf_laser2robot: [0.224,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    # tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,-1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
+
     court_color: "red" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
@@ -44,6 +47,7 @@ launch: #起動パラメータ
       paddy_install: 0x201
       #デジタルボタン
       main_button: 0x230
+      vel: 0x400
         
     port:
       joy_main: 50000
@@ -125,13 +129,14 @@ arm_interface_node:
 rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
-    laser_weight: 0.7 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 1.0e-4 #値が大きくなると共分散が小さくなる
-    odom_weight_angler: 1.0e-5
-    voxel_size: 0.03
+    laser_weight: 0.8 #lidarの重み->値を大きくするとlidarが優先される
+    odom_weight_liner: 11.0e-5 #値が大きくなると共分散が小さくなる 
+    odom_weight_angler: 2.0e-6
+    voxel_size: 0.035
     trial_num: 50
-    inlier_dist_threshold: 0.015
-    inlier_length_threshold: 0.7 #インライアのしきい値
+    inlier_dist_threshold: 0.017
+    inlier_length_threshold: 1.0 #インライアのしきい値
+    second_ransac: true           #2回ransacをするか
 
 sequencer_node:
   ros__parameters:

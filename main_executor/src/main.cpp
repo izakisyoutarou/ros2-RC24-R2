@@ -22,11 +22,11 @@ int main(int argc, char * argv[]){
     auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
     auto spline_pid_node = std::make_shared<spline_pid::SplinePid>(nodes_option);
 
-    exec.add_node(controller_node);
-    exec.add_node(logger_converter_node);
+    // exec.add_node(controller_node);
+    // exec.add_node(logger_converter_node);
     exec.add_node(ransac_localization);
     //exec.add_node(socketcan_node);
-    exec.add_node(spline_pid_node);
+    // exec.add_node(spline_pid_node);
 
     exec.spin();
     rclcpp::shutdown();
