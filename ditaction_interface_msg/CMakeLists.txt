@@ -12,6 +12,8 @@ find_package(rosidl_default_generators REQUIRED)
 set(msg_files
   "msg/ArmParam.msg"
   "msg/SiroParam.msg"
+  "msg/VisualizerC1.msg"
+  "msg/VisualizerRealsense.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}

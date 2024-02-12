@@ -26,7 +26,7 @@ int main(int argc, char * argv[]){
 
     // exec.add_node(controller_node);
     // exec.add_node(logger_converter_node);
-    // exec.add_node(ransac_localization);
+    exec.add_node(ransac_localization);
     // exec.add_node(socketcan_node);
     // exec.add_node(spline_pid_node);
     exec.add_node(ditaction_interface_node);

@@ -3,7 +3,13 @@
 namespace yolox_ros_cpp
 {
     YoloXNode::YoloXNode(const rclcpp::NodeOptions &options)
-        : Node("yolox_ros_cpp", options)
+        : Node("yolox_ros_cpp", options),
+        str_range_point1(get_parameter("ditaction.str_range_point1").as_double_array()),
+        str_range_point2(get_parameter("ditaction.str_range_point2").as_double_array()),
+        str_range_x_C3orC5(get_parameter("ditaction.str_range_x_C3orC5").as_double_array()),
+        str_ball_range_y(get_parameter("ditaction.str_ball_range_y").as_double()),
+        siro_ball_range_y(get_parameter("ditaction.siro_ball_range_y").as_double_array()),
+        siro_ball_range_x(get_parameter("ditaction.siro_ball_range_x").as_double_array())
     {
         using namespace std::chrono_literals; // NOLINT
         this->init_timer_ = this->create_wall_timer(
@@ -102,6 +108,28 @@ namespace yolox_ros_cpp
             this->params_.publish_boundingbox_topic_name,
             10);
         this->pub_image_ = image_transport::create_publisher(this, this->params_.publish_image_topic_name);
+
+        _sub_viz_c1 = this->create_subscription<ditaction_interface_msg::msg::VisualizerC1>(
+            "visualizer_c1",
+            10,
+            std::bind(&YoloXNode::callback_viz_c1, this, std::placeholders::_1)
+        );
+
+        _sub_viz_realsense = this->create_subscription<ditaction_interface_msg::msg::VisualizerRealsense>(
+            "visualizer_realsense",
+            10,
+            std::bind(&YoloXNode::callback_viz_realsense, this, std::placeholders::_1)
+        );
+    }
+
+    void YoloXNode::callback_viz_c1(const ditaction_interface_msg::msg::VisualizerC1::SharedPtr msg){
+        str_from_upslope = msg->str_from_upslope;
+        siro_form_upslope = msg->siro_form_upslope;
+    }
+
+    void YoloXNode::callback_viz_realsense(const ditaction_interface_msg::msg::VisualizerRealsense::SharedPtr msg){
+        str_from_c3_c5 = msg->str_from_c3_c5;
+        str_front_ball = msg->str_front_ball;
     }
 
     void YoloXNode::colorImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &ptr)
@@ -116,7 +144,12 @@ namespace yolox_ros_cpp
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
         // RCLCPP_INFO(this->get_logger(), "Inference: %f FPS", 1000.0f / elapsed.count()); //FPSを確認できる
 
-        yolox_cpp::utils::draw_objects(frame, objects, this->class_names_);
+        std::vector<bool> viz_flag = {str_from_upslope, siro_form_upslope, str_from_c3_c5, str_front_ball};
+
+        yolox_cpp::utils::draw_objects(
+            frame, objects, this->class_names_, 
+            str_range_point1, str_range_point2, str_range_x_C3orC5, siro_ball_range_y, siro_ball_range_x, str_ball_range_y,
+            viz_flag);
         if (this->params_.imshow_isshow)
         {
             cv::imshow("yolox", frame);

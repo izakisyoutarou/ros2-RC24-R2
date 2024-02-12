@@ -11,6 +11,8 @@
 #include "bboxes_ex_msgs/msg/bounding_boxes.hpp"
 #include "ditaction_interface_msg/msg/arm_param.hpp"
 #include "ditaction_interface_msg/msg/siro_param.hpp"
+#include "ditaction_interface_msg/msg/visualizer_c1.hpp"
+#include "ditaction_interface_msg/msg/visualizer_realsense.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 
 #include "visibility_control.h"
@@ -52,6 +54,10 @@ namespace ditaction_interface
             //arm_param_caluculatorへ
             rclcpp::Publisher<ditaction_interface_msg::msg::ArmParam>::SharedPtr _pub_arm_param;
 
+            //yolox_ros_cppへ(ビジュアライザーのため)
+            rclcpp::Publisher<ditaction_interface_msg::msg::VisualizerC1>::SharedPtr _pub_viz_c1;
+            rclcpp::Publisher<ditaction_interface_msg::msg::VisualizerRealsense>::SharedPtr _pub_viz_realsense;
+
             //Qos
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
@@ -76,6 +82,13 @@ namespace ditaction_interface
             //坂上から見たときにC3かC5かをみる境界線の計算
             bool bounday_line(int x, int y);
 
+            //yolox_ros_cppにc1のvizの情報をpubする関数
+            void viz_c1(bool is_str_from_upslope);
+
+            //yolox_ros_cppにrealsenseのvizの情報をpubする関数
+            void viz_realsense(bool is_str_from_c3_c5);
+
+            //変数
             double center_x;
             double center_y;
             std::string now_sequence;

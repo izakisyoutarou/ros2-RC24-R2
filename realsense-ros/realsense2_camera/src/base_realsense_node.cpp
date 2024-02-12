@@ -54,7 +54,7 @@ void SyncedImuPublisher::Publish(sensor_msgs::msg::Imu imu_msg)
     }
     return;
 }
-//
+
 void SyncedImuPublisher::Pause()
 {
     if (!_is_enabled) return;

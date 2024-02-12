@@ -8,12 +8,12 @@ namespace ditaction_interface
 
         str_self_pose_range(get_parameter("str_self_pose_range").as_double_array()),
         siro_self_pose_range(get_parameter("siro_self_pose_range").as_double_array()),
-        str_range_point1(get_parameter("str_range_point1").as_double_array()),
-        str_range_point2(get_parameter("str_range_point2").as_double_array()),
-        str_range_x_C3orC5(get_parameter("str_range_x_C3orC5").as_double_array()),
-        str_ball_range_y(get_parameter("str_ball_range_y").as_double()),
-        siro_ball_range_y(get_parameter("siro_ball_range_y").as_double_array()),
-        siro_ball_range_x(get_parameter("siro_ball_range_x").as_double_array())
+        str_range_point1(get_parameter("ditaction.str_range_point1").as_double_array()),
+        str_range_point2(get_parameter("ditaction.str_range_point2").as_double_array()),
+        str_range_x_C3orC5(get_parameter("ditaction.str_range_x_C3orC5").as_double_array()),
+        str_ball_range_y(get_parameter("ditaction.str_ball_range_y").as_double()),
+        siro_ball_range_y(get_parameter("ditaction.siro_ball_range_y").as_double_array()),
+        siro_ball_range_x(get_parameter("ditaction.siro_ball_range_x").as_double_array())
         {
             //yolox_ros_cppのrealsenseから
             _sub_realsense = this->create_subscription<bboxes_ex_msgs::msg::BoundingBox>(
@@ -63,6 +63,10 @@ namespace ditaction_interface
 
             //arm_param_caluculatorへ
             _pub_arm_param = this->create_publisher<ditaction_interface_msg::msg::ArmParam>("arm_param", _qos);
+
+            //yolox_ros_cppへ(ビジュアライザーのため)
+            _pub_viz_c1 = this->create_publisher<ditaction_interface_msg::msg::VisualizerC1>("visualizer_c1", _qos);
+            _pub_viz_realsense = this->create_publisher<ditaction_interface_msg::msg::VisualizerRealsense>("visualizer_realsense", _qos);
         }
 
         void DitactionInterface::callback_c1(const bboxes_ex_msgs::msg::BoundingBox::SharedPtr msg){
@@ -72,6 +76,8 @@ namespace ditaction_interface
             if(now_sequence == "str"){
                 if(is_self_pose_range_x_str && is_self_pose_range_y_str && is_self_pose_range_z_str){
                     bool is_collection_C5;
+
+                    viz_c1(true);
 
                     center_x = msg->xmax - msg->xmin;
                     center_y = msg->ymax - msg->ymin;
@@ -86,6 +92,9 @@ namespace ditaction_interface
             }
             //モード問わず、サイロに向かっているとき
             if(is_self_pose_range_x_siro && is_self_pose_range_y_siro && is_self_pose_range_z_siro){
+                
+                viz_c1(false);
+
                 center_x = msg->xmax - msg->xmin;
                 center_y = msg->ymax - msg->ymin;
 
@@ -120,6 +129,7 @@ namespace ditaction_interface
             center_y = msg->ymax - msg->ymin;
 
             if(way_point == "C3"){
+                viz_realsense(true);
                 if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST1";
                 else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
                 else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
@@ -127,6 +137,7 @@ namespace ditaction_interface
                 way_point = "";
             }
             else if(way_point == "C5"){
+                viz_realsense(true);
                 if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST8";
                 else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST7";
                 else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST6";
@@ -135,6 +146,7 @@ namespace ditaction_interface
             }
 
             if(!way_point.empty()){
+                viz_realsense(false);
                 if(center_y < str_ball_range_y) msg_front_ball->data = true;
                 else msg_front_ball->data = false;
             }
@@ -189,6 +201,24 @@ namespace ditaction_interface
             is_collection_C5 = (calculation >= 0) ? true : false;
 
             return is_collection_C5;
+        }
+
+        void DitactionInterface::viz_c1(bool is_str_from_upslope){
+            auto msg_viz_c1 = std::make_shared<ditaction_interface_msg::msg::VisualizerC1>();
+
+            if(is_str_from_upslope) msg_viz_c1->str_from_upslope = true;
+            else msg_viz_c1->siro_form_upslope = true;
+
+            _pub_viz_c1->publish(*msg_viz_c1);
+        }
+
+        void DitactionInterface::viz_realsense(bool is_str_from_c3_c5){
+            auto msg_viz_realsense = std::make_shared<ditaction_interface_msg::msg::VisualizerRealsense>();
+
+            if(is_str_from_c3_c5) msg_viz_realsense->str_from_c3_c5 = true;
+            else msg_viz_realsense->str_front_ball = true;
+
+            _pub_viz_realsense->publish(*msg_viz_realsense);
         }
         
 

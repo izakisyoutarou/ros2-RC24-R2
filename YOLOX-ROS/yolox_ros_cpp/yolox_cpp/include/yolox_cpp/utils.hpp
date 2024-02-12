@@ -27,7 +27,14 @@ namespace yolox_cpp{
             return class_names;
         }
 
-        static void draw_objects(cv::Mat bgr, const std::vector<Object>& objects, const std::vector<std::string>& class_names=COCO_CLASSES)
+        static void draw_objects(cv::Mat bgr, const std::vector<Object>& objects, const std::vector<std::string>& class_names=COCO_CLASSES,
+            const std::vector<double>& str_range_point1 = std::vector<double>(), 
+            const std::vector<double>& str_range_point2 = std::vector<double>(), 
+            const std::vector<double>& str_range_x_C3orC5 = std::vector<double>(),
+            const std::vector<double>& siro_ball_range_y = std::vector<double>(), 
+            const std::vector<double>& siro_ball_range_x = std::vector<double>(), 
+            const double str_ball_range_y = 0.0, 
+            const std::vector<bool>& viz_flag = std::vector<bool>())
         {
 
             for (size_t i = 0; i < objects.size(); i++)
@@ -64,6 +71,29 @@ namespace yolox_cpp{
 
                 cv::putText(bgr, text, cv::Point(x, y + label_size.height),
                             cv::FONT_HERSHEY_SIMPLEX, 0.4, txt_color, 1);
+
+                cv::Scalar line_color(0, 255, 0);  // BGR 色空間での色
+                int x_coordinate = 680;//以下、新規追加。画面上に線を表示
+                if(viz_flag[0]){
+                    cv::line(bgr, cv::Point(x_coordinate, 0), cv::Point(x_coordinate, bgr.rows), line_color, 2);
+                }
+                else if(viz_flag[1]){
+                    for (int i = 0; i < 6; i++){
+                        cv::line(bgr, cv::Point(siro_ball_range_x[i], 0), cv::Point(siro_ball_range_x[i], bgr.rows), line_color, 2);
+                    }
+                    for (int i = 0; i < 3; i++){
+                        cv::line(bgr, cv::Point(0, siro_ball_range_y[i]), cv::Point(bgr.cols, siro_ball_range_y[i]), line_color, 2);
+                    }
+                }
+                else if(viz_flag[2]){
+                    for (int i = 0; i < 3; i++){
+                        cv::line(bgr, cv::Point(str_range_x_C3orC5[i], 0), cv::Point(str_range_x_C3orC5[i], bgr.rows), line_color, 2);
+                    }
+                }
+                else if(viz_flag[3]){
+                    cv::line(bgr, cv::Point(0, str_ball_range_y), cv::Point(bgr.cols, str_ball_range_y), line_color, 2);
+                }
+                
             }
         }
     }

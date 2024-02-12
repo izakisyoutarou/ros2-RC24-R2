@@ -13,6 +13,7 @@ endif()
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(v4l2_camera REQUIRED)
+find_package(ditaction_interface_msg REQUIRED)
 ament_auto_find_build_dependencies()
 
 if(NOT yolox_cpp_FOUND)
