@@ -12,6 +12,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/empty.hpp"
 //他のpkg
+#include "controller_interface/Gamebtn.hpp"
 #include "utilities/can_utils.hpp"
 #include "utilities/utils.hpp"
 #include "socket_udp.hpp"
@@ -50,14 +51,12 @@ namespace controller_interface
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
 
-            //arm_param_calculatorから
-            // rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_arm_calculator;
             //sequencerから
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_arm_strange;
+            //rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_arm_strange;
 
             
 
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_collection_ball;
+            //rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_collection_ball;
 
             //CanUsbへ
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
@@ -242,6 +241,8 @@ namespace controller_interface
 
             VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
+
+            Gamebtn gamebtn;
 
             RecvUDP joy_main;
     };
