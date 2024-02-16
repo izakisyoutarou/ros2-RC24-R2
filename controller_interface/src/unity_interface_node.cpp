@@ -38,7 +38,11 @@ namespace controller_interface
             _qos,
             std::bind(&Unity::unity_callback, this, std::placeholders::_1)
         );
-
+        _sub_initial_state = this->create_subscription<std_msgs::msg::String>(
+                "initial_state",
+                _qos,
+            std::bind(&Unity::callback_initial_state, this, std::placeholders::_1)
+        );
         _pub_initial_state = this->create_publisher<std_msgs::msg::String>("initial_state_unity", _qos);
         _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("restart_unity", _qos);
         _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("emergency_unity", _qos);
@@ -93,9 +97,6 @@ namespace controller_interface
 
     void Unity::unity_callback(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
 
-        msg_unity_initial_state.data = msg->initial_state;
-        _pub_initial_state->publish(msg_unity_initial_state);
-
         msg_unity_control.data = msg->is_restart;
         _pub_base_restart->publish(msg_unity_control);
 
@@ -115,5 +116,11 @@ namespace controller_interface
         _pub_con_spline->publish(*msg_unity_control);
         msg_unity_control->data = msg->arm;
         _pub_con_arm->publish(*msg_unity_control);
+    }
+    void Unity::callback_initial_state(const std_msgs::msg::String::SharedPtr msg){
+        initial_state = msg->data[0];
+        auto msg_unity_initial_state = std::make_shared<std_msgs::msg::String>();
+        msg_unity_initial_state->data = initial_state;
+        _pub_initial_state->publish(*msg_unity_initial_state);
     }
 }

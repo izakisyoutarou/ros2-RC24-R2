@@ -46,6 +46,7 @@ namespace controller_interface
             
             rclcpp::Subscription<controller_interface_msg::msg::Convergence>::SharedPtr _sub_convergence_unity;
             rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_unity;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_initial_state;
 
 
             rclcpp::TimerBase::SharedPtr _pub_state_communication_timer;
@@ -53,6 +54,7 @@ namespace controller_interface
 
             void unity_callback(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
             void convergence_unity_callback(const controller_interface_msg::msg::Convergence::SharedPtr msg);
+            void callback_initial_state(const std_msgs::msg::String::SharedPtr msg);
 
             //base_control用
             bool is_reset = false;
