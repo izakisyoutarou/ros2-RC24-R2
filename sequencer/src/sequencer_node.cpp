@@ -43,6 +43,12 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
         std::bind(&Sequencer::callback_self_pose, this, std::placeholders::_1)
     );
 
+    _subscription_front_ball = this->create_subscription<std_msgs::msg::Bool>(
+        "front_ball",
+        _qos,
+        std::bind(&Sequencer::callback_front_ball, this, std::placeholders::_1)
+    );
+
     _publisher_move_node = this->create_publisher<std_msgs::msg::String>("move_node", _qos);
     _publisher_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
     _publisher_way_point = this->create_publisher<std_msgs::msg::String>("way_point", _qos);
@@ -79,21 +85,29 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                 command_move_node("c2");
                 progress++;
             }
-            else if(progress == n++ && msg->spline_convergence){
-                //回収コマンド
+            else if(progress == n++ && msg->spline_convergence && get_front_ball){
+                if(front_ball){
+                    //手前回収
+                }
+                else {
+                    //奥回収
+                }
             } 
-            else if(progress == n++ && msg->spline_convergence){
-                //回収コマンド
+            else if(progress == n++ /*&&アーム高さN以上&&吸着判定*/){
+                command_sequence(SEQUENCE_MODE::silo);
             } 
         }
         //サイロシーケンス
         else if(sequence_mode == SEQUENCE_MODE::silo){
             if(progress == n++){
-                command_move_node("c2");
+                command_move_node("c1");
                 progress++;
             }
             else if(progress == n++ && msg->spline_convergence){
                 //サイロコマンド
+            } 
+            else if(progress == n++ /*非吸着判定*/){
+                command_sequence(SEQUENCE_MODE::rhombus);
             }
         }
         
@@ -135,6 +149,15 @@ void Sequencer::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr 
     }
 }
 
+void Sequencer::callback_front_ball(const std_msgs::msg::Bool::SharedPtr msg){
+    front_ball = msg->data;
+    get_front_ball = true;
+}
+
+void Sequencer::callback(const std_msgs::msg::String::SharedPtr msg){
+
+}
+
 void Sequencer::command_move_node(const std::string node){
     auto msg_move_node = std::make_shared<std_msgs::msg::String>();
     msg_move_node->data = node;
@@ -154,6 +177,7 @@ void Sequencer::command_sequence(const SEQUENCE_MODE sequence){
     auto msg_now_sequence = std::make_shared<std_msgs::msg::String>();
     msg_now_sequence->data = sequence_list[static_cast<int>(sequence)];
     _publisher_now_sequence->publish(*msg_now_sequence);
+    progress = 0;
 }
 
 void Sequencer::command_move_interrupt_node(const std::string node){

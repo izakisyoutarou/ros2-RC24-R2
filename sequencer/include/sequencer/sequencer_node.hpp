@@ -36,12 +36,15 @@ private:
     rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr _subscription_is_start;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_collection_point;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_self_pose;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _subscription_front_ball;
 
     void callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg);
     void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
     void callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg);
     void callback_collection_point(const std_msgs::msg::String::SharedPtr msg);
     void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
+    void callback_front_ball(const std_msgs::msg::Bool::SharedPtr msg);
+    void callback(const std_msgs::msg::String::SharedPtr msg);
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_node;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _publisher_canusb;
@@ -71,6 +74,11 @@ private:
     std::string sequence_list[5] = {"stop","rhombus","silo","collect"};
 
     bool is_start = false;
+
+    bool get_front_ball = false;
+    bool front_ball = false;
+
+    int select_silo = 0;
     
 };
 
