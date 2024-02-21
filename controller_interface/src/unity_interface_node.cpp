@@ -10,7 +10,7 @@ namespace controller_interface
     using std::string;
 
     Unity::Unity(const rclcpp::NodeOptions &options) : Unity("",options) {}
-    Unity::Unity(const std::string &name_space, const rclcpp::NodeOptions &options): rclcpp::Node("controller_interface_node", name_space, options),
+    Unity::Unity(const std::string &name_space, const rclcpp::NodeOptions &options): rclcpp::Node("unity_interface_node", name_space, options),
     //リスタート
     defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
     //緊急停止
@@ -37,8 +37,8 @@ namespace controller_interface
             std::bind(&Unity::unity_callback, this, std::placeholders::_1)
         );
         _sub_initial_state = this->create_subscription<std_msgs::msg::String>(
-                "initial_state",
-                _qos,
+            "initial_state",
+            _qos,
             std::bind(&Unity::callback_initial_state, this, std::placeholders::_1)
         );
         _pub_initial_state = this->create_publisher<std_msgs::msg::String>("initial_state_unity", _qos);
