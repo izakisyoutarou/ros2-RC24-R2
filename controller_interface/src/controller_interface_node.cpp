@@ -42,8 +42,6 @@ namespace controller_interface
         defalt_move_autonomous_flag(get_parameter("defalt_move_autonomous_flag").as_bool()),
         //低速モード
         defalt_slow_speed_flag(get_parameter("defalt_slow_speed_flag").as_bool()),
-        //ボールの色情報を取得
-        defalt_color_information_flag(get_parameter("defalt_color_information_flag").as_bool()),
         //収束
         defalt_spline_convergence(get_parameter("defalt_spline_convergence").as_bool()),
         //アーム

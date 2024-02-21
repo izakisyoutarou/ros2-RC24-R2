@@ -155,9 +155,6 @@ namespace controller_interface
             const bool defalt_move_autonomous_flag;
             const bool defalt_emergency_flag;
             const bool defalt_slow_speed_flag;
-            //subcontrollerのカラー情報
-            const bool defalt_color_information_flag;
-
             const bool defalt_spline_convergence;
             const bool defalt_arm_convergence;
             
