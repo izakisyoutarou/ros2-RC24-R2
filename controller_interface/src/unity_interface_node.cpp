@@ -10,7 +10,7 @@ namespace controller_interface
     using std::string;
 
     Unity::Unity(const rclcpp::NodeOptions &options) : Unity("",options) {}
-    Unity::Unity(const std::string &name_space, const rclcpp::NodeOptions &options): rclcpp::Node("controller_interface_node", name_space, options),
+    Unity::Unity(const std::string &name_space, const rclcpp::NodeOptions &options): rclcpp::Node("unity_interface_node", name_space, options),
     //リスタート
     defalt_restart_flag(get_parameter("defalt_restart_flag").as_bool()),
     //緊急停止
