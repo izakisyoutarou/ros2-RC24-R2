@@ -100,12 +100,16 @@ namespace controller_interface
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_main, this, std::placeholders::_1)
             );
-
             //spline_pidからsub
             _sub_spline = this->create_subscription<std_msgs::msg::Bool>(
                 "is_move_tracking",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_spline, this, std::placeholders::_1)
+            );
+            _sub_initial_state = this->create_subscription<std_msgs::msg::String>(
+                "initial_state",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_initial_state, this, std::placeholders::_1)
             );
 
             //canusbへ
@@ -150,6 +154,7 @@ namespace controller_interface
                     _pub_canusb->publish(*msg_heartbeat);
                 }
             );
+
             //convergence
             _pub_timer_convergence = this->create_wall_timer(
                 std::chrono::milliseconds(convergence_ms),
@@ -160,11 +165,13 @@ namespace controller_interface
                     _pub_convergence->publish(*msg_convergence);
                 }
             );
+
             //stick
             _socket_timer = this->create_wall_timer(
                 std::chrono::milliseconds(this->get_parameter("interval_ms").as_int()),
                 [this] { _recv_callback(); }
             );
+
             //sequenser
             _start_timer = this->create_wall_timer(
                 std::chrono::milliseconds(this->get_parameter("start_ms").as_int()),
@@ -188,8 +195,7 @@ namespace controller_interface
 
         }
 
-        void SmartphoneGamepad::callback_main_pad(const std_msgs::msg::String::SharedPtr msg)
-        {
+        void SmartphoneGamepad::callback_main_pad(const std_msgs::msg::String::SharedPtr msg){
             //リスタート
             auto msg_restart = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_restart->canid = can_restart_id;
@@ -206,7 +212,6 @@ namespace controller_interface
             msg_btn->candlc = 8;
 
             uint8_t _candata_btn[8];
-            bool robotcontrol_flag = false;
             bool flag_restart = false;
             is_restart = false;
 
@@ -224,7 +229,6 @@ namespace controller_interface
                 is_restart = true;
                 is_move_autonomous = defalt_move_autonomous_flag;
                 is_slow_speed = defalt_slow_speed_flag;
-                initial_state = "O";//要改善
                 is_spline_convergence = defalt_spline_convergence;
                 is_arm_convergence = defalt_arm_convergence;
             }
@@ -261,22 +265,6 @@ namespace controller_interface
                 initial_sequense_pickup->data = initial_pickup_state;
                 _pub_initial_sequense->publish(*initial_sequense_pickup);
             }
-            
-            if(msg->data == "y"){
-                RCLCPP_INFO(this->get_logger(), "y");
-            }
-
-            if(msg->data == "r1"){
-                RCLCPP_INFO(this->get_logger(), "r1");
-            }
-
-            if(msg->data == "l1"){
-                RCLCPP_INFO(this->get_logger(), "l1");
-            }
-
-            if(msg->data == "l2"){
-                RCLCPP_INFO(this->get_logger(), "l2");
-            }
 
             //リセットボタンを押しているか確認する
             is_restart = msg->data == "s";
@@ -300,7 +288,10 @@ namespace controller_interface
             msg_emergency->candata[0] = is_emergency;
             
             if(msg->data=="g") _pub_canusb->publish(*msg_emergency);
-            if(robotcontrol_flag == true) _pub_base_control->publish(msg_base_control);
+            if(robotcontrol_flag == true) {
+                _pub_base_control->publish(msg_base_control);
+                robotcontrol_flag = false;
+            }
             if(msg->data == "s"){
                 _pub_canusb->publish(*msg_restart);
                 _pub_canusb->publish(*msg_emergency);
@@ -323,6 +314,12 @@ namespace controller_interface
         void SmartphoneGamepad::callback_spline(const std_msgs::msg::Bool::SharedPtr msg){
             is_spline_convergence = msg->data;
         }
+
+        void SmartphoneGamepad::callback_initial_state(const std_msgs::msg::String::SharedPtr msg){
+            initial_state = msg->data;
+            robotcontrol_flag = true;
+        }
+
         //スティックの値をUDP通信でsubscribしている
         void SmartphoneGamepad::_recv_callback(){
             if(joy_main.is_recved()){

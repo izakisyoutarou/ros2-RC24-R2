@@ -39,6 +39,7 @@ namespace controller_interface
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_main_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_screen_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_state_num_R2;
+            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_initial_state;
 
             //mainボードから
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_arm_possible;
@@ -46,19 +47,12 @@ namespace controller_interface
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
 
-            //sequencerから
-
-
             //CanUsbへ
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
 
             //各nodeと共有
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
-            //ボールと苗の回収&設置
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_collection;
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_installation;
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_ball_collection;
 
             //sequenserから他のノードへ
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_initial_sequense;
@@ -76,25 +70,20 @@ namespace controller_interface
             rclcpp::TimerBase::SharedPtr _start_timer;
             rclcpp::TimerBase::SharedPtr _pub_state_communication_timer;
 
-
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
             
             //controller_mainからのcallback
             void callback_main_pad(const std_msgs::msg::String::SharedPtr msg);
             void callback_screen_pad(const std_msgs::msg::String::SharedPtr msg);
-            void callback_coatstate_pad(const std_msgs::msg::Bool::SharedPtr msg);
+            void callback_initial_state(const std_msgs::msg::String::SharedPtr msg);
 
             //mainからのcallback
             void callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
 
             //splineからのcallback
             void callback_spline(const std_msgs::msg::Bool::SharedPtr msg);
-            //sequencerからのcallback
-            void callback_arm_strage(const std_msgs::msg::String::SharedPtr msg);
-            void callback_collecting_ball(const std_msgs::msg::String::SharedPtr msg);
             void _recv_callback();
-
 
             void _recv_joy_main(const unsigned char data[16]);
 
@@ -104,25 +93,25 @@ namespace controller_interface
             std_msgs::msg::Bool msg_unity_sub_control;
             std_msgs::msg::String msg_unity_initial_state;
 
-
             //base_control用
             bool is_restart = false;
             bool is_emergency = false;
             bool is_move_autonomous = false;
             bool is_slow_speed = false;
-            std::string initial_state = "";
+            std::string initial_state = "O";
 
             //unityにsubscrib
             bool is_restart_unity = false;
             bool is_emergency_unity = false;
             bool is_move_autonomous_unity = false;
             bool is_slow_speed_unity = false;
-            std::string initial_state_unity = "";
+            std::string initial_state_unity = "O";
             
             bool spline_convergence = false;
             bool arm_convergence = false;
             bool arm_flag = false;
 
+            bool robotcontrol_flag = false;
 
             //canusb
             bool a;
