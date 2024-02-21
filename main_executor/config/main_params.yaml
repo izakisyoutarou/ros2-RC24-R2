@@ -59,6 +59,19 @@ launch: #起動パラメータ
       r1_pc: "192.168.1.2"
       r2_pc: "192.168.1.3"
 
+    convergence_ms: 100 #収束周期[ms]
+    base_state_communication_ms: 50
+    #リスタート、緊急、足回りの手自動、上物の手自動、手動の射角、ボタンのカラー情報
+    defalt_restart_flag: false
+    defalt_emergency_flag: false
+    defalt_move_autonomous_flag: true
+    defalt_arm_autonomous_flag: true
+    defalt_slow_speed_flag: false
+    #収束の初期値
+    defalt_spline_convergence: false
+    defalt_arm_calculator_convergence: false
+    defalt_arm_convergence: false
+
 spline_pid_node:
   ros__parameters:
     interval_ms: 20     #サイクル周期[ms]
@@ -97,25 +110,10 @@ controller_interface_node:
     angular_max_dec: 180.0
     
     heartbeat_ms: 100 #ハートビート周期[ms]
-    convergence_ms: 100 #収束周期[ms]
-
-    base_state_communication_ms: 100
-
     interval_ms: 50
     start_ms: 3000
     
-    #リスタート、緊急、足回りの手自動、上物の手自動、手動の射角、ボタンのカラー情報
-    defalt_restart_flag: true
-    defalt_emergency_flag: true
-    defalt_move_autonomous_flag: true
-    defalt_arm_autonomous_flag: true
-    defalt_slow_speed_flag: true
-    defalt_color_information_flag: true
-
-    #収束の初期値
-    defalt_spline_convergence: true
-    defalt_arm_calculator_convergence: true
-    defalt_arm_convergence: true
+    defalt_color_information_flag: false
 
     initial_pickup_state: "A"
     initial_inject_state: "B"
