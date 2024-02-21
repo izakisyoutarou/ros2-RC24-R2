@@ -38,7 +38,7 @@ void Gamebtn::steer_reset(rclcpp::Publisher<socketcan_interface_msg::msg::Socket
 }
 
 void Gamebtn::paddy_collect_0(bool is_arm_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
-    if(!is_arm_convergence){
+    if(is_arm_convergence){
         cout<<"paddy_collect_0"<<endl;
         auto msg_paddy_collect = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         msg_paddy_collect->canid = canid.paddy_collect;
@@ -49,7 +49,7 @@ void Gamebtn::paddy_collect_0(bool is_arm_convergence,rclcpp::Publisher<socketca
 }
 
 void Gamebtn::paddy_collect_1(bool is_arm_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
-    if(!is_arm_convergence){
+    if(is_arm_convergence){
         cout<<"paddy_collect_1"<<endl;
         auto msg_paddy_collect = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         msg_paddy_collect->canid = canid.paddy_collect;
@@ -60,11 +60,33 @@ void Gamebtn::paddy_collect_1(bool is_arm_convergence,rclcpp::Publisher<socketca
 }
 
 void Gamebtn::paddy_install(bool is_arm_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
-    if(!is_arm_convergence){
+    if(is_arm_convergence){
         cout<<"paddy_install"<<endl;
         auto msg_paddy_install = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         msg_paddy_install->canid = canid.paddy_install;
         msg_paddy_install->candlc = 0;
         _pub_canusb->publish(*msg_paddy_install);
+    }
+}
+
+void Gamebtn::net_open(bool is_net_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
+    if(!is_net_convergence){
+        cout<<"net_open"<<endl;
+        auto msg_net_open = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+        msg_net_open->canid = canid.net;
+        msg_net_open->candlc = 1;
+        msg_net_open->candata[0] = 0;
+        _pub_canusb->publish(*msg_net_open);
+    }
+}
+
+void Gamebtn::net_close(bool is_net_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
+    if(!is_net_convergence){
+        cout<<"net_close"<<endl;
+        auto msg_net_close = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+        msg_net_close->canid = canid.net;
+        msg_net_close->candlc = 1;
+        msg_net_close->candata[0] = 1;
+        _pub_canusb->publish(*msg_net_close);
     }
 }

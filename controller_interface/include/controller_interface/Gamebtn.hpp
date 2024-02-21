@@ -26,6 +26,7 @@ class Gamebtn{
             int16_t steer_reset;
             int16_t paddy_collect;
             int16_t paddy_install;
+            int16_t net;
         };
         CANID canid;
 
@@ -36,5 +37,8 @@ class Gamebtn{
         void paddy_collect_0(bool is_arm_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb);
         void paddy_collect_1(bool is_arm_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb);  
         void paddy_install(bool is_arm_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb);
+        void net_open(bool is_net_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb);
+        void net_close(bool is_net_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb);
+
 
 };

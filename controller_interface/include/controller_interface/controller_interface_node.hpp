@@ -42,10 +42,11 @@ namespace controller_interface
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_initial_state;
 
             //mainボードから
-            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_arm_possible;
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_arm_convergence;
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_net_convergence;
 
             //spline_pidから
-            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
+            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_is_move_tracking;
 
             //CanUsbへ
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
@@ -79,10 +80,11 @@ namespace controller_interface
             void callback_initial_state(const std_msgs::msg::String::SharedPtr msg);
 
             //mainからのcallback
-            void callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+            void callback_arm_convergence(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+            void callback_net_convergence(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
 
             //splineからのcallback
-            void callback_spline(const std_msgs::msg::Bool::SharedPtr msg);
+            void callback_is_move_tracking(const std_msgs::msg::Bool::SharedPtr msg);
             void _recv_callback();
 
             void _recv_joy_main(const unsigned char data[16]);
@@ -109,6 +111,7 @@ namespace controller_interface
             
             bool spline_convergence = false;
             bool arm_convergence = false;
+            bool net_convergence = false;
             bool arm_flag = false;
 
             bool robotcontrol_flag = false;
@@ -134,6 +137,7 @@ namespace controller_interface
             //convergence用
             bool is_spline_convergence;
             bool is_arm_convergence;
+            bool is_net_convergence;
 
             //初期化指定用
             const float high_manual_linear_max_vel;
@@ -146,6 +150,7 @@ namespace controller_interface
             const bool defalt_slow_speed_flag;
             const bool defalt_spline_convergence;
             const bool defalt_arm_convergence;
+            const bool defalt_net_convergence;
             
             const int16_t can_emergency_id;
             const int16_t can_heartbeat_id;
@@ -157,6 +162,7 @@ namespace controller_interface
             const int16_t can_steer_reset_id;
             const int16_t can_paddy_collect_id;
             const int16_t can_paddy_install_id;
+            const int16_t can_net_id;
             const int16_t can_main_button_id;
 
             const std::string r1_pc;
