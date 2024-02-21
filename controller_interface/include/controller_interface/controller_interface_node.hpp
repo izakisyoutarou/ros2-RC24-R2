@@ -113,7 +113,7 @@ namespace controller_interface
 
 
             //base_control用
-            bool is_reset = false;
+            bool is_restart = false;
             bool is_emergency = false;
             bool is_move_autonomous = false;
             bool is_arm_autonomous = false;
@@ -122,7 +122,7 @@ namespace controller_interface
             std::string initial_state = "";
 
             //unityにsubscrib
-            bool is_reset_unity = false;
+            bool is_restart_unity = false;
             bool is_emergency_unity = false;
             bool is_move_autonomous_unity = false;
             bool is_arm_autonomous_unity = false;
