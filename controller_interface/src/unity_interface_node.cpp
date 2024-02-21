@@ -39,8 +39,8 @@ namespace controller_interface
             std::bind(&Unity::unity_callback, this, std::placeholders::_1)
         );
         _sub_initial_state = this->create_subscription<std_msgs::msg::String>(
-                "initial_state",
-                _qos,
+            "initial_state",
+            _qos,
             std::bind(&Unity::callback_initial_state, this, std::placeholders::_1)
         );
         _pub_initial_state = this->create_publisher<std_msgs::msg::String>("initial_state_unity", _qos);
