@@ -43,6 +43,8 @@ launch: #起動パラメータ
       #ハンド
       paddy_collect: 0x200
       paddy_install: 0x201
+      #網
+      net: 0x210
       #デジタルボタン
       main_button: 0x230
 
@@ -69,6 +71,7 @@ launch: #起動パラメータ
     #収束の初期値
     defalt_spline_convergence: false
     defalt_arm_convergence: false
+    defalt_net_convergence: false
 
 spline_pid_node:
   ros__parameters:
