@@ -108,13 +108,10 @@ controller_interface_node:
     defalt_restart_flag: false
     defalt_emergency_flag: false
     defalt_move_autonomous_flag: false
-    defalt_arm_autonomous_flag: false
     defalt_slow_speed_flag: false
-    defalt_color_information_flag: false
 
     #収束の初期値
     defalt_spline_convergence: false
-    defalt_arm_calculator_convergence: false
     defalt_arm_convergence: false
 
     initial_pickup_state: "A"
