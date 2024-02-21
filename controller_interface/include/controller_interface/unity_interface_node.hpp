@@ -6,7 +6,6 @@
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "controller_interface_msg/msg/convergence.hpp"
-#include "controller_interface_msg/msg/colorball.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -40,8 +39,8 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_move_auto;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_arm;
             
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_spline;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_arm;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_spline_convergence;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_arm_convergence;
             rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_base_state_communication;
             
             rclcpp::Subscription<controller_interface_msg::msg::Convergence>::SharedPtr _sub_convergence_unity;
@@ -60,29 +59,23 @@ namespace controller_interface
             bool is_reset = false;
             bool is_emergency = false;
             bool is_move_autonomous = false;
-            bool is_arm_autonomous = false;
             bool is_slow_speed = false;
-            bool is_arm_mech_stop_m = false;
             std::string initial_state = "";
 
             bool spline_convergence = false;
-            bool arm_calculator = false;
-            bool arm = false;
+            bool arm_convergence = false;
             bool arm_flag = false;
 
             //unityにpublish
             bool is_reset_unity = false;
             bool is_emergency_unity = false;
             bool is_move_autonomous_unity = false;
-            bool is_arm_autonomous_unity = false;
             bool is_slow_speed_unity = false;
-            bool is_arm_mech_stop_m_unity = false;
             std::string initial_state_unity = "";
 
             //初期設定用
             bool defalt_restart_flag;
             bool defalt_move_autonomous_flag;
-            bool defalt_arm_autonomous_flag;
             bool defalt_emergency_flag;
             bool defalt_slow_speed_flag;
             bool defalt_spline_convergence;
