@@ -40,15 +40,10 @@ namespace controller_interface
         defalt_emergency_flag(get_parameter("defalt_emergency_flag").as_bool()),
         //手自動
         defalt_move_autonomous_flag(get_parameter("defalt_move_autonomous_flag").as_bool()),
-        //アーム手自動
-        defalt_arm_autonomous_flag(get_parameter("defalt_arm_autonomous_flag").as_bool()),
         //低速モード
         defalt_slow_speed_flag(get_parameter("defalt_slow_speed_flag").as_bool()),
-        //ボールの色情報を取得
-        defalt_color_information_flag(get_parameter("defalt_color_information_flag").as_bool()),
         //収束
         defalt_spline_convergence(get_parameter("defalt_spline_convergence").as_bool()),
-        defalt_arm_calculator_convergence(get_parameter("defalt_arm_calculator_convergence").as_bool()),
         //アーム
         defalt_arm_convergence(get_parameter("defalt_arm_convergence").as_bool()),        
         //通信系
@@ -118,8 +113,6 @@ namespace controller_interface
             //armへ
             _pub_base_control = this->create_publisher<controller_interface_msg::msg::BaseControl>("base_control",_qos);
             _pub_convergence = this->create_publisher<controller_interface_msg::msg::Convergence>("convergence" , _qos);
-            _pub_color_ball_R2 = this->create_publisher<controller_interface_msg::msg::Colorball>("color_information_R2", _qos);
-            _pub_arm = this->create_publisher<std_msgs::msg::Bool>("arm_info", _qos);
             //sprine_pid
             _pub_move_node = this->create_publisher<std_msgs::msg::String>("move_node", _qos);
             //gazeboへ
@@ -132,15 +125,9 @@ namespace controller_interface
             msg_base_control->is_restart = defalt_restart_flag;
             msg_base_control->is_emergency = defalt_emergency_flag;
             msg_base_control->is_move_autonomous = defalt_move_autonomous_flag;
-            msg_base_control->is_arm_autonomous = defalt_arm_autonomous_flag;
             msg_base_control->is_slow_speed = defalt_slow_speed_flag;
             msg_base_control->initial_state = "O";
             _pub_base_control->publish(*msg_base_control);
-
-            //armの初期情報
-            auto msg_arm_con = std::make_shared<std_msgs::msg::Bool>();
-            msg_arm_con->data = arm_flag;
-            _pub_arm ->publish(*msg_arm_con);
 
             auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
             msg_emergency->canid = can_emergency_id;
@@ -150,8 +137,7 @@ namespace controller_interface
 
             auto msg_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
             msg_convergence->spline_convergence = defalt_spline_convergence;
-            msg_convergence->arm_calculator = defalt_arm_calculator_convergence;
-            msg_convergence->arm = defalt_arm_convergence;
+            msg_convergence->arm_convergence = defalt_arm_convergence;
             _pub_convergence->publish(*msg_convergence);
 
             //ハートビート
@@ -170,7 +156,7 @@ namespace controller_interface
                 [this] {
                     auto msg_convergence = std::make_shared<controller_interface_msg::msg::Convergence>();
                     msg_convergence->spline_convergence = is_spline_convergence;                   
-                    msg_convergence->arm = is_arm_convergence;
+                    msg_convergence->arm_convergence = is_arm_convergence;
                     _pub_convergence->publish(*msg_convergence);
                 }
             );
@@ -237,7 +223,6 @@ namespace controller_interface
                 is_emergency = false;
                 is_restart = true;
                 is_move_autonomous = defalt_move_autonomous_flag;
-                is_arm_autonomous = defalt_arm_autonomous_flag;
                 is_slow_speed = defalt_slow_speed_flag;
                 initial_state = "O";//要改善
                 is_spline_convergence = defalt_spline_convergence;
@@ -265,12 +250,10 @@ namespace controller_interface
                 if(is_move_autonomous == false){
                     cout<<"自動"<<endl;
                     is_move_autonomous = true;
-                    is_arm_autonomous = true;
                 }
                 else{
                     cout<<"手動"<<endl;
                     is_move_autonomous = false;
-                    is_arm_autonomous = false;
                 }
             }
             else if(msg->data == "l3"){
@@ -302,7 +285,6 @@ namespace controller_interface
             msg_base_control.is_restart = is_restart;
             msg_base_control.is_emergency = is_emergency;
             msg_base_control.is_move_autonomous = is_move_autonomous;
-            msg_base_control.is_arm_autonomous = is_arm_autonomous;
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
             

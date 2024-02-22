@@ -1,0 +1,3 @@
+bool spline_convergence
+bool arm_convergence
+bool net_convergence
