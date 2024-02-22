@@ -113,7 +113,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                 //方向回転
                 progress++;
             } 
-            else if(progress == n++ && /*足回り収束*/){
+            else if(progress == n++  /*足回り収束*/){
                 //回収
                 progress++;
             }
