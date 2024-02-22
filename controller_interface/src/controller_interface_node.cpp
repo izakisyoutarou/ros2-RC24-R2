@@ -202,8 +202,7 @@ namespace controller_interface
             slow_velPlanner_linear_y.limit(slow_limit_linear);
 
             velPlanner_angular_z.limit(limit_angular);
-
-        }
+                    }
 
         void SmartphoneGamepad::callback_main_pad(const std_msgs::msg::String::SharedPtr msg){
             //リスタート
@@ -346,36 +345,35 @@ namespace controller_interface
 
         //ジョイスティック
         void SmartphoneGamepad::_recv_joy_main(const unsigned char data[16]){
-            float values[4];
-            //メモリをコピー
-            memcpy(values, data, sizeof(float)*4);
-            auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_linear->canid = can_linear_id;
-            msg_linear->candlc = 8;
-            auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-            msg_angular->canid = can_angular_id;
-            msg_angular->candlc = 4;
-            auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
 
-            bool flag_move_autonomous = false;
-            
-            uint8_t _candata_joy[8];
             //手動モード
             if(is_move_autonomous == false){
+                float values[4];
+                memcpy(values, data, sizeof(float)*4);
+                auto msg_linear = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                msg_linear->canid = can_linear_id;
+                msg_linear->candlc = 8;
+                auto msg_angular = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                msg_angular->canid = can_angular_id;
+                msg_angular->candlc = 4;
+                auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
+                uint8_t _candata_joy[8];
                 //低速モード
                 if(is_slow_speed == true){
                     slow_velPlanner_linear_x.vel(static_cast<double>(values[1]));//unityとロボットにおける。xとyが違うので逆にしている。
-                    slow_velPlanner_linear_y.vel(static_cast<double>(-values[0]));
-                    velPlanner_angular_z.vel(static_cast<double>(-values[2]));
+                    slow_velPlanner_linear_y.vel(static_cast<double>(values[0]));
+                    velPlanner_angular_z.vel(static_cast<double>(values[2]));
+
                     slow_velPlanner_linear_x.cycle();
                     slow_velPlanner_linear_y.cycle();
                     velPlanner_angular_z.cycle();
+
                     //floatからバイト(メモリ)に変換
-                    float_to_bytes(_candata_joy, static_cast<float>(-slow_velPlanner_linear_x.vel()) * slow_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(-slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(slow_velPlanner_linear_x.vel()) * slow_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
                     
                     msg_gazebo->linear.x = slow_velPlanner_linear_x.vel();
@@ -384,19 +382,19 @@ namespace controller_interface
                 }
                 //高速モードのとき
                 else {
-                    high_velPlanner_linear_x.vel(static_cast<double>(values[1]));//unityとロボットにおける。xとyが違うので逆にしている。
-                    high_velPlanner_linear_y.vel(static_cast<double>(-values[0]));
-                    velPlanner_angular_z.vel(static_cast<double>(-values[2]));
+                    high_velPlanner_linear_x.vel(static_cast<double>(values[1]));
+                    high_velPlanner_linear_y.vel(static_cast<double>(values[0]));
+                    velPlanner_angular_z.vel(static_cast<double>(values[2]));
 
                     high_velPlanner_linear_x.cycle();
                     high_velPlanner_linear_y.cycle();
                     velPlanner_angular_z.cycle();
 
-                    float_to_bytes(_candata_joy, static_cast<float>(-high_velPlanner_linear_x.vel()) * high_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(-high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(high_velPlanner_linear_x.vel()) * high_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
                     msg_gazebo->linear.x = high_velPlanner_linear_x.vel();
