@@ -1,17 +1,15 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: false
-    scan: false
+    slcan: true
+    scan: true
     trajectory_planner: true
     
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
-    initial_pose: [0.67, 1.35, 0.0]  #初期位置[x,y,yaw]
-    # initial_pose: [0.35, 0.4, 0.0]  #初期位置[x,y,yaw]
+    initial_pose: [0.35, 0.4, 0.0]  #初期位置[x,y,yaw]
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
-    tf_laser2robot: [0.224,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
-    # tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,-1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,-1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
 
     court_color: "red" #コート情報
 
@@ -45,9 +43,13 @@ launch: #起動パラメータ
       #ハンド
       paddy_collect: 0x200
       paddy_install: 0x201
+      #網
+      net: 0x210
       #デジタルボタン
       main_button: 0x230
-      vel: 0x400
+
+      vel: 0x400 #適当
+      ang: 0x401 #適当
         
     port:
       joy_main: 50000
@@ -58,6 +60,18 @@ launch: #起動パラメータ
     ip:
       r1_pc: "192.168.1.2"
       r2_pc: "192.168.1.3"
+
+    convergence_ms: 100 #収束周期[ms]
+    base_state_communication_ms: 50
+    #リスタート、緊急、足回りの手自動、上物の手自動、手動の射角、ボタンのカラー情報
+    defalt_restart_flag: false
+    defalt_emergency_flag: false
+    defalt_move_autonomous_flag: false
+    defalt_slow_speed_flag: false
+    #収束の初期値
+    defalt_spline_convergence: false
+    defalt_arm_convergence: false
+    defalt_net_convergence: false
 
 spline_pid_node:
   ros__parameters:
@@ -97,26 +111,9 @@ controller_interface_node:
     angular_max_dec: 180.0
     
     heartbeat_ms: 100 #ハートビート周期[ms]
-    convergence_ms: 100 #収束周期[ms]
-
-    base_state_communication_ms: 100
-
     interval_ms: 50
     start_ms: 3000
     
-    #リスタート、緊急、足回りの手自動、上物の手自動、手動の射角、ボタンのカラー情報
-    defalt_restart_flag: true
-    defalt_emergency_flag: true
-    defalt_move_autonomous_flag: true
-    defalt_arm_autonomous_flag: true
-    defalt_slow_speed_flag: true
-    defalt_color_information_flag: true
-
-    #収束の初期値
-    defalt_spline_convergence: true
-    defalt_arm_calculator_convergence: true
-    defalt_arm_convergence: true
-
     initial_pickup_state: "A"
     initial_inject_state: "B"
 
@@ -129,14 +126,24 @@ arm_interface_node:
 rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
-    laser_weight: 0.8 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 11.0e-5 #値が大きくなると共分散が小さくなる 
-    odom_weight_angler: 2.0e-6
+    laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
+    odom_weight_liner: 5.0e-4 #値が大きくなると共分散が小さくなる 
+    odom_weight_angler: 2.0e-5
     voxel_size: 0.035
     trial_num: 50
     inlier_dist_threshold: 0.017
-    inlier_length_threshold: 1.0 #インライアのしきい値
-    second_ransac: true           #2回ransacをするか
+    inlier_length_threshold: 0.3 #インライアのしきい値
+    second_ransac: false           #2回ransacをするか
+    #以下カルマンフィルタのノイズ->値を小さくするとセンサーが優先される
+    cov_sys_px: 0.1    # システム雑音の位置x[m]の標準偏差
+    cov_sys_py: 0.1    # システム雑音の位置x[m]の標準偏差
+    cov_sys_yaw: 0.1   # システム雑音の角度yaw[deg]の標準偏差
+    cov_obs_px1: 0.2   # 観測雑音の位置x[m]の標準偏差
+    cov_obs_py1: 0.2   # 観測雑音の位置y[m]の標準偏差
+    cov_obs_px2: 0.1   # 観測雑音の位置x[m]の標準偏差
+    cov_obs_py2: 0.1   # 観測雑音の位置x[m]の標準偏差
+    cov_px: 0.5        # x誤差共分散行列
+    cov_py: 0.5        # y誤差共分散行列
 
 injection_param_calculator_node:
   ros__parameters:
