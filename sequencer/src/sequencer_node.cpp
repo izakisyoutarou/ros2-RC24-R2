@@ -9,8 +9,10 @@ namespace sequencer{
 Sequencer::Sequencer(const rclcpp::NodeOptions &options) : Sequencer("", options) {}
 
 Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &options)
-: rclcpp::Node("sequencer_node", name_space, options)
-    
+: rclcpp::Node("sequencer_node", name_space, options),
+        can_paddy_collect_id(get_parameter("canid.paddy_collect").as_int()),
+        can_paddy_install_id(get_parameter("canid.paddy_install").as_int()),
+        can_net_id(get_parameter("canid.net").as_int())    
 {
 
     _subscription_convergence = this->create_subscription<controller_interface_msg::msg::Convergence>(
@@ -79,42 +81,94 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
 void Sequencer::callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg){
     int n = 0;
     if(is_start){
-        //ひし形シーケンス
-        if(sequence_mode == SEQUENCE_MODE::rhombus){
+        //ストレージシーケンス
+        if(sequence_mode == SEQUENCE_MODE::storage){
             if(progress == n++){
                 command_move_node("c2");
                 progress++;
             }
-            else if(progress == n++ && msg->spline_convergence && get_front_ball){
-                if(front_ball){
-                    //手前回収
-                }
-                else {
-                    //奥回収
-                }
-            } 
-            else if(progress == n++ /*&&アーム高さN以上&&吸着判定*/){
+            else if(progress == n++ && msg->spline_convergence && way_point[1] == 'T' && get_front_ball){
+                if(front_ball) command_paddy_collect_front();
+                else command_paddy_collect_back();
+                progress++;
+            }
+            else if(progress == n++ && msg->arm_convergence) {
                 command_sequence(SEQUENCE_MODE::silo);
-            } 
+                ball_num++;
+            }
         }
+
+         //トランスファーシーケンス
+        else if(sequence_mode == SEQUENCE_MODE::transfer){
+            if(progress == n++){
+                command_move_node("ST8");
+                progress++;
+            }
+            else if(progress == n++ && msg->spline_convergence){
+                command_net_close();
+                progress++;
+            } 
+            else if(progress == n++ && msg->net_convergence){
+                command_net_open();
+                //方向回転
+                progress++;
+            } 
+            else if(progress == n++ && /*足回り収束*/){
+                //回収
+                progress++;
+            }
+            else if(progress == n++ && msg->arm_convergence) {
+                command_sequence(SEQUENCE_MODE::silo);
+                ball_num++;
+            }
+        }
+
+         //コレクトシーケンス
+        else if(sequence_mode == SEQUENCE_MODE::collect){
+            if(progress == n++){
+                command_move_node("c2");
+                progress++;
+            }
+            else if(progress == n++){
+                progress++;
+            } 
+            else if(progress == n++){
+                progress++;
+            } 
+            else if(progress == n++){
+                progress++;
+            }
+            else if(progress == n++ && msg->arm_convergence) command_sequence(SEQUENCE_MODE::silo);
+        }     
+
         //サイロシーケンス
         else if(sequence_mode == SEQUENCE_MODE::silo){
             if(progress == n++){
                 command_move_node("c1");
                 progress++;
             }
-            else if(progress == n++ && msg->spline_convergence){
-                //サイロコマンド
+            else if(progress == n++ && msg->spline_convergence && way_point[1] == 'I'){
+                command_paddy_install();
             } 
-            else if(progress == n++ /*非吸着判定*/){
-                command_sequence(SEQUENCE_MODE::rhombus);
+            else if(progress == n++ && msg->arm_convergence) {
+                if(sequence_mode == SEQUENCE_MODE::storage) {
+                    if(ball_num < 6) command_sequence(SEQUENCE_MODE::storage);
+                    else {
+                        command_sequence(SEQUENCE_MODE::transfer);
+                        ball_num = 0;                        
+                    }
+                }
+                else if(sequence_mode == SEQUENCE_MODE::transfer) {
+                    if(ball_num < 6) command_sequence(SEQUENCE_MODE::transfer);
+                    else{
+                        command_sequence(SEQUENCE_MODE::collect);
+                        ball_num = 0;
+                    }
+                }
+                else command_sequence(SEQUENCE_MODE::collect);
             }
         }
-        
-        //回収シーケンス
-        else if(sequence_mode == SEQUENCE_MODE::collect){
-            
-        }
+
     }
 }
 
@@ -125,14 +179,16 @@ void Sequencer::callback_base_control(const controller_interface_msg::msg::BaseC
 }
 
 void Sequencer::callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg){
-    if(msg->data == 0) command_sequence(SEQUENCE_MODE::rhombus);
-    else if(msg->data == 1) command_sequence(SEQUENCE_MODE::silo);
+    if(msg->data == 0) command_sequence(SEQUENCE_MODE::storage);
+    else if(msg->data == 1) command_sequence(SEQUENCE_MODE::transfer);
     else if(msg->data == 2) command_sequence(SEQUENCE_MODE::collect);
+    else if(msg->data == 3) command_sequence(SEQUENCE_MODE::silo);
     is_start = true;
 }
 
 void Sequencer::callback_collection_point(const std_msgs::msg::String::SharedPtr msg){
-    command_move_interrupt_node(msg->data);
+    if(msg->data == "" && sequence_mode == SEQUENCE_MODE::storage) command_sequence(SEQUENCE_MODE::transfer);
+    else command_move_interrupt_node(msg->data);
 }
 
 void Sequencer::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg){
@@ -141,6 +197,7 @@ void Sequencer::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr 
     this->self_pose.z = msg->z;
     for(int i = 0; i < node_list.size(); i++){
         if(abs(node_list[i].x - self_pose.x) <= 0.1 && abs(node_list[i].y - self_pose.y) <= 0.1){
+            way_point = node_list[i].name;
             auto msg_way_point = std::make_shared<std_msgs::msg::String>();
             msg_way_point->data = node_list[i].name;
             _publisher_way_point->publish(*msg_way_point); 
@@ -154,22 +211,16 @@ void Sequencer::callback_front_ball(const std_msgs::msg::Bool::SharedPtr msg){
     get_front_ball = true;
 }
 
-void Sequencer::callback(const std_msgs::msg::String::SharedPtr msg){
-
-}
-
 void Sequencer::command_move_node(const std::string node){
     auto msg_move_node = std::make_shared<std_msgs::msg::String>();
     msg_move_node->data = node;
     _publisher_move_node->publish(*msg_move_node);
 }
 
-void Sequencer::command_canusb(const int16_t id, const uint8_t dlc, const uint8_t data[8]){
-    auto msg_canusb = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_canusb->canid = id;
-    msg_canusb->candlc = dlc;
-    for(int i = 0; i < dlc; i++) msg_canusb->candata[i] = data[i];
-    _publisher_canusb->publish(*msg_canusb);
+void Sequencer::command_move_interrupt_node(const std::string node){
+    auto msg_move_interrupt_node = std::make_shared<std_msgs::msg::String>();
+    msg_move_interrupt_node->data = node;
+    _publisher_move_interrupt_node->publish(*msg_move_interrupt_node);
 }
 
 void Sequencer::command_sequence(const SEQUENCE_MODE sequence){
@@ -180,10 +231,39 @@ void Sequencer::command_sequence(const SEQUENCE_MODE sequence){
     progress = 0;
 }
 
-void Sequencer::command_move_interrupt_node(const std::string node){
-    auto msg_move_interrupt_node = std::make_shared<std_msgs::msg::String>();
-    msg_move_interrupt_node->data = node;
-    _publisher_move_interrupt_node->publish(*msg_move_interrupt_node);
+void Sequencer::command_canusb_uint8(const int16_t id, const uint8_t data){
+    auto msg_canusb = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+    msg_canusb->canid = id;
+    msg_canusb->candlc = 1;
+    msg_canusb->candata[0] = data;
+    _publisher_canusb->publish(*msg_canusb);
+}
+
+void Sequencer::command_canusb_empty(const int16_t id){
+    auto msg_canusb = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+    msg_canusb->canid = id;
+    msg_canusb->candlc = 0;
+    _publisher_canusb->publish(*msg_canusb);
+}
+
+void Sequencer::command_paddy_collect_front(){
+    command_canusb_uint8(can_paddy_collect_id, 0);
+}
+
+void Sequencer::command_paddy_collect_back(){
+    command_canusb_uint8(can_paddy_collect_id, 1);
+}
+
+void Sequencer::command_paddy_install(){
+    command_canusb_empty(can_paddy_install_id);    
+}
+
+void Sequencer::command_net_open(){
+    command_canusb_uint8(can_net_id, 0);
+}
+
+void Sequencer::command_net_close(){
+    command_canusb_uint8(can_net_id, 1);
 }
 
 }  // namespace sequencer
