@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <future>
+#include <boost/format.hpp>
 
 using namespace utils;
 
@@ -62,7 +63,9 @@ namespace controller_interface
         can_steer_reset_id(get_parameter("canid.steer_reset").as_int()),
         can_paddy_collect_id(get_parameter("canid.paddy_collect").as_int()),
         can_paddy_install_id(get_parameter("canid.paddy_install").as_int()),
+        can_paddy_convergence_id(get_parameter("canid.paddy_convergence").as_int()),
         can_net_id(get_parameter("canid.net").as_int()),
+        can_net_convergence_id(get_parameter("canid.net_convergence").as_int()),
         can_main_button_id(get_parameter("canid.main_button").as_int()),
 
         //ipアドレス
@@ -99,12 +102,12 @@ namespace controller_interface
             );
             //mainからsub
             _sub_arm_convergence = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-                "can_rx_202",
+                "can_rx_"+ (boost::format("%x") % can_paddy_convergence_id).str(),
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_arm_convergence, this, std::placeholders::_1)
             );
             _sub_net_convergence = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
-                "can_rx_211",
+                "can_rx_"+ (boost::format("%x") % can_net_convergence_id).str(),
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_net_convergence, this, std::placeholders::_1)
             );

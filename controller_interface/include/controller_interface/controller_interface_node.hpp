@@ -162,7 +162,9 @@ namespace controller_interface
             const int16_t can_steer_reset_id;
             const int16_t can_paddy_collect_id;
             const int16_t can_paddy_install_id;
+            const int16_t can_paddy_convergence_id;
             const int16_t can_net_id;
+            const int16_t can_net_convergence_id;
             const int16_t can_main_button_id;
 
             const std::string r1_pc;
