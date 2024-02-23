@@ -1,7 +1,7 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: true
-    scan: true
+    slcan: false
+    scan: false
     trajectory_planner: true
     
 
@@ -128,24 +128,24 @@ arm_interface_node:
 rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
-    laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 5.0e-4 #値が大きくなると共分散が小さくなる 
+    laser_weight: 0.75 #lidarの重み->値を大きくするとlidarが優先される
+    odom_weight_liner: 4.0e-4 #値が大きくなると共分散が小さくなる 
     odom_weight_angler: 2.0e-5
-    voxel_size: 0.035
+    voxel_size: 0.04
     trial_num: 50
-    inlier_dist_threshold: 0.017
-    inlier_length_threshold: 0.3 #インライアのしきい値
-    second_ransac: false           #2回ransacをするか
+    inlier_dist_threshold: 0.012
+    inlier_length_threshold: 0.4 #インライアのしきい値
+    second_ransac: true           #2回ransacをするか
     #以下カルマンフィルタのノイズ->値を小さくするとセンサーが優先される
-    cov_sys_px: 0.1    # システム雑音の位置x[m]の標準偏差
-    cov_sys_py: 0.1    # システム雑音の位置x[m]の標準偏差
-    cov_sys_yaw: 0.1   # システム雑音の角度yaw[deg]の標準偏差
-    cov_obs_px1: 0.2   # 観測雑音の位置x[m]の標準偏差
-    cov_obs_py1: 0.2   # 観測雑音の位置y[m]の標準偏差
-    cov_obs_px2: 0.1   # 観測雑音の位置x[m]の標準偏差
-    cov_obs_py2: 0.1   # 観測雑音の位置x[m]の標準偏差
-    cov_px: 0.5        # x誤差共分散行列
-    cov_py: 0.5        # y誤差共分散行列
+    cov_sys_px: 1.5    # システム雑音の位置x[m]の標準偏差
+    cov_sys_py: 1.5    # システム雑音の位置x[m]の標準偏差
+    cov_sys_yaw: 0.5   # システム雑音の角度yaw[deg]の標準偏差 
+    cov_obs_px1: 0.5   # 観測雑音の位置x[m]の標準偏差
+    cov_obs_py1: 0.9   # 観測雑音の位置y[m]の標準偏差
+    cov_obs_px2: 1.0   # 観測雑音の位置x[m]の標準偏差
+    cov_obs_py2: 1.0   # 観測雑音の位置x[m]の標準偏差
+    cov_px: 6.5        # x誤差共分散行列
+    cov_py: 6.5        # y誤差共分散行列
 
 sequencer_node:
   ros__parameters:
