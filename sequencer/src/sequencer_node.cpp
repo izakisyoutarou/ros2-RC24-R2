@@ -10,10 +10,16 @@ Sequencer::Sequencer(const rclcpp::NodeOptions &options) : Sequencer("", options
 
 Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &options)
 : rclcpp::Node("sequencer_node", name_space, options),
+
         court_color(get_parameter("court_color").as_string()),
         can_paddy_collect_id(get_parameter("canid.paddy_collect").as_int()),
         can_paddy_install_id(get_parameter("canid.paddy_install").as_int()),
-        can_net_id(get_parameter("canid.net").as_int())    
+        can_net_id(get_parameter("canid.net").as_int()),
+        can_hand_lift_id(get_parameter("canid.hand_lift").as_int()),
+        can_hand_fb_id(get_parameter("canid.hand_fb").as_int()),
+        can_hand_wrist_id(get_parameter("canid.hand_wrist").as_int()),
+        can_hand_suction_id(get_parameter("canid.hand_suction").as_int())
+
 {
 
     _subscription_convergence = this->create_subscription<controller_interface_msg::msg::Convergence>(
@@ -275,6 +281,15 @@ void Sequencer::command_paddy_collect_back(){ command_canusb_uint8(can_paddy_col
 void Sequencer::command_paddy_install(){ command_canusb_empty(can_paddy_install_id); }
 void Sequencer::command_net_open(){ command_canusb_uint8(can_net_id, 0); }
 void Sequencer::command_net_close(){ command_canusb_uint8(can_net_id, 1); }
+void Sequencer::command_hand_lift_suction_before(){ command_canusb_uint8(can_hand_lift_id, 0); }
+void Sequencer::command_hand_lift_suction(){ command_canusb_uint8(can_hand_lift_id, 1); }
+void Sequencer::command_hand_lift_silo(){ command_canusb_uint8(can_hand_lift_id, 2); }
+void Sequencer::command_hand_fb_front(){ command_canusb_uint8(can_hand_fb_id, 0); }
+void Sequencer::command_hand_fb_back(){ command_canusb_uint8(can_hand_fb_id, 1); }
+void Sequencer::command_hand_wrist_up(){ command_canusb_uint8(can_hand_wrist_id, 0); }
+void Sequencer::command_hand_wrist_down(){ command_canusb_uint8(can_hand_wrist_id, 1); }
+void Sequencer::command_hand_suction_on(){ command_canusb_uint8(can_hand_suction_id, 0); }
+void Sequencer::command_hand_suction_off(){ command_canusb_uint8(can_hand_suction_id, 1); }
 
 int Sequencer::silo_evaluate(std::string camera[15]){
   

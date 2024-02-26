@@ -63,11 +63,24 @@ private:
     void command_paddy_install();
     void command_net_open();
     void command_net_close();
+    void command_hand_lift_suction_before();
+    void command_hand_lift_suction();
+    void command_hand_lift_silo();
+    void command_hand_fb_front();
+    void command_hand_fb_back();
+    void command_hand_wrist_up();
+    void command_hand_wrist_down();
+    void command_hand_suction_on();
+    void command_hand_suction_off();
     int silo_evaluate(std::string camera[15]);
 
     const int16_t can_paddy_collect_id;
     const int16_t can_paddy_install_id;
     const int16_t can_net_id;
+    const int16_t can_hand_lift_id;
+    const int16_t can_hand_fb_id;
+    const int16_t can_hand_wrist_id;
+    const int16_t can_hand_suction_id;
 
     //QoS
     rclcpp::QoS _qos = rclcpp::QoS(10);
