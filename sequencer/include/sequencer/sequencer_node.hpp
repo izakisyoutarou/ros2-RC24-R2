@@ -63,6 +63,8 @@ private:
     void command_paddy_install();
     void command_net_open();
     void command_net_close();
+    // void silo_select();
+    int silo_evaluate(std::string camera[15]);
 
     const int16_t can_paddy_collect_id;
     const int16_t can_paddy_install_id;
@@ -91,6 +93,10 @@ private:
     std::string way_point = "O";
 
     geometry_msgs::msg::Vector3 self_pose;
+    std::string silo_data[5][3]; 
+    std::string silo_norm[11][4];//3,2,1,num
+    int silo_priority[5]; 
+    const std::string court_color;
     
 };
 

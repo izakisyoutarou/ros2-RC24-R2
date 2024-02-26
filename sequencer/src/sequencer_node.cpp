@@ -10,6 +10,7 @@ Sequencer::Sequencer(const rclcpp::NodeOptions &options) : Sequencer("", options
 
 Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &options)
 : rclcpp::Node("sequencer_node", name_space, options),
+        court_color(get_parameter("court_color").as_string()),
         can_paddy_collect_id(get_parameter("canid.paddy_collect").as_int()),
         can_paddy_install_id(get_parameter("canid.paddy_install").as_int()),
         can_net_id(get_parameter("canid.net").as_int())    
@@ -58,11 +59,11 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
     _publisher_move_interrupt_node = this->create_publisher<std_msgs::msg::String>("move_interrupt_node", _qos);
     
 
-    std::ifstream ifs(ament_index_cpp::get_package_share_directory("main_executor") + "/config/spline_pid/R2_nodelist.cfg");
-    std::string str;
-    while(getline(ifs, str)){
+    std::ifstream ifs0(ament_index_cpp::get_package_share_directory("main_executor") + "/config/spline_pid/R2_nodelist.cfg");
+    std::string str0;
+    while(getline(ifs0, str0)){
         std::string token;
-        std::istringstream stream(str);
+        std::istringstream stream(str0);
         int count = 0;
         Node node;
         while(getline(stream, token, ' ')){
@@ -74,7 +75,30 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
         node_list.push_back(node);
     }
 
+    std::ifstream ifs1(ament_index_cpp::get_package_share_directory("main_executor") + "/config/sequencer/silo_priority.cfg");
+    std::string str1;
+    int n = 0;
+    while(getline(ifs1, str1)){
+        std::string token;
+        std::istringstream stream(str1);
+        int count = 0;
+        while(getline(stream, token, ' ')){
+            if(token == "V") silo_norm[n][count] = "";
+            else silo_norm[n][count] = token;
+            count++;
+        }
+        n++;
+    }
+
     command_sequence(SEQUENCE_MODE::stop);
+    
+    std::string A[15] = {"","","B",
+                         "","R","R",
+                         "","","R",
+                         "","B","B",
+                         "B","","R"};
+
+    silo_evaluate(A);
 
 }
 
@@ -246,24 +270,62 @@ void Sequencer::command_canusb_empty(const int16_t id){
     _publisher_canusb->publish(*msg_canusb);
 }
 
-void Sequencer::command_paddy_collect_front(){
-    command_canusb_uint8(can_paddy_collect_id, 0);
-}
+void Sequencer::command_paddy_collect_front(){ command_canusb_uint8(can_paddy_collect_id, 0); }
+void Sequencer::command_paddy_collect_back(){ command_canusb_uint8(can_paddy_collect_id, 1); }
+void Sequencer::command_paddy_install(){ command_canusb_empty(can_paddy_install_id); }
+void Sequencer::command_net_open(){ command_canusb_uint8(can_net_id, 0); }
+void Sequencer::command_net_close(){ command_canusb_uint8(can_net_id, 1); }
 
-void Sequencer::command_paddy_collect_back(){
-    command_canusb_uint8(can_paddy_collect_id, 1);
-}
+int Sequencer::silo_evaluate(std::string camera[15]){
+  
+    //コート色による情報反転
+    if(court_color == "blue"){
+        std::string data[15]; 
+        int num[15] = {12,13,14,9,10,11,6,7,8,3,4,5,0,1,2};
+        for(int i = 0; i < 15; i++) data[i] = camera[i];
+        for(int i = 0; i < 15; i++) camera[i] = data[num[i]];
+    }    
+    
+    //データの格納
+    for(int i = 0; i < 15; i++) {
+        if(court_color == "blue"){
+            if(camera[i] == "B") silo_data[i/3][i%3] = "M";
+            else if(camera[i] == "R") silo_data[i/3][i%3] = "E";
+            else silo_data[i/3][i%3] = "";
+        }
+        else if(court_color == "red"){
+            if(camera[i] == "B") silo_data[i/3][i%3] = "E";
+            else if(camera[i] == "R") silo_data[i/3][i%3] = "M";
+            else silo_data[i/3][i%3] = "";
+        }
+    }
 
-void Sequencer::command_paddy_install(){
-    command_canusb_empty(can_paddy_install_id);    
-}
+    //評価判定
+    for(int i = 0; i < 5; i++){
+        bool check = false;
+        for(int j = 0; j < 11; j++){
+            if(silo_data[i][0] == silo_norm[j][0] && silo_data[i][1] == silo_norm[j][1] && silo_data[i][2] == silo_norm[j][2]) {
+                silo_priority[i] = std::stoi(silo_norm[j][3]);
+                check = true;
+                break;
+            }
+        }
+        if(!check) silo_priority[i] = 10;
+    }
 
-void Sequencer::command_net_open(){
-    command_canusb_uint8(can_net_id, 0);
-}
+    //評価比較
+    int silo_num = 0;
+    int priority_min = silo_priority[0];
+    for(int i = 1; i < 5; i++){
+        if(silo_priority[i] < priority_min){
+            priority_min = silo_priority[i];
+            silo_num = i;
+        }
+    }
+         
+    RCLCPP_INFO(get_logger(),"%d",silo_num);   
 
-void Sequencer::command_net_close(){
-    command_canusb_uint8(can_net_id, 1);
+    return silo_num;
 }
 
 }  // namespace sequencer
