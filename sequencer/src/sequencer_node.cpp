@@ -322,8 +322,6 @@ int Sequencer::silo_evaluate(std::string camera[15]){
             silo_num = i;
         }
     }
-         
-    RCLCPP_INFO(get_logger(),"%d",silo_num);   
 
     return silo_num;
 }
