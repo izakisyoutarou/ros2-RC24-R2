@@ -18,7 +18,8 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
         can_hand_lift_id(get_parameter("canid.hand_lift").as_int()),
         can_hand_fb_id(get_parameter("canid.hand_fb").as_int()),
         can_hand_wrist_id(get_parameter("canid.hand_wrist").as_int()),
-        can_hand_suction_id(get_parameter("canid.hand_suction").as_int())
+        can_hand_suction_id(get_parameter("canid.hand_suction").as_int()),
+        R2_state(get_parameter("R2_state").as_str())
 
 {
 
@@ -109,97 +110,103 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
 }
 
 void Sequencer::callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg){
-    int n = 0;
-    if(is_start){
-        //ストレージシーケンス
-        if(sequence_mode == SEQUENCE_MODE::storage){
-            if(progress == n++){
-                command_move_node("c2");
-                progress++;
-            }
-            else if(progress == n++ && msg->spline_convergence && way_point[1] == 'T' && get_front_ball){
-                if(front_ball) command_paddy_collect_front();
-                else command_paddy_collect_back();
-                progress++;
-            }
-            else if(progress == n++ && msg->arm_convergence) {
-                command_sequence(SEQUENCE_MODE::silo);
-                ball_num++;
-            }
-        }
-
-         //トランスファーシーケンス
-        else if(sequence_mode == SEQUENCE_MODE::transfer){
-            if(progress == n++){
-                command_move_node("ST8");
-                progress++;
-            }
-            else if(progress == n++ && msg->spline_convergence){
-                command_net_close();
-                progress++;
-            } 
-            else if(progress == n++ && msg->net_convergence){
-                command_net_open();
-                //方向回転
-                progress++;
-            } 
-            else if(progress == n++  /*足回り収束*/){
-                //回収
-                progress++;
-            }
-            else if(progress == n++ && msg->arm_convergence) {
-                command_sequence(SEQUENCE_MODE::silo);
-                ball_num++;
-            }
-        }
-
-         //コレクトシーケンス
-        else if(sequence_mode == SEQUENCE_MODE::collect){
-            if(progress == n++){
-                command_move_node("c2");
-                progress++;
-            }
-            else if(progress == n++){
-                progress++;
-            } 
-            else if(progress == n++){
-                progress++;
-            } 
-            else if(progress == n++){
-                progress++;
-            }
-            else if(progress == n++ && msg->arm_convergence) command_sequence(SEQUENCE_MODE::silo);
-        }     
-
-        //サイロシーケンス
-        else if(sequence_mode == SEQUENCE_MODE::silo){
-            if(progress == n++){
-                command_move_node("c1");
-                progress++;
-            }
-            else if(progress == n++ && msg->spline_convergence && way_point[1] == 'I'){
-                command_paddy_install();
-            } 
-            else if(progress == n++ && msg->arm_convergence) {
-                if(sequence_mode == SEQUENCE_MODE::storage) {
-                    if(ball_num < 6) command_sequence(SEQUENCE_MODE::storage);
-                    else {
-                        command_sequence(SEQUENCE_MODE::transfer);
-                        ball_num = 0;                        
-                    }
+    if(R2_state = "old"){
+        int n = 0;
+        if(is_start){
+            //ストレージシーケンス
+            if(sequence_mode == SEQUENCE_MODE::storage){
+                if(progress == n++){
+                    command_move_node("c2");
+                    progress++;
                 }
-                else if(sequence_mode == SEQUENCE_MODE::transfer) {
-                    if(ball_num < 6) command_sequence(SEQUENCE_MODE::transfer);
-                    else{
-                        command_sequence(SEQUENCE_MODE::collect);
-                        ball_num = 0;
-                    }
+                else if(progress == n++ && msg->spline_convergence && way_point[1] == 'T' && get_front_ball){
+                    if(front_ball) command_paddy_collect_front();
+                    else command_paddy_collect_back();
+                    progress++;
                 }
-                else command_sequence(SEQUENCE_MODE::collect);
+                else if(progress == n++ && msg->arm_convergence) {
+                    command_sequence(SEQUENCE_MODE::silo);
+                    ball_num++;
+                }
             }
+
+            //トランスファーシーケンス
+            else if(sequence_mode == SEQUENCE_MODE::transfer){
+                if(progress == n++){
+                    command_move_node("ST8");
+                    progress++;
+                }
+                else if(progress == n++ && msg->spline_convergence){
+                    command_net_close();
+                    progress++;
+                } 
+                else if(progress == n++ && msg->net_convergence){
+                    command_net_open();
+                    //方向回転
+                    progress++;
+                } 
+                else if(progress == n++  /*足回り収束*/){
+                    //回収
+                    progress++;
+                }
+                else if(progress == n++ && msg->arm_convergence) {
+                    command_sequence(SEQUENCE_MODE::silo);
+                    ball_num++;
+                }
+            }
+
+            //コレクトシーケンス
+            else if(sequence_mode == SEQUENCE_MODE::collect){
+                if(progress == n++){
+                    command_move_node("c2");
+                    progress++;
+                }
+                else if(progress == n++){
+                    progress++;
+                } 
+                else if(progress == n++){
+                    progress++;
+                } 
+                else if(progress == n++){
+                    progress++;
+                }
+                else if(progress == n++ && msg->arm_convergence) command_sequence(SEQUENCE_MODE::silo);
+            }     
+
+            //サイロシーケンス
+            else if(sequence_mode == SEQUENCE_MODE::silo){
+                if(progress == n++){
+                    command_move_node("c1");
+                    progress++;
+                }
+                else if(progress == n++ && msg->spline_convergence && way_point[1] == 'I'){
+                    command_paddy_install();
+                } 
+                else if(progress == n++ && msg->arm_convergence) {
+                    if(sequence_mode == SEQUENCE_MODE::storage) {
+                        if(ball_num < 6) command_sequence(SEQUENCE_MODE::storage);
+                        else {
+                            command_sequence(SEQUENCE_MODE::transfer);
+                            ball_num = 0;                        
+                        }
+                    }
+                    else if(sequence_mode == SEQUENCE_MODE::transfer) {
+                        if(ball_num < 6) command_sequence(SEQUENCE_MODE::transfer);
+                        else{
+                            command_sequence(SEQUENCE_MODE::collect);
+                            ball_num = 0;
+                        }
+                    }
+                    else command_sequence(SEQUENCE_MODE::collect);
+                }
+            }
+
         }
+    }
+    else if(R2_state = "new"){
 
     }
+
 }
 
 void Sequencer::callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){

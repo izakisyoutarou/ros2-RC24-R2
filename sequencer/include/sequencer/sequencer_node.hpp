@@ -109,6 +109,8 @@ private:
     std::string silo_norm[11][4];//3,2,1,num
     int silo_priority[5]; 
     const std::string court_color;
+
+    const std::string R2_state;
     
 };
 
