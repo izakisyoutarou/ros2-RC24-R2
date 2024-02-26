@@ -63,7 +63,6 @@ private:
     void command_paddy_install();
     void command_net_open();
     void command_net_close();
-    // void silo_select();
     int silo_evaluate(std::string camera[15]);
 
     const int16_t can_paddy_collect_id;
