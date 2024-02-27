@@ -41,6 +41,7 @@ namespace controller_interface
             
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_spline_convergence;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_arm_convergence;
+            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_net_convergence;
             rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_base_state_communication;
             
             rclcpp::Subscription<controller_interface_msg::msg::Convergence>::SharedPtr _sub_convergence_unity;
@@ -64,6 +65,7 @@ namespace controller_interface
 
             bool spline_convergence = false;
             bool arm_convergence = false;
+            bool net_convergence = false;
             bool arm_flag = false;
 
             //unityにpublish
@@ -80,6 +82,7 @@ namespace controller_interface
             bool defalt_slow_speed_flag;
             bool defalt_spline_convergence;
             bool defalt_arm_convergence;
+            bool defalt_net_convergence;
 
             std_msgs::msg::Bool msg_unity_control;
             std_msgs::msg::String msg_unity_initial_state;
