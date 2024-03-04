@@ -10,6 +10,8 @@
 #include "controller_interface_msg/msg/convergence.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
+#include "path_msg/msg/turning.hpp"
+#include "utilities/utils.hpp"
 
 namespace sequencer{
 
@@ -38,6 +40,8 @@ private:
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_collection_point;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_self_pose;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _subscription_front_ball;
+    rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _subscription_tof;
+    rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_ball_coordinate;
 
     void callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg);
     void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
@@ -45,17 +49,22 @@ private:
     void callback_collection_point(const std_msgs::msg::String::SharedPtr msg);
     void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
     void callback_front_ball(const std_msgs::msg::Bool::SharedPtr msg);
-    void callback(const std_msgs::msg::String::SharedPtr msg);
+    void callback_tof(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
+    void callback_ball_coordinate(const geometry_msgs::msg::Vector3::SharedPtr msg);
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_node;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _publisher_canusb;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_way_point;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_now_sequence;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_interrupt_node;
+    rclcpp::Publisher<path_msg::msg::Turning>::SharedPtr _pub_spin_position;
+    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _publisher_ball_tracking;
 
     void command_move_node(const std::string node);
     void command_move_interrupt_node(const std::string node);
+    void command_spin_position(const float angle);
     void command_sequence(SEQUENCE_MODE sequence);
+
     void command_canusb_uint8(const int16_t id, const uint8_t data);
     void command_canusb_empty(const int16_t id);
     void command_paddy_collect_front();
@@ -65,9 +74,11 @@ private:
     void command_net_close();
     void command_hand_lift_suction_before();
     void command_hand_lift_suction();
+    void command_hand_lift_pickup();
     void command_hand_lift_silo();
     void command_hand_fb_front();
     void command_hand_fb_back();
+    void command_hand_fb_silo();
     void command_hand_wrist_up();
     void command_hand_wrist_down();
     void command_hand_suction_on();
@@ -81,6 +92,7 @@ private:
     const int16_t can_hand_fb_id;
     const int16_t can_hand_wrist_id;
     const int16_t can_hand_suction_id;
+    const int16_t can_tof_id;
 
     //QoS
     rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -100,17 +112,24 @@ private:
 
     bool is_start = false;
     bool get_front_ball = false;
+    bool get_ball_pose = false;
     bool front_ball = false;
 
     std::string way_point = "O";
 
     geometry_msgs::msg::Vector3 self_pose;
+    geometry_msgs::msg::Vector3 ball_pose;
+
     std::string silo_data[5][3]; 
     std::string silo_norm[11][4];//3,2,1,num
     int silo_priority[5]; 
     const std::string court_color;
 
     const std::string R2_state;
+    
+    bool tof[3] = {false, false, false};
+
+    SEQUENCE_MODE pre_sequence = SEQUENCE_MODE::stop;
     
 };
 
