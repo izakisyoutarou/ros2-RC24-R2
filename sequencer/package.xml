@@ -15,6 +15,8 @@
   <depend>geometry_msgs</depend>
   <depend>socketcan_interface_msg</depend>
   <depend>controller_interface_msg</depend>
+  <depend>path_msg</depend>
+  <depend>utilities</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
