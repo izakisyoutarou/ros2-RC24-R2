@@ -49,6 +49,7 @@ launch: #起動パラメータ
       hand_fb: 0x204
       hand_wrist: 0x205
       hand_suction: 0x206
+      tof: 0x207
 
       #網
       net: 0x210
