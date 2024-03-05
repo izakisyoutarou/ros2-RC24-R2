@@ -128,7 +128,8 @@ namespace ditaction_interface
             center_x = msg->xmax - msg->xmin;
             center_y = msg->ymax - msg->ymin;
 
-            ct.Rx_Ry_Rz(center_x, center_y);
+            // ct.Rx_Ry_Rz(center_x, center_y, center_dist, self_pose);
+            ct.Rx_Ry_Rz(center_x, center_y, pose);
 
             if(way_point == "C3"){
                 viz_realsense(true);
