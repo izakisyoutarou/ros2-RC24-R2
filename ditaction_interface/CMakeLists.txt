@@ -14,7 +14,12 @@ find_package(geometry_msgs REQUIRED)
 find_package(ditaction_interface_msg REQUIRED)
 find_package(controller_interface_msg REQUIRED)
 
+set(ditaction_interface_node
+  Eigen3
+)
+
 add_library(ditaction_interface_node
+    src/coordinate_transformation.cpp
     src/ditaction_interface_node.cpp
 )
 
@@ -41,7 +46,7 @@ target_include_directories(ditaction_interface_node
 
 if(NOT WIN32)
   ament_environment_hooks(
-     "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
+    "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
   )
 endif()
 

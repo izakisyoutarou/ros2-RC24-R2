@@ -128,6 +128,8 @@ namespace ditaction_interface
             center_x = msg->xmax - msg->xmin;
             center_y = msg->ymax - msg->ymin;
 
+            ct.Rx_Ry_Rz(center_x, center_y);
+
             if(way_point == "C3"){
                 viz_realsense(true);
                 if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST1";
@@ -163,6 +165,9 @@ namespace ditaction_interface
             is_self_pose_range_x_siro = (msg->x > siro_self_pose_range[0] && msg->y < siro_self_pose_range[1]) ? true : false;
             is_self_pose_range_y_siro = (msg->y > siro_self_pose_range[2] && msg->x < siro_self_pose_range[3]) ? true : false;
             is_self_pose_range_z_siro = (msg->z > siro_self_pose_range[4] && msg->y < siro_self_pose_range[5]) ? true : false;
+            pose[0] = msg->x;
+            pose[1] = msg->y;
+            pose[2] = msg->z;
         }
 
         void DitactionInterface::callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){

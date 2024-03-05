@@ -14,7 +14,7 @@
 #include "ditaction_interface_msg/msg/visualizer_c1.hpp"
 #include "ditaction_interface_msg/msg/visualizer_realsense.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
-
+#include "ditaction_interface/coordinate_transformation.hpp"
 #include "visibility_control.h"
 
 namespace ditaction_interface
@@ -26,6 +26,8 @@ namespace ditaction_interface
             
             DITACTION_INTERFACE_PUBLIC
             explicit DitactionInterface(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+
+            
 
         private:
             //yolox_ros_cppのrealsenseから
@@ -91,6 +93,7 @@ namespace ditaction_interface
             //変数
             double center_x;
             double center_y;
+            Vector3d pose;
             std::string now_sequence;
             std::string way_point;
 
@@ -124,5 +127,8 @@ namespace ditaction_interface
 
             //フィールド
             geometry_msgs::msg::Vector3 self_pose;
+
+            //座標変換
+            coordinate_transformation ct;
     };
 }

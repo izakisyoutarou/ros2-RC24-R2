@@ -1,17 +1,15 @@
 launch: #起動パラメータ
   ros__parameters:
     slcan: false
-    scan: true
+    scan: false
     trajectory_planner: false
-    yolox_c1: true
-    yolox_realsense: false
     
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
-    initial_pose: [0.5, 0.5, 0.0]  #初期位置[x,y,yaw]
+    initial_pose: [0.35, 0.4, 0.0]  #初期位置[x,y,yaw]
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
-    tf_laser2robot: [0.3,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,-1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
     court_color: "red" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
@@ -35,8 +33,9 @@ launch: #起動パラメータ
       #100番台(足回り)
       linear: 0x100
       angular: 0x101
-      odom_linear: 0x110
-      odom_angular: 0x111
+      odom_linear_x: 0x110
+      odom_linear_y: 0x111
+      odom_angular: 0x112
       init_angular: 0x120
       steer_reset: 0x130
       #200番台(上物)
@@ -91,34 +90,36 @@ controller_interface_node:
     # 手動の高速　並進　速度[m/s],加速度[m/s^2],加減速度[-m/s^2]
     high_linear_max_vel: 1.0
     high_linear_max_acc: 2.0
-    high_linear_max_dec: 2.0
+    high_linear_max_dec: 3.0
     # 手動の低速　並進　速度[m/s],加速度[m/s^2],加減速度[-m/s^2]
     slow_linear_max_vel: 0.5
     slow_linear_max_acc: 1.0
-    slow_linear_max_dec: 1.0
+    slow_linear_max_dec: 1.5
     # 手動の回転  速度[deg/s],加速度[deg/s^2],加減速度[-deg/s^2]
-    angular_max_vel: 45.0
+    angular_max_vel: 90.0
     angular_max_acc: 180.0
     angular_max_dec: 180.0
     
     heartbeat_ms: 100 #ハートビート周期[ms]
     convergence_ms: 100 #収束周期[ms]
 
+    base_state_communication_ms: 50
+
     interval_ms: 50
     start_ms: 3000
     
     #リスタート、緊急、足回りの手自動、上物の手自動、手動の射角、ボタンのカラー情報
-    defalt_restart_flag: true
-    defalt_emergency_flag: true
-    defalt_move_autonomous_flag: true
-    defalt_arm_autonomous_flag: true
-    defalt_slow_speed_flag: true
-    defalt_color_information_flag: true
+    defalt_restart_flag: false
+    defalt_emergency_flag: false
+    defalt_move_autonomous_flag: false
+    defalt_arm_autonomous_flag: false
+    defalt_slow_speed_flag: false
+    defalt_color_information_flag: false
 
     #収束の初期値
-    defalt_spline_convergence: true
-    defalt_arm_calculator_convergence: true
-    defalt_arm_convergence: true
+    defalt_spline_convergence: false
+    defalt_arm_calculator_convergence: false
+    defalt_arm_convergence: false
 
     initial_pickup_state: "A"
     initial_inject_state: "B"
@@ -132,13 +133,14 @@ arm_interface_node:
 rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
-    laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 1.0e-5 #値が大きくなると共分散が小さくなる
+    laser_weight: 0.7 #lidarの重み->値を大きくするとlidarが優先される
+    odom_weight_liner: 1.0e-4 #値が大きくなると共分散が小さくなる
     odom_weight_angler: 1.0e-5
-    voxel_size: 0.05
-    trial_num: 40
-    inlier_dist_threshold: 0.01
-    inlier_length_threshold: 1.0 #インライアのしきい値
+    voxel_size: 0.03
+    trial_num: 50
+    inlier_dist_threshold: 0.015
+    inlier_length_threshold: 0.7 #インライアのしきい値
+    second_ransac: true
 
 sequencer_node:
   ros__parameters:
@@ -156,17 +158,3 @@ injection_param_calculator_node:
     velocity_lim_max: 10.0               # 最大初速度[m/s]
     injection_angle: 45.0                # 射出角度[deg]
     max_loop: 100                        # ニュートン法のループ制限回数
-
-ditaction_interface_node:
-  ros__parameters:
-    #ひし形モードのひし形に向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
-    str_self_pose_range: [9.4, 10.0, -3.8, -3.0, 0.61, 0.87]
-
-    
-
-    
-
-    #ひし形モードのサイロに向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
-    siro_self_pose_range: [9.4, 10.0, -3.8, -3.0, -2.5, -.2.3]
-
-    

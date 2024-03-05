@@ -12,13 +12,11 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/empty.hpp"
 //他のpkg
+#include "controller_interface/Gamebtn.hpp"
 #include "utilities/can_utils.hpp"
 #include "utilities/utils.hpp"
 #include "socket_udp.hpp"
 #include "trapezoidal_velocity_planner.hpp"
-
-#include "send_udp.hpp"
-#include "super_command.hpp"
 
 #include "visibility_control.h"
 
@@ -42,10 +40,6 @@ namespace controller_interface
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_main_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_screen_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_state_num_R2;
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_initial_state;
-
-            //R2_subのcontrollerから
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_pad_sub;
 
             //mainボードから
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_main_arm_possible;
@@ -53,12 +47,10 @@ namespace controller_interface
             //spline_pidから
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_spline;
 
-            //arm_param_calculatorから
-            // rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_arm_calculator;
             //sequencerから
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_arm_strange;
+            //rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_arm_strange;
 
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_collection_ball;
+            //rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_collection_ball;
 
             //CanUsbへ
             rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb;
@@ -72,21 +64,12 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_collection;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_seedling_installation;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_ball_collection;
+
+            //sequenserから他のノードへ
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_initial_sequense;
             
             //gazebo_simulator用のpub
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
-
-            //main_controlerからのsubscriber
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_initial_state;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_restart;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_emergency;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_move_auto;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_base_arm;
-            
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_spline;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_colcurator;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_arm;
-            //arm情報
 
             //sprine_pid
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_move_node;
@@ -96,6 +79,8 @@ namespace controller_interface
             rclcpp::TimerBase::SharedPtr _pub_timer_convergence;
             rclcpp::TimerBase::SharedPtr _socket_timer;
             rclcpp::TimerBase::SharedPtr _start_timer;
+            rclcpp::TimerBase::SharedPtr _pub_state_communication_timer;
+
 
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -104,10 +89,6 @@ namespace controller_interface
             void callback_main_pad(const std_msgs::msg::String::SharedPtr msg);
             void callback_screen_pad(const std_msgs::msg::String::SharedPtr msg);
             void callback_coatstate_pad(const std_msgs::msg::Bool::SharedPtr msg);
-            void callback_state_num_R2(const std_msgs::msg::String::SharedPtr msg);
-
-            //controller_subからのcallback
-            void callback_sub_pad(const std_msgs::msg::String::SharedPtr msg);
 
             //mainからのcallback
             void callback_main(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
@@ -115,12 +96,6 @@ namespace controller_interface
 
             //splineからのcallback
             void callback_spline(const std_msgs::msg::Bool::SharedPtr msg);
-
-            //arm_param_calculatorからのcallback
-            // void callback_arm_calculator(const std_msgs::msg::Bool::SharedPtr msg);
-            // void callback_calculator_convergenced_arm(const std_msgs::Bool::SharedPtr msg);
-            void callback_initial_state(const std_msgs::msg::String::SharedPtr msg);
-
             //sequencerからのcallback
             void callback_arm_strage(const std_msgs::msg::String::SharedPtr msg);
             void callback_collecting_ball(const std_msgs::msg::String::SharedPtr msg);
@@ -240,8 +215,9 @@ namespace controller_interface
             VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
 
-            send_udp send;
-            super_command command;
+            std::string move_node;
+
+            Gamebtn gamebtn;
 
             RecvUDP joy_main;
     };
