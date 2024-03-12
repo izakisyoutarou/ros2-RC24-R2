@@ -373,10 +373,10 @@ namespace controller_interface
 
                     //floatからバイト(メモリ)に変換
                     float_to_bytes(_candata_joy, static_cast<float>(slow_velPlanner_linear_x.vel()) * slow_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(-slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
                     
                     msg_gazebo->linear.x = slow_velPlanner_linear_x.vel();
@@ -394,10 +394,10 @@ namespace controller_interface
                     velPlanner_angular_z.cycle();
 
                     float_to_bytes(_candata_joy, static_cast<float>(high_velPlanner_linear_x.vel()) * high_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(-high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
                     msg_gazebo->linear.x = high_velPlanner_linear_x.vel();
