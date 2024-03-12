@@ -177,7 +177,7 @@ namespace detection_interface
 
             Vector3d test = ct.Rx_Ry_Rz(center_x, center_y, 200, pose);
 
-            RCLCPP_INFO(this->get_logger(), "%f", test);
+            // RCLCPP_INFO(this->get_logger(), "%f", center_x);
 
             if(way_point == "C3"){
                 if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST1";
@@ -214,6 +214,7 @@ namespace detection_interface
             pose[0] = msg->x;
             pose[1] = msg->y;
             pose[2] = msg->z;
+            // RCLCPP_INFO(this->get_logger(), "%f", pose[0]);
         }
 
         void DetectionInterface::callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
