@@ -3,6 +3,8 @@ launch: #起動パラメータ
     slcan: false
     scan: false
     trajectory_planner: false
+    yolox_c1: false
+    yolox_realsense: false
     
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
@@ -158,3 +160,20 @@ injection_param_calculator_node:
     velocity_lim_max: 10.0               # 最大初速度[m/s]
     injection_angle: 45.0                # 射出角度[deg]
     max_loop: 100                        # ニュートン法のループ制限回数
+
+detection_interface_node:
+  ros__parameters:
+    #ひし形モードのひし形に向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
+    str_self_pose_range: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    str_range_point1: [0.0, 0.0] #ボール識別から、どの回収ポイントかを判断するポイント1(右上)[x,y]
+    str_range_point2: [0.0, 0.0] #ボール識別から、どの回収ポイントかを判断するポイント2(左下)[x,y]
+    str_range_x_C3orC5: [320.0, 640.0, 960.0] #ボール識別から、どの回収ポイントかを判断するポイント_C3orC5[x1,x2,x3]
+
+    str_ball_range_y: 0.0 #ボールが手前と奥のどちらにあるのか[y]
+
+    #ひし形モードのサイロに向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
+    siro_self_pose_range: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    siro_ball_range_y: [0.0, 0.0] #ボールが何段目か[y1, y2]
+    siro_ball_range_x: [0.0, 0.0, 0.0, 0.0] #ボールがどのサイロか[x1, x2, x3, x4]
