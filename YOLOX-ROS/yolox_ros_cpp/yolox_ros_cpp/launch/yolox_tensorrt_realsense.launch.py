@@ -48,7 +48,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'conf',
-            default_value='0.30',
+            default_value='0.80',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(
@@ -73,7 +73,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'publish_boundingbox_topic_name',
-            default_value='/yolox/bounding_boxes',
+            default_value='/yolox/realsense',
             description='topic name for publishing bounding box message.'
         ),
     ]

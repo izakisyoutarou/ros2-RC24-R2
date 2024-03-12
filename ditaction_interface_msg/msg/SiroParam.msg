@@ -1,3 +1,0 @@
-uint8 ball_stage
-uint8 siro_num
-string ball_calor

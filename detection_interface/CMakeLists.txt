@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(ditaction_interface)
+project(detection_interface)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -11,29 +11,29 @@ find_package(rclcpp REQUIRED)
 find_package(bboxes_ex_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(ditaction_interface_msg REQUIRED)
+find_package(detection_interface_msg REQUIRED)
 find_package(controller_interface_msg REQUIRED)
 
-add_library(ditaction_interface_node
-    src/ditaction_interface_node.cpp
+add_library(detection_interface_node
+    src/detection_interface_node.cpp
 )
 
-target_compile_definitions(ditaction_interface_node
-  PRIVATE "DITACTION_INTERFACE_LIBRARY"
+target_compile_definitions(detection_interface_node
+  PRIVATE "DETECTION_INTERFACE_LIBRARY"
 )
 
-target_compile_options(ditaction_interface_node PUBLIC -Wall)
+target_compile_options(detection_interface_node PUBLIC -Wall)
 
-ament_target_dependencies(ditaction_interface_node
+ament_target_dependencies(detection_interface_node
   rclcpp
   bboxes_ex_msgs
   std_msgs
   geometry_msgs
-  ditaction_interface_msg
+  detection_interface_msg
   controller_interface_msg
 )
 
-target_include_directories(ditaction_interface_node
+target_include_directories(detection_interface_node
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
@@ -51,7 +51,7 @@ install(
 )
 
 install(
-  TARGETS ditaction_interface_node
+  TARGETS detection_interface_node
   EXPORT export_${PROJECT_NAME}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

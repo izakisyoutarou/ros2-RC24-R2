@@ -129,13 +129,8 @@ namespace yolox_ros_cpp
 
         auto boxes = objects_to_bboxes(frame, objects, img->header);
 
-        for (auto box : boxes.bounding_boxes) {//しきい値のための新規追加
-            if (box.probability > 0.9) {
-                this->pub_bboxes_->publish(boxes);
-                break;  // メッセージ全体を送信するため、不要ならばコメントアウトする
-            }
-        }
-
+        this->pub_bboxes_->publish(boxes);
+        
         sensor_msgs::msg::Image::SharedPtr pub_img;
         pub_img = cv_bridge::CvImage(img->header, "bgr8", frame).toImageMsg();
         this->pub_image_.publish(pub_img);

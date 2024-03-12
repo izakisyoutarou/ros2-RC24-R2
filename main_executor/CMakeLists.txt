@@ -13,8 +13,8 @@ find_package(utilities REQUIRED)
 find_package(ransac_localization REQUIRED)
 find_package(logger_converter REQUIRED)
 find_package(controller_interface REQUIRED)
-find_package(ditaction_interface REQUIRED)
-find_package(ditaction_interface_msg REQUIRED)
+find_package(detection_interface REQUIRED)
+find_package(detection_interface_msg REQUIRED)
 find_package(bboxes_ex_msgs REQUIRED)
 
 add_executable(main_exec
@@ -28,8 +28,8 @@ ament_target_dependencies(main_exec
         ransac_localization
         logger_converter
         controller_interface
-        ditaction_interface
-        ditaction_interface_msg
+        detection_interface
+        detection_interface_msg
         bboxes_ex_msgs
         )
 

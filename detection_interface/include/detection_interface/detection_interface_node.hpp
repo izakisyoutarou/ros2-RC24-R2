@@ -9,28 +9,28 @@
 #include <geometry_msgs/msg/vector3.hpp>
 #include "bboxes_ex_msgs/msg/bounding_box.hpp"
 #include "bboxes_ex_msgs/msg/bounding_boxes.hpp"
-#include "ditaction_interface_msg/msg/arm_param.hpp"
-#include "ditaction_interface_msg/msg/siro_param.hpp"
+#include "detection_interface_msg/msg/arm_param.hpp"
+#include "detection_interface_msg/msg/siro_param.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 
 #include "visibility_control.h"
 
-namespace ditaction_interface
+namespace detection_interface
 {
-    class DitactionInterface : public rclcpp::Node{
+    class DetectionInterface : public rclcpp::Node{
         public:
-            DITACTION_INTERFACE_PUBLIC
-            explicit DitactionInterface(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+            DETECTION_INTERFACE_PUBLIC
+            explicit DetectionInterface(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
             
-            DITACTION_INTERFACE_PUBLIC
-            explicit DitactionInterface(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
+            DETECTION_INTERFACE_PUBLIC
+            explicit DetectionInterface(const std::string& name_space, const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
         private:
             //yolox_ros_cppのrealsenseから
-            rclcpp::Subscription<bboxes_ex_msgs::msg::BoundingBox>::SharedPtr _sub_realsense;
+            rclcpp::Subscription<bboxes_ex_msgs::msg::BoundingBoxes>::SharedPtr _sub_realsense;
 
             //yolox_ros_cppのc1から
-            rclcpp::Subscription<bboxes_ex_msgs::msg::BoundingBox>::SharedPtr _sub_c1;
+            rclcpp::Subscription<bboxes_ex_msgs::msg::BoundingBoxes>::SharedPtr _sub_c1;
 
             //ransacから
             rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _sub_self_pose;
@@ -46,20 +46,20 @@ namespace ditaction_interface
 
             //sequncerへ
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_collection_point;
-            rclcpp::Publisher<ditaction_interface_msg::msg::SiroParam>::SharedPtr _pub_siro_param;
+            rclcpp::Publisher<detection_interface_msg::msg::SiroParam>::SharedPtr _pub_siro_param;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_front_ball;
 
             //arm_param_caluculatorへ
-            rclcpp::Publisher<ditaction_interface_msg::msg::ArmParam>::SharedPtr _pub_arm_param;
+            rclcpp::Publisher<detection_interface_msg::msg::ArmParam>::SharedPtr _pub_arm_param;
 
             //Qos
             rclcpp::QoS _qos = rclcpp::QoS(10);
 
             //yolox_ros_cppのrealsenseからのcallback
-            void callback_realsense(const bboxes_ex_msgs::msg::BoundingBox::SharedPtr msg);
+            void callback_realsense(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
 
             //yolox_ros_cppのc1からのcallback
-            void callback_c1(const bboxes_ex_msgs::msg::BoundingBox::SharedPtr msg);
+            void callback_c1(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
 
             //controller_interfaceからのcallback
             void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);

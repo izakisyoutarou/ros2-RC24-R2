@@ -29,7 +29,6 @@ namespace yolox_cpp{
 
         static void draw_objects(cv::Mat bgr, const std::vector<Object>& objects, const std::vector<std::string>& class_names=COCO_CLASSES)
         {
-
             for (size_t i = 0; i < objects.size(); i++)
             {
                 const Object& obj = objects[i];
@@ -64,6 +63,14 @@ namespace yolox_cpp{
 
                 cv::putText(bgr, text, cv::Point(x, y + label_size.height),
                             cv::FONT_HERSHEY_SIMPLEX, 0.4, txt_color, 1);
+
+                cv::Scalar line_color(0, 255, 0);  // BGR 色空間での色
+                int x_coordinate1 = 320;//以下、新規追加。画面上に線を表示
+                int x_coordinate2 = 640;//以下、新規追加。画面上に線を表示
+                int x_coordinate3 = 960;//以下、新規追加。画面上に線を表示
+                cv::line(bgr, cv::Point(x_coordinate1, 0), cv::Point(x_coordinate1, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(x_coordinate2, 0), cv::Point(x_coordinate2, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(x_coordinate3, 0), cv::Point(x_coordinate3, bgr.rows), line_color, 2);
             }
         }
     }
