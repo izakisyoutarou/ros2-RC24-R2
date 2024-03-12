@@ -127,10 +127,10 @@ namespace ditaction_interface
 
             center_x = msg->xmax - msg->xmin;
             center_y = msg->ymax - msg->ymin;
+            center_z = msg->center_dist;
 
-            // ct.Rx_Ry_Rz(center_x, center_y, center_dist, self_pose);
-            ct.Rx_Ry_Rz(center_x, center_y, pose);
-
+            ct.Rx_Ry_Rz(center_x, center_y, center_z, pose);
+            
             if(way_point == "C3"){
                 viz_realsense(true);
                 if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST1";

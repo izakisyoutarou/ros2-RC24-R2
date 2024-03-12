@@ -8,14 +8,11 @@ using namespace Eigen;
 
 class coordinate_transformation {
     public:
-        // Vector3d Rx_Ry_Rz(double px, double py, double depth, Vector3d pose);
-        Vector3d Rx_Ry_Rz(double px, double py, Vector3d pose);
+        Vector3d Rx_Ry_Rz(double px, double py, double depth, Vector3d pose);
         
     private:
-        // Matrix3d conversion(double px, double py, double depth);
-        Matrix3d conversion(double px, double py);
+        Matrix3d conversion(double px, double py, double depth);
         Matrix3d euler_angle();
-        double depth; //camera kara
         double WIDTH = 640.0;
         double HEIGHT = 480.0;
         double HFOV = 69.4;

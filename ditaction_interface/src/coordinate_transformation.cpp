@@ -1,7 +1,6 @@
 #include "ditaction_interface/coordinate_transformation.hpp"
 
-    // Matrix3d coordinate_transformation::conversion(double px, double py, double depth){ 
-    Matrix3d coordinate_transformation::conversion(double px, double py){ //Camera coordinate
+    Matrix3d coordinate_transformation::conversion(double px, double py, double depth){
         double h_angle = 0.0;
         double v_angle = 0.0;
         h_angle = (px - WIDTH / 2) * (HFOV / WIDTH);
@@ -38,10 +37,8 @@
         return R;
     }
 
-    // Vector3d coordinate_transformation::Rx_Ry_Rz(double px, double py, double depth, Vector3d pose){ //variation
-    Vector3d coordinate_transformation::Rx_Ry_Rz(double px, double py, Vector3d pose){ //variation
-        // Matrix3d before_xyz = conversion(px, py, depth);
-        Matrix3d before_xyz = conversion(px, py);
+    Vector3d coordinate_transformation::Rx_Ry_Rz(double px, double py, double depth, Vector3d pose){ //variation
+        Matrix3d before_xyz = conversion(px, py, depth);
         Matrix3d R = euler_angle();
         Matrix3d Rxyz;
         Rxyz = R * before_xyz;

@@ -93,6 +93,7 @@ namespace ditaction_interface
             //変数
             double center_x;
             double center_y;
+            double center_z;
             Vector3d pose;
             std::string now_sequence;
             std::string way_point;
