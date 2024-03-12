@@ -12,6 +12,7 @@
 #include "detection_interface_msg/msg/arm_param.hpp"
 #include "detection_interface_msg/msg/siro_param.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
+#include "detection_interface/coordinate_transformation.hpp"
 
 #include "visibility_control.h"
 
@@ -78,6 +79,7 @@ namespace detection_interface
 
             double center_x;
             double center_y;
+            Vector3d pose;
             std::string now_sequence;
             std::string way_point;
 
@@ -111,5 +113,8 @@ namespace detection_interface
 
             //フィールド
             geometry_msgs::msg::Vector3 self_pose;
+
+            //座標変換
+            coordinate_transformation ct;
     };
 }

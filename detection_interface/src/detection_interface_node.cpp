@@ -175,6 +175,10 @@ namespace detection_interface
             center_x = xmax - xmin;
             center_y = ymax - ymin;
 
+            Vector3d test = ct.Rx_Ry_Rz(center_x, center_y, 200, pose);
+
+            RCLCPP_INFO(this->get_logger(), "%f", test);
+
             if(way_point == "C3"){
                 if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST1";
                 else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
@@ -207,6 +211,9 @@ namespace detection_interface
             is_self_pose_range_x_siro = (msg->x > siro_self_pose_range[0] && msg->y < siro_self_pose_range[1]) ? true : false;
             is_self_pose_range_y_siro = (msg->y > siro_self_pose_range[2] && msg->x < siro_self_pose_range[3]) ? true : false;
             is_self_pose_range_z_siro = (msg->z > siro_self_pose_range[4] && msg->y < siro_self_pose_range[5]) ? true : false;
+            pose[0] = msg->x;
+            pose[1] = msg->y;
+            pose[2] = msg->z;
         }
 
         void DetectionInterface::callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
