@@ -139,7 +139,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                     command_hand_wrist_down();
                     progress++;
                 }
-                else if(progress == n++ && msg->spline_convergence && msg->arm_convergence && way_point[1] == 'T' && get_front_ball){
+                else if(progress == n++ && msg->spline_convergence && msg->arm_convergence && get_front_ball){
                     if(front_ball) command_hand_fb_front();
                     else command_hand_fb_back();
                     command_hand_suction_on();
@@ -223,10 +223,17 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                 }
                 else if(progress == n++ && get_ball_pose){
                     auto ball_tracking = std::make_shared<geometry_msgs::msg::Vector3>();
-                    float L = 0.01;
-                    ball_tracking.x = ball_pose.x - (0.095+L)*sin(-ball_pose.z);
-                    ball_tracking.y = ball_pose.y - (0.095+L)*cos(-ball_pose.z);
-                    ball_tracking.z = ball_pose.z;
+                    float length = 0.3 + 0.095;
+                    if(ball_pose.x > self_pose.x){
+                        ball_tracking.x = ball_pose.x - length*sin(ball_pose.z);
+                        ball_tracking.y = ball_pose.y - length*cos(ball_pose.z);
+                        ball_tracking.z = ball_pose.z;
+                    }
+                    else if(self_pose.x > ball_pose.x){
+                        ball_tracking.x = ball_pose.x + length*sin(ball_pose.z);
+                        ball_tracking.y = ball_pose.y - length*cos(ball_pose.z);
+                        ball_tracking.z = ball_pose.z;                        
+                    }
                     _publisher_ball_tracking->publish(*ball_tracking);
                     command_hand_suction_on();
                     get_ball_pose = false;
@@ -284,7 +291,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                     command_hand_wrist_up();
                     progress++;
                 }
-                else if(progress == n++ && msg->spline_convergence && way_point[1] == 'I'){
+                else if(progress == n++ && msg->spline_convergence){
                     command_hand_suction_off();
                     progress++;
                 } 
