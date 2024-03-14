@@ -54,7 +54,6 @@ private:
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_node;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _publisher_canusb;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_way_point;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_now_sequence;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_interrupt_node;
     rclcpp::Publisher<path_msg::msg::Turning>::SharedPtr _pub_spin_position;
@@ -97,13 +96,6 @@ private:
     //QoS
     rclcpp::QoS _qos = rclcpp::QoS(10);
 
-    struct Node{
-        std::string name;
-        double x;
-        double y;
-    };
-
-    std::vector<Node> node_list;
     std::string sequence_list[5] = {"stop","storage","transfer","collect","silo"};
 
     int progress = 0;
@@ -114,8 +106,6 @@ private:
     bool get_front_ball = false;
     bool get_ball_pose = false;
     bool front_ball = false;
-
-    std::string way_point = "O";
 
     geometry_msgs::msg::Vector3 self_pose;
     geometry_msgs::msg::Vector3 ball_pose;

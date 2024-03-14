@@ -76,27 +76,10 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
 
     _publisher_move_node = this->create_publisher<std_msgs::msg::String>("move_node", _qos);
     _publisher_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
-    _publisher_way_point = this->create_publisher<std_msgs::msg::String>("way_point", _qos);
     _publisher_now_sequence = this->create_publisher<std_msgs::msg::String>("now_sequence", _qos);
     _publisher_move_interrupt_node = this->create_publisher<std_msgs::msg::String>("move_interrupt_node", _qos);
     _pub_spin_position = this->create_publisher<path_msg::msg::Turning>("spin_position", 10);    
     _publisher_ball_tracking = this->create_publisher<geometry_msgs::msg::Vector3>("ball_tracking", _qos);
-
-    std::ifstream ifs0(ament_index_cpp::get_package_share_directory("main_executor") + "/config/spline_pid/R2_nodelist.cfg");
-    std::string str0;
-    while(getline(ifs0, str0)){
-        std::string token;
-        std::istringstream stream(str0);
-        int count = 0;
-        Node node;
-        while(getline(stream, token, ' ')){
-            if(count==0) node.name = token;
-            else if(count==1) node.x = std::stold(token);
-            else if(count==2) node.y = std::stold(token);
-            count++;
-        }
-        node_list.push_back(node);
-    }
 
     std::ifstream ifs1(ament_index_cpp::get_package_share_directory("main_executor") + "/config/sequencer/silo_priority.cfg");
     std::string str1;
@@ -225,14 +208,14 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                     auto ball_tracking = std::make_shared<geometry_msgs::msg::Vector3>();
                     float length = 0.3 + 0.095;
                     if(ball_pose.x > self_pose.x){
-                        ball_tracking.x = ball_pose.x - length*sin(ball_pose.z);
-                        ball_tracking.y = ball_pose.y - length*cos(ball_pose.z);
-                        ball_tracking.z = ball_pose.z;
+                        ball_tracking->x = ball_pose.x - length*sin(ball_pose.z);
+                        ball_tracking->y = ball_pose.y - length*cos(ball_pose.z);
+                        ball_tracking->z = ball_pose.z;
                     }
                     else if(self_pose.x > ball_pose.x){
-                        ball_tracking.x = ball_pose.x + length*sin(ball_pose.z);
-                        ball_tracking.y = ball_pose.y - length*cos(ball_pose.z);
-                        ball_tracking.z = ball_pose.z;                        
+                        ball_tracking->x = ball_pose.x + length*sin(ball_pose.z);
+                        ball_tracking->y = ball_pose.y - length*cos(ball_pose.z);
+                        ball_tracking->z = ball_pose.z;                        
                     }
                     _publisher_ball_tracking->publish(*ball_tracking);
                     command_hand_suction_on();
@@ -343,15 +326,6 @@ void Sequencer::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr 
     this->self_pose.x = msg->x;
     this->self_pose.y = msg->y;
     this->self_pose.z = msg->z;
-    for(int i = 0; i < node_list.size(); i++){
-        if(abs(node_list[i].x - self_pose.x) <= 0.1 && abs(node_list[i].y - self_pose.y) <= 0.1){
-            way_point = node_list[i].name;
-            auto msg_way_point = std::make_shared<std_msgs::msg::String>();
-            msg_way_point->data = node_list[i].name;
-            _publisher_way_point->publish(*msg_way_point); 
-            break;
-        }
-    }
 }
 
 void Sequencer::callback_ball_coordinate(const geometry_msgs::msg::Vector3::SharedPtr msg){
