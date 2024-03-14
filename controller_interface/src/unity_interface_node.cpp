@@ -49,6 +49,8 @@ namespace controller_interface
 
         _pub_con_spline_convergence = this->create_publisher<std_msgs::msg::Bool>("spline_convergence_unity", _qos);
         _pub_con_arm_convergence = this->create_publisher<std_msgs::msg::Bool>("arm_convergence_unity", _qos);
+        _pub_con_net_convergence = this->create_publisher<std_msgs::msg::Bool>("net_convergence_unity", _qos);
+
 
         this->is_reset = defalt_restart_flag;
         this->is_emergency = defalt_emergency_flag;
@@ -56,6 +58,7 @@ namespace controller_interface
         this->initial_state = "O";
         this->spline_convergence = defalt_spline_convergence;
         this->arm_convergence = defalt_arm_convergence;
+        this->net_convergence = defalt_net_convergence;
 
 
         auto msg_unity_initial_state = std::make_shared<std_msgs::msg::String>();
@@ -77,6 +80,9 @@ namespace controller_interface
 
         msg_unity_control->data = arm_convergence;
         _pub_con_arm_convergence->publish(*msg_unity_control);
+
+        msg_unity_control->data = net_convergence;
+        _pub_con_net_convergence->publish(*msg_unity_control);
 
         //スマホコントローラとの通信状況を確認
         _pub_state_communication_timer = create_wall_timer(
@@ -106,6 +112,8 @@ namespace controller_interface
         _pub_con_spline_convergence->publish(*msg_unity_control);
         msg_unity_control->data = msg->arm_convergence;
         _pub_con_arm_convergence->publish(*msg_unity_control);
+        msg_unity_control->data = msg->net_convergence;
+        _pub_con_net_convergence->publish(*msg_unity_control);
     }
 
     void Unity::callback_initial_state(const std_msgs::msg::String::SharedPtr msg){
