@@ -60,7 +60,7 @@ launch: #起動パラメータ
       vel: 0x400 #適当
       ang: 0x401 #適当
 
-      R2_state: old
+    R2_state: old
         
     port:
       joy_main: 50000
