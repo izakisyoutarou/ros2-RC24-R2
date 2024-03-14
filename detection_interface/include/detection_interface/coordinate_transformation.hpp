@@ -2,6 +2,7 @@
 #include "detection_interface/visibility_control.h"
 #include <rclcpp/rclcpp.hpp>
 #include <eigen3/Eigen/Dense>
+#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -13,14 +14,14 @@ class coordinate_transformation {
     private:
         Matrix3d conversion(double px, double py, double depth);
         Matrix3d euler_angle();
-        double WIDTH = 640.0;
-        double HEIGHT = 480.0;
-        double HFOV = 69.4;
-        double VFOV = 42.5;
-        double x = 0.0;
-        double y = 0.0;
-        double z = 0.0;
-        double theta_x = 45.0; //Camera mounting position
+        double WIDTH = 1280.0;
+        double HEIGHT = 720.0;
+        double HFOV = 86.0;
+        double VFOV = 57.0;
+        double x = 0.0 ;
+        double y = 0.0 ;
+        double z = 0.0 ;
+        double theta_x = 0.0; //Camera mounting position
         double theta_y = 180.0;
         double theta_z = -90.0;
         double tx = 0.0; //offset robot and camera

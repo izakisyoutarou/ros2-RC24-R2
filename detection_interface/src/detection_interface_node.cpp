@@ -166,14 +166,13 @@ namespace detection_interface
                 xmax = box.xmax;
                 ymax = box.ymax;
                 id = box.id;
-                img_width = box.img_width;
                 img_height = box.img_height;
                 center_dist = box.center_dist;
                 class_id = box.class_id;
             }
 
-            center_x = xmax - xmin;
-            center_y = ymax - ymin;
+            center_x = (xmax + xmin) / 2;
+            center_y = (ymax + ymin) / 2;
 
             Vector3d test = ct.Rx_Ry_Rz(center_x, center_y, 200, pose);
 
@@ -184,6 +183,7 @@ namespace detection_interface
                 else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
                 else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
                 else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
+                std::cout << msg_collection_point->data << std::endl;
                 way_point = "";
             }
             else if(way_point == "C5"){
@@ -214,7 +214,6 @@ namespace detection_interface
             pose[0] = msg->x;
             pose[1] = msg->y;
             pose[2] = msg->z;
-            // RCLCPP_INFO(this->get_logger(), "%f", pose[0]);
         }
 
         void DetectionInterface::callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
@@ -230,6 +229,7 @@ namespace detection_interface
 
         void DetectionInterface::callback_way_point(const std_msgs::msg::String::SharedPtr msg){
             way_point = msg->data;
+            // std::cout << way_point << std::endl;
         }
 
         bool DetectionInterface::bounday_line(int x, int y){
