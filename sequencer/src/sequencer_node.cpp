@@ -97,13 +97,7 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
     }
 
     command_sequence(SEQUENCE_MODE::stop);
-    
-    std::string A[15] = {"","","B",
-                         "","R","R",
-                         "","","R",
-                         "","B","B",
-                         "B","","R"};
-    silo_evaluate(A);
+
 }
 
 void Sequencer::callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg){
@@ -406,27 +400,50 @@ void Sequencer::command_hand_wrist_down(){ command_canusb_uint8(can_hand_wrist_i
 void Sequencer::command_hand_suction_on(){ command_canusb_uint8(can_hand_suction_id, 0); }
 void Sequencer::command_hand_suction_off(){ command_canusb_uint8(can_hand_suction_id, 1); }
 
-int Sequencer::silo_evaluate(std::string camera[15]){
-    //コート色による情報反転
-    if(court_color == "blue"){
-        std::string data[15]; 
-        int num[15] = {12,13,14,9,10,11,6,7,8,3,4,5,0,1,2};
-        for(int i = 0; i < 15; i++) data[i] = camera[i];
-        for(int i = 0; i < 15; i++) camera[i] = data[num[i]];
-    }    
-    //データの格納
-    for(int i = 0; i < 15; i++) {
-        if(court_color == "blue"){
-            if(camera[i] == "B") silo_data[i/3][i%3] = "M";
-            else if(camera[i] == "R") silo_data[i/3][i%3] = "E";
-            else silo_data[i/3][i%3] = "";
-        }
-        else if(court_color == "red"){
-            if(camera[i] == "B") silo_data[i/3][i%3] = "E";
-            else if(camera[i] == "R") silo_data[i/3][i%3] = "M";
-            else silo_data[i/3][i%3] = "";
+int Sequencer::silo_accumulation(std::string camera[2]){
+    for(int i = 0; i < 5; i++){
+        for(int j = 0; j < 3; j++){
+            camera_check[i][j]++;
         }
     }
+
+    //コート色による情報反転
+    if(court_color == "blue"){
+        std::string data[2]; 
+        std::string num[15] = {"12","13","14","9","10","11","6","7","8","3","4","5","0","1","2"};
+        for(int i = 0; i < 15; i++) {
+            if(i == stoi(camera[0])){
+                camera[0] = num[i];
+                break;
+            }
+        }
+    }
+    
+    //データの格納
+    int n =  stoi(camera[0]);
+    if(court_color == "blue"){
+        if(camera[1] == "B") silo_data[n/3][n%3] = "M";
+        else if(camera[1] == "R") silo_data[n/3][n%3] = "E";
+    }
+    else if(court_color == "red"){
+        if(camera[1] == "B") silo_data[n/3][n%3] = "E";
+        else if(camera[1] == "R") silo_data[n/3][n%3] = "M";
+    }
+    camera_check[n/3][n%3] = 0;
+
+    //データの削除
+    for(int i = 0; i < 5; i++){
+        for(int j = 0; j < 3; j++){
+            if(camera_check[i][j] > 15) {
+                silo_data[i][j] = "";
+                camera_check[i][j] = 0;
+                RCLCPP_INFO(get_logger(),"%d, %d",i, j);            
+            }
+        }
+    }
+}
+
+int silo_evaluate(){
     //評価判定
     for(int i = 0; i < 5; i++){
         bool check = false;
@@ -450,4 +467,5 @@ int Sequencer::silo_evaluate(std::string camera[15]){
     }
     return silo_num;
 }
+
 }  // namespace sequencer

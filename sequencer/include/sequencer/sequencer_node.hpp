@@ -82,7 +82,8 @@ private:
     void command_hand_wrist_down();
     void command_hand_suction_on();
     void command_hand_suction_off();
-    int silo_evaluate(std::string camera[15]);
+    int silo_accumulation(std::string camera[2]);
+    int silo_evaluate();
 
     const int16_t can_paddy_collect_id;
     const int16_t can_paddy_install_id;
@@ -111,8 +112,9 @@ private:
     geometry_msgs::msg::Vector3 ball_pose;
 
     std::string silo_data[5][3]; 
+    int camera_check[5][3] = {};
     std::string silo_norm[11][4];//3,2,1,num
-    int silo_priority[5]; 
+    int silo_priority[5] = {}; 
     const std::string court_color;
 
     const std::string R2_state;
