@@ -16,9 +16,12 @@
   <depend>ransac_localization</depend>
   <depend>logger_converter</depend>
   <depend>controller_interface</depend>
+  <depend>sequencer</depend>
   <depend>detection_interface</depend>
   <depend>detection_interface_msg</depend>
   <depend>bboxes_ex_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

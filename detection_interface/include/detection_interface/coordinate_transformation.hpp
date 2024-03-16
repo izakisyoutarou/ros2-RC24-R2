@@ -23,7 +23,7 @@ class coordinate_transformation {
         double z = 0.0 ;
         double theta_x = 0.0; //Camera mounting position
         double theta_y = 180.0;
-        double theta_z = -90.0;
+        double theta_z = 0.0;
         double tx = 0.0; //offset robot and camera
         double ty = 0.0; //offset robot and camera
         double tz = 0.0; //offset robot and camera

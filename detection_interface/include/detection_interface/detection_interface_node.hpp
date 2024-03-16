@@ -3,6 +3,7 @@
 #include <float.h>
 #include <string>
 #include <math.h>
+#include <cv_bridge/cv_bridge.h>
 //使うmsg
 #include <std_msgs/msg/string.hpp>
 #include <std_msgs/msg/bool.hpp>
@@ -13,6 +14,8 @@
 #include "detection_interface_msg/msg/siro_param.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "detection_interface/coordinate_transformation.hpp"
+
+#include <image_transport/image_transport.hpp>
 
 #include "visibility_control.h"
 
@@ -45,10 +48,15 @@ namespace detection_interface
             //splineから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_way_point;
 
+            //realsenseのdepthカメラ
+            image_transport::Subscriber _sub_depth_;
+            void depthImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr&);
+
             //sequncerへ
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_collection_point;
             rclcpp::Publisher<detection_interface_msg::msg::SiroParam>::SharedPtr _pub_siro_param;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_front_ball;
+            rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _pub_ball_coordinate;
 
             //arm_param_caluculatorへ
             rclcpp::Publisher<detection_interface_msg::msg::ArmParam>::SharedPtr _pub_arm_param;
@@ -77,8 +85,6 @@ namespace detection_interface
             //坂上から見たときにC3かC5かをみる境界線の計算
             bool bounday_line(int x, int y);
 
-            double center_x;
-            double center_y;
             Vector3d pose;
             std::string now_sequence;
             std::string way_point;
@@ -116,5 +122,7 @@ namespace detection_interface
 
             //座標変換
             coordinate_transformation ct;
+
+            cv::Mat cv_image_;
     };
 }

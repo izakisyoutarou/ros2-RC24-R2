@@ -8,8 +8,8 @@ def generate_launch_description():
   camera = Node(
     package="v4l2_camera",
     executable="v4l2_camera_node",
-    parameters=[{
-      'video_device'     : "/dev/video4",
+    parameters=[{#「ls /dev/*」で確認してデバイスを合わせる
+      'video_device'     : "/dev/video10",
       "image_size"       : [640, 480],
       "format"           : "rgb"
     }]

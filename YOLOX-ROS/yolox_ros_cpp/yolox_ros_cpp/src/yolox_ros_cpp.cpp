@@ -151,6 +151,7 @@ namespace yolox_ros_cpp
             box.img_width = frame.cols;
             box.img_height = frame.rows;
             boxes.bounding_boxes.emplace_back(box);
+
         }
         return boxes;
     }

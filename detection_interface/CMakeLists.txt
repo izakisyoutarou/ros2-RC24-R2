@@ -13,6 +13,8 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(detection_interface_msg REQUIRED)
 find_package(controller_interface_msg REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(cv_bridge REQUIRED)
 
 add_library(detection_interface_node
     src/detection_interface_node.cpp
@@ -32,6 +34,8 @@ ament_target_dependencies(detection_interface_node
   geometry_msgs
   detection_interface_msg
   controller_interface_msg
+  image_transport
+  cv_bridge
 )
 
 target_include_directories(detection_interface_node

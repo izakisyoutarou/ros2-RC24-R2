@@ -16,7 +16,7 @@ def generate_launch_description():
         #     default_value='/dev/video0',
         #     description='input video source'
         # ),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(#学習済みデータの指定
             'model_path',
             default_value='./ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_ano3_test3.trt',
             description='yolox model path.'
@@ -26,12 +26,12 @@ def generate_launch_description():
             default_value='false',
             description='with p6.'
         ),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(#ラベル情報の指定
             'class_labels_path',
             default_value='./ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano3_test2.txt',
             description='if use custom model, set class name labels. '
         ),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(#ラベル数の指定
             'num_classes',
             default_value='3',
             description='num classes.'
@@ -46,9 +46,9 @@ def generate_launch_description():
             default_value='0.1.1rc0',
             description='yolox model version.'
         ),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(#しきい値
             'conf',
-            default_value='0.30',
+            default_value='0.90',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(
@@ -56,30 +56,32 @@ def generate_launch_description():
             default_value='0.45',
             description='yolox nms threshold'
         ),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(#プレビューの表示
             'imshow_isshow',
             default_value='true',
             description=''
         ),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(#YOLOX-ROSがサブしてる画像トピックのトピック名
             'src_image_topic_name',
             default_value='/image_raw', #C1camera
             description='topic name for source image'
         ),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(#YOLOX-ROSがパブしてる画像トピックのトピック名
             'publish_image_topic_name',
             default_value='/yolox/image_raw',
             description='topic name for publishing image with bounding box drawn'
         ),
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(#YOLOX-ROSが推論データをdetection_interfaceにパブしているトピック名
             'publish_boundingbox_topic_name',
             default_value='/yolox/c1',
             description='topic name for publishing bounding box message.'
         ),
     ]
 
+    #c1カメラからトピックをパブできるようしているパッケージ
     camera_file_path = get_package_share_directory('v4l2_camera')
 
+    #v4l2_cameraのlaunchを立ち上げ
     camera_launch = launch.actions.IncludeLaunchDescription(
         PythonLaunchDescriptionSource([camera_file_path + "/launch/test.launch.py"])
     )

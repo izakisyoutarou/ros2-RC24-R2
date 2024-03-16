@@ -64,13 +64,22 @@ namespace yolox_cpp{
                 cv::putText(bgr, text, cv::Point(x, y + label_size.height),
                             cv::FONT_HERSHEY_SIMPLEX, 0.4, txt_color, 1);
 
+                //ここで補助ラインの描写
                 cv::Scalar line_color(0, 255, 0);  // BGR 色空間での色
-                int x_coordinate1 = 320;//以下、新規追加。画面上に線を表示
-                int x_coordinate2 = 640;//以下、新規追加。画面上に線を表示
-                int x_coordinate3 = 960;//以下、新規追加。画面上に線を表示
-                cv::line(bgr, cv::Point(x_coordinate1, 0), cv::Point(x_coordinate1, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(x_coordinate2, 0), cv::Point(x_coordinate2, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(x_coordinate3, 0), cv::Point(x_coordinate3, bgr.rows), line_color, 2);
+                // int x_coordinate1 = 320;//以下、新規追加。画面上に線を表示
+                // int x_coordinate2 = 640;//以下、新規追加。画面上に線を表示
+                // int x_coordinate3 = 960;//以下、新規追加。画面上に線を表示
+                // cv::line(bgr, cv::Point(x_coordinate1, 0), cv::Point(x_coordinate1, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(x_coordinate2, 0), cv::Point(x_coordinate2, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(x_coordinate3, 0), cv::Point(x_coordinate3, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(1280, 540), cv::Point(0, 180), line_color, 2); //realsense
+                // cv::line(bgr, cv::Point(1920, 960), cv::Point(0, 320), line_color, 2); //c1 坂上から見るやつ
+                cv::line(bgr, cv::Point(384, 0), cv::Point(384, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(768, 0), cv::Point(768, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(1152, 0), cv::Point(1152, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(1536, 0), cv::Point(1536, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(0, 640), cv::Point(bgr.cols, 640), line_color, 2);
+                cv::line(bgr, cv::Point(0, 960), cv::Point(bgr.cols, 960), line_color, 2);
             }
         }
     }

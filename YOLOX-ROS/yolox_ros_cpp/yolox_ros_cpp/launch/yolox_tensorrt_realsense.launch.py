@@ -78,6 +78,7 @@ def generate_launch_description():
         ),
     ]
 
+    #公式から提供されているrealsenseのパッケージ
     realsense_file_path = get_package_share_directory('realsense2_camera')
 
     realsense_launch = launch.actions.IncludeLaunchDescription(
