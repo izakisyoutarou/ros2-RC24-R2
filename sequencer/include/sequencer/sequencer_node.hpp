@@ -38,6 +38,7 @@ private:
     rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _subscription_base_control;
     rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr _subscription_is_start;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_collection_point;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_way_point;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_self_pose;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _subscription_front_ball;
     rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _subscription_tof;
@@ -47,6 +48,7 @@ private:
     void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
     void callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg);
     void callback_collection_point(const std_msgs::msg::String::SharedPtr msg);
+    void callback_way_point(const std_msgs::msg::String::SharedPtr msg);
     void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
     void callback_front_ball(const std_msgs::msg::Bool::SharedPtr msg);
     void callback_tof(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
@@ -82,8 +84,9 @@ private:
     void command_hand_wrist_down();
     void command_hand_suction_on();
     void command_hand_suction_off();
-    int silo_accumulation(std::string camera[2]);
+    void silo_accumulation(std::string camera[2]);
     int silo_evaluate();
+    void silo_reset();
 
     const int16_t can_paddy_collect_id;
     const int16_t can_paddy_install_id;
@@ -122,6 +125,8 @@ private:
     bool tof[3] = {false, false, false};
 
     SEQUENCE_MODE pre_sequence = SEQUENCE_MODE::stop;
+
+    std::string way_point = "";
     
 };
 
