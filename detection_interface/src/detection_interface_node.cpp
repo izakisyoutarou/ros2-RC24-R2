@@ -236,8 +236,8 @@ namespace detection_interface
         }
 
         void DetectionInterface::depthImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &ptr){
-            // std::shared_ptr<cv_bridge::CvImage> bridge_ = cv_bridge::toCvCopy(ptr, sensor_msgs::image_encodings::TYPE_16UC1);
-            // cv_image_ = bridge_->image;
+            std::shared_ptr<cv_bridge::CvImage> bridge_ = cv_bridge::toCvCopy(ptr, sensor_msgs::image_encodings::TYPE_16UC1);
+            cv_image_ = bridge_->image;
         }
 
         void DetectionInterface::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg){

@@ -64,6 +64,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'src_image_topic_name',
             default_value='/camera/camera/color/image_raw', #realsense
+            # default_value='/camera/camera/rgbd', #realsense
             description='topic name for source image'
         ),
         DeclareLaunchArgument(
