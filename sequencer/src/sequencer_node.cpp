@@ -50,6 +50,12 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
         std::bind(&Sequencer::callback_collection_point, this, std::placeholders::_1)
     );
 
+    _subscription_way_point = this->create_subscription<std_msgs::msg::String>(
+        "way_point",
+        _qos,
+        std::bind(&Sequencer::callback_way_point, this, std::placeholders::_1)
+    );
+
     _subscription_self_pose = this->create_subscription<geometry_msgs::msg::Vector3>(
         "self_pose",
         rclcpp::SensorDataQoS(),
@@ -97,13 +103,7 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
     }
 
     command_sequence(SEQUENCE_MODE::stop);
-    
-    std::string A[15] = {"","","B",
-                         "","R","R",
-                         "","","R",
-                         "","B","B",
-                         "B","","R"};
-    silo_evaluate(A);
+
 }
 
 void Sequencer::callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg){
@@ -122,7 +122,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                     command_hand_wrist_down();
                     progress++;
                 }
-                else if(progress == n++ && msg->spline_convergence && msg->arm_convergence && get_front_ball){
+                else if(progress == n++ && msg->spline_convergence && msg->arm_convergence && get_front_ball && (way_point == "ST0" || way_point == "ST1" || way_point == "ST2" || way_point == "ST3" || way_point == "ST4" || way_point == "ST5" || way_point == "ST6" || way_point == "ST7")){
                     if(front_ball) command_hand_fb_front();
                     else command_hand_fb_back();
                     command_hand_suction_on();
@@ -269,12 +269,18 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                     else command_sequence(SEQUENCE_MODE::collect);
                 }
                 if(progress == n++){
+                    silo_reset();
                     command_move_node("c1");
                     command_hand_fb_silo();
                     command_hand_wrist_up();
                     progress++;
                 }
-                else if(progress == n++ && msg->spline_convergence){
+                else if(progress == n++ && way_point == "c1"){
+                    int target_silo = silo_evaluate();
+                    command_move_node("SI" + std::to_string(target_silo));
+                    progress++;
+                } 
+                else if(progress == n++ && msg->spline_convergence && (way_point == "SI0" || way_point == "SI1" || way_point == "SI2" || way_point == "SI3" || way_point == "SI4")){
                     command_hand_suction_off();
                     progress++;
                 } 
@@ -320,6 +326,10 @@ void Sequencer::callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg){
 void Sequencer::callback_collection_point(const std_msgs::msg::String::SharedPtr msg){
     if(msg->data == "" && sequence_mode == SEQUENCE_MODE::storage) command_sequence(SEQUENCE_MODE::transfer);
     else command_move_interrupt_node(msg->data);
+}
+
+void Sequencer::callback_way_point(const std_msgs::msg::String::SharedPtr msg){
+    way_point = msg->data;
 }
 
 void Sequencer::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg){
@@ -406,27 +416,50 @@ void Sequencer::command_hand_wrist_down(){ command_canusb_uint8(can_hand_wrist_i
 void Sequencer::command_hand_suction_on(){ command_canusb_uint8(can_hand_suction_id, 0); }
 void Sequencer::command_hand_suction_off(){ command_canusb_uint8(can_hand_suction_id, 1); }
 
-int Sequencer::silo_evaluate(std::string camera[15]){
-    //コート色による情報反転
-    if(court_color == "blue"){
-        std::string data[15]; 
-        int num[15] = {12,13,14,9,10,11,6,7,8,3,4,5,0,1,2};
-        for(int i = 0; i < 15; i++) data[i] = camera[i];
-        for(int i = 0; i < 15; i++) camera[i] = data[num[i]];
-    }    
-    //データの格納
-    for(int i = 0; i < 15; i++) {
-        if(court_color == "blue"){
-            if(camera[i] == "B") silo_data[i/3][i%3] = "M";
-            else if(camera[i] == "R") silo_data[i/3][i%3] = "E";
-            else silo_data[i/3][i%3] = "";
-        }
-        else if(court_color == "red"){
-            if(camera[i] == "B") silo_data[i/3][i%3] = "E";
-            else if(camera[i] == "R") silo_data[i/3][i%3] = "M";
-            else silo_data[i/3][i%3] = "";
+void Sequencer::silo_accumulation(std::string camera[2]){
+    for(int i = 0; i < 5; i++){
+        for(int j = 0; j < 3; j++){
+            camera_check[i][j]++;
         }
     }
+
+    //コート色による情報反転
+    if(court_color == "blue"){
+        std::string data[2]; 
+        std::string num[15] = {"12","13","14","9","10","11","6","7","8","3","4","5","0","1","2"};
+        for(int i = 0; i < 15; i++) {
+            if(i == stoi(camera[0])){
+                camera[0] = num[i];
+                break;
+            }
+        }
+    }
+    
+    //データの格納
+    int n =  stoi(camera[0]);
+    if(court_color == "blue"){
+        if(camera[1] == "B") silo_data[n/3][n%3] = "M";
+        else if(camera[1] == "R") silo_data[n/3][n%3] = "E";
+    }
+    else if(court_color == "red"){
+        if(camera[1] == "B") silo_data[n/3][n%3] = "E";
+        else if(camera[1] == "R") silo_data[n/3][n%3] = "M";
+    }
+    camera_check[n/3][n%3] = 0;
+
+    //データの削除
+    for(int i = 0; i < 5; i++){
+        for(int j = 0; j < 3; j++){
+            if(camera_check[i][j] > 15) {
+                silo_data[i][j] = "";
+                camera_check[i][j] = 0;
+                RCLCPP_INFO(get_logger(),"%d, %d",i, j);            
+            }
+        }
+    }
+}
+
+int Sequencer::silo_evaluate(){
     //評価判定
     for(int i = 0; i < 5; i++){
         bool check = false;
@@ -450,4 +483,15 @@ int Sequencer::silo_evaluate(std::string camera[15]){
     }
     return silo_num;
 }
+
+void Sequencer::silo_reset(){
+        //データの削除
+    for(int i = 0; i < 5; i++){
+        for(int j = 0; j < 3; j++){
+                silo_data[i][j] = "";
+                camera_check[i][j] = 0;
+        }
+    }
+}
+
 }  // namespace sequencer
