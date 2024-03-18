@@ -93,10 +93,10 @@ spline_pid_node:
     curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
     linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
 
-    linear_planner_gain: 5.0 #並進速度計画機ゲイン
+    linear_planner_gain: 3.0 #並進速度計画機ゲイン
     linear_pos_gain: 5.0  #並進位置ズレのゲイン
-    linear_pos_diff_gain: 1.5
-    linear_pos_integral_gain: 0.01  #並進位置ズレの積分ゲイン
+    linear_pos_diff_gain: 2.0
+    linear_pos_integral_gain: 0.02  #並進位置ズレの積分ゲイン
 
     angular_planner_gain: 4.0 #回転速度計画機ゲイン
     angular_pos_gain: 4.0 #回転位置ズレのゲイン
