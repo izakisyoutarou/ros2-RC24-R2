@@ -18,7 +18,7 @@ def generate_launch_description():
         # ),
         DeclareLaunchArgument(
             'model_path',
-            default_value='./ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_ano3_test3.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_ano3_test3.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(
@@ -28,7 +28,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'class_labels_path',
-            default_value='./ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano3_test2.txt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano3_test2.txt',
             description='if use custom model, set class name labels. '
         ),
         DeclareLaunchArgument(
