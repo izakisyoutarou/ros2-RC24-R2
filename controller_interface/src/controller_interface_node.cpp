@@ -231,7 +231,7 @@ namespace controller_interface
                 cout<<"emergency"<<endl;
                 robotcontrol_flag = true;
                 is_emergency = true;
-                is_restart = false;             
+                is_restart = false;
             }
             else if(msg->data == "s"){
                 cout<<"restart"<<endl;
@@ -260,6 +260,7 @@ namespace controller_interface
             //サイロ
             else if(msg->data == "x") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
             else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
+           
             else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
             //低速モード
             else if(msg->data == "l2") is_slow_speed = !is_slow_speed;
