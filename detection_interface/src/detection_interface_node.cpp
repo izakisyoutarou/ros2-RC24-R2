@@ -113,8 +113,8 @@ namespace detection_interface
 
                     is_collection_C5 = bounday_line(center_x, center_y);
                     
-                    if(is_collection_C5) msg_collection_point->data = "C5";
-                    else msg_collection_point->data = "C3";
+                    if(is_collection_C5) msg_collection_point->data = "c4";
+                    else msg_collection_point->data = "c3";
 
                     std::cout << msg_collection_point->data << std::endl;
 
@@ -207,19 +207,19 @@ namespace detection_interface
                 msg_ball_coordinate->z = test[2];
                 // RCLCPP_INFO(this->get_logger(), "%f", center_x);
 
-                if(way_point == "C3"){
-                    if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST1";
-                    else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
-                    else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
-                    else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
+                if(way_point == "c3"){
+                    if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST0";
+                    else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST1";
+                    else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST2";
+                    else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
                     std::cout << msg_collection_point->data << std::endl;
                     way_point = "";
                 }
-                else if(way_point == "C5"){
-                    if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST8";
-                    else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST7";
-                    else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST6";
-                    else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
+                else if(way_point == "c6"){
+                    if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST7";
+                    else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST6";
+                    else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
+                    else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
                     way_point = "";
                 }
 
