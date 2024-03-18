@@ -44,6 +44,12 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
         std::bind(&Sequencer::callback_is_start, this, std::placeholders::_1)
     );
 
+    _subscription_process_skip = this->create_subscription<std_msgs::msg::Empty>(
+        "process_skip",
+        _qos,
+        std::bind(&Sequencer::callback_process_skip, this, std::placeholders::_1)
+    );
+    
     _subscription_collection_point = this->create_subscription<std_msgs::msg::String>(
         "collection_point",
         _qos,
@@ -122,27 +128,32 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                     command_hand_wrist_down();
                     progress++;
                 }
-                else if(progress == n++ && msg->spline_convergence && msg->arm_convergence && get_front_ball && (way_point == "ST0" || way_point == "ST1" || way_point == "ST2" || way_point == "ST3" || way_point == "ST4" || way_point == "ST5" || way_point == "ST6" || way_point == "ST7")){
-                    if(front_ball) command_hand_fb_front();
-                    else command_hand_fb_back();
-                    command_hand_suction_on();
+                else if(progress == n++ && msg->spline_convergence /*&& msg->arm_convergence && get_front_ball*/ && (way_point == "ST0" || way_point == "ST1" || way_point == "ST2" || way_point == "ST3" || way_point == "ST4" || way_point == "ST5" || way_point == "ST6" || way_point == "ST7")){
+                    RCLCPP_INFO(get_logger(),"sucsessfull");
                     progress++;
                 }
-                else if(progress == n++ && msg->arm_convergence){
-                    command_hand_lift_suction();
-                    progress++;
-                }
-                else if(progress == n++ && msg->arm_convergence){
-                    command_hand_lift_pickup();
-                    progress++;
-                }
-                else if(progress == n++ && msg->arm_convergence){
-                    if(tof[0]){
-                        command_sequence(SEQUENCE_MODE::silo);
-                        ball_num++;                       
-                    }
-                    else progress--;
-                }
+
+                // else if(progress == n++ && msg->spline_convergence && msg->arm_convergence && get_front_ball && (way_point == "ST0" || way_point == "ST1" || way_point == "ST2" || way_point == "ST3" || way_point == "ST4" || way_point == "ST5" || way_point == "ST6" || way_point == "ST7")){
+                //     if(front_ball) command_hand_fb_front();
+                //     else command_hand_fb_back();
+                //     command_hand_suction_on();
+                //     progress++;
+                // }
+                // else if(progress == n++ && msg->arm_convergence){
+                //     command_hand_lift_suction();
+                //     progress++;
+                // }
+                // else if(progress == n++ && msg->arm_convergence){
+                //     command_hand_lift_pickup();
+                //     progress++;
+                // }
+                // else if(progress == n++ && msg->arm_convergence){
+                //     if(tof[0]){
+                //         command_sequence(SEQUENCE_MODE::silo);
+                //         ball_num++;                       
+                //     }
+                //     else progress--;
+                // }
             }
 
             //トランスファーシーケンス
@@ -321,6 +332,10 @@ void Sequencer::callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg){
     else if(msg->data == 2) command_sequence(SEQUENCE_MODE::collect);
     else if(msg->data == 3) command_sequence(SEQUENCE_MODE::silo);
     is_start = true;
+}
+
+void Sequencer::callback_process_skip(const std_msgs::msg::Empty::SharedPtr msg){
+    process_skip = true;
 }
 
 void Sequencer::callback_collection_point(const std_msgs::msg::String::SharedPtr msg){

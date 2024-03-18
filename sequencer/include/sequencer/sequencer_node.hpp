@@ -7,6 +7,7 @@
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/u_int8.hpp"
+#include "std_msgs/msg/empty.hpp"
 #include "controller_interface_msg/msg/convergence.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
@@ -37,6 +38,7 @@ private:
     rclcpp::Subscription<controller_interface_msg::msg::Convergence>::SharedPtr _subscription_convergence;
     rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _subscription_base_control;
     rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr _subscription_is_start;
+    rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr _subscription_process_skip;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_collection_point;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_way_point;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_self_pose;
@@ -47,6 +49,7 @@ private:
     void callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg);
     void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
     void callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg);
+    void callback_process_skip(const std_msgs::msg::Empty::SharedPtr msg);
     void callback_collection_point(const std_msgs::msg::String::SharedPtr msg);
     void callback_way_point(const std_msgs::msg::String::SharedPtr msg);
     void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
@@ -127,6 +130,8 @@ private:
     SEQUENCE_MODE pre_sequence = SEQUENCE_MODE::stop;
 
     std::string way_point = "";
+
+    bool process_skip = false;
     
 };
 
