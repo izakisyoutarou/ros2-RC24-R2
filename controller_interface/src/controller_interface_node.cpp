@@ -133,6 +133,9 @@ namespace controller_interface
             //gazeboへ
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
+            _pub_is_start = this->create_publisher<std_msgs::msg::UInt8>("is_start", _qos);
+            _pub_process_skip = this->create_publisher<std_msgs::msg::Empty>("process_skip", _qos);
+
             //sequenserへ
             _pub_initial_sequense = this->create_publisher<std_msgs::msg::String>("initial_sequense", _qos);
 
@@ -254,11 +257,21 @@ namespace controller_interface
             //IO基盤リセット
             else if(msg->data == "left") gamebtn.io_reset(_pub_canusb);
             //ボール回収
-            else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
-            //ボール回収
             else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);
+            //ボール回収
+            else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
             //サイロ
-            else if(msg->data == "x") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
+            // else if(msg->data == "x") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
+            else if(msg->data == "x") {
+                auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
+                msg_is_start->data = 0;
+                _pub_is_start->publish(*msg_is_start);
+            }
+            else if(msg->data == "y") {
+                auto msg_process_skip = std::make_shared<std_msgs::msg::Empty>();
+                _pub_process_skip->publish(*msg_process_skip);
+            }
+
             else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
             else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
             //低速モード
