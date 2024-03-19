@@ -31,7 +31,7 @@ namespace detection_interface
             //ransacから
             _sub_self_pose = this->create_subscription<geometry_msgs::msg::Vector3>(
                 "self_pose",
-                _qos,
+                rclcpp::SensorDataQoS(),
                 std::bind(&DetectionInterface::callback_self_pose, this, std::placeholders::_1)
             );
 
@@ -108,6 +108,7 @@ namespace detection_interface
 
             //ひし形モードのときに、ひし形に向かっているとき
             if(now_sequence == "storage"){
+                std::cout << is_self_pose_range_x_str << "@"<< is_self_pose_range_y_str <<"@"<< is_self_pose_range_z_str << std::endl;
                 if(is_self_pose_range_x_str && is_self_pose_range_y_str && is_self_pose_range_z_str){
                     bool is_collection_C5;
 
@@ -207,30 +208,33 @@ namespace detection_interface
                 msg_ball_coordinate->z = test[2];
                 // RCLCPP_INFO(this->get_logger(), "%f", center_x);
 
+                if(way_point == "c3" || way_point == "c4"){
                 if(way_point == "c3"){
                     if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST0";
                     else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST1";
                     else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST2";
                     else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
-                    std::cout << msg_collection_point->data << std::endl;
+                    // std::cout << msg_collection_point->data << std::endl;
                     way_point = "";
                 }
-                else if(way_point == "c6"){
+                else if(way_point == "c4"){
                     if(center_x < str_range_x_C3orC5[0]) msg_collection_point->data = "ST7";
                     else if(center_x > str_range_x_C3orC5[0] && center_x < str_range_x_C3orC5[1]) msg_collection_point->data = "ST6";
                     else if(center_x > str_range_x_C3orC5[1] && center_x < str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
                     else if(center_x > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
                     way_point = "";
                 }
+                    _pub_collection_point->publish(*msg_collection_point);
+                }
 
                 if(!way_point.empty()){
                     if(center_y < str_ball_range_y) msg_front_ball->data = true;
                     else msg_front_ball->data = false;
+                    _pub_front_ball->publish(*msg_front_ball);
                 }
             
                 way_point = "";
-                _pub_collection_point->publish(*msg_collection_point);
-                _pub_front_ball->publish(*msg_front_ball);
+                _pub_cotion_point->publish(*msg_collection_point);
                 _pub_ball_coordinate->publish(*msg_ball_coordinate);
             }
         }
@@ -247,6 +251,7 @@ namespace detection_interface
             is_self_pose_range_x_siro = (msg->x > siro_self_pose_range[0] && msg->x < siro_self_pose_range[1]) ? true : false;
             is_self_pose_range_y_siro = (msg->y > siro_self_pose_range[2] && msg->y < siro_self_pose_range[3]) ? true : false;
             is_self_pose_range_z_siro = (msg->z > siro_self_pose_range[4] && msg->z < siro_self_pose_range[5]) ? true : false;
+            // std::cout << is_self_pose_range_x_str << std::endl;
             pose[0] = msg->x;
             pose[1] = msg->y;
             pose[2] = msg->z;
