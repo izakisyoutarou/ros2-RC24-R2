@@ -66,20 +66,51 @@ namespace yolox_cpp{
 
                 //ここで補助ラインの描写
                 cv::Scalar line_color(0, 255, 0);  // BGR 色空間での色
-                // int x_coordinate1 = 320;//以下、新規追加。画面上に線を表示
-                // int x_coordinate2 = 640;//以下、新規追加。画面上に線を表示
-                // int x_coordinate3 = 960;//以下、新規追加。画面上に線を表示
+
+                //ひし形近く
+                // int x_coordinate0 = 230;
+                // int x_coordinate1 = 390;
+                // int x_coordinate2 = 560;
+                // int x_coordinate3 = 710;
+                // int x_coordinate4 = 860;
+                // cv::line(bgr, cv::Point(x_coordinate0, 0), cv::Point(x_coordinate0, bgr.rows), line_color, 2);
                 // cv::line(bgr, cv::Point(x_coordinate1, 0), cv::Point(x_coordinate1, bgr.rows), line_color, 2);
                 // cv::line(bgr, cv::Point(x_coordinate2, 0), cv::Point(x_coordinate2, bgr.rows), line_color, 2);
                 // cv::line(bgr, cv::Point(x_coordinate3, 0), cv::Point(x_coordinate3, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(x_coordinate4, 0), cv::Point(x_coordinate4, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 230), cv::Point(bgr.cols, 230), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 450), cv::Point(bgr.cols, 450), line_color, 2);
+
+                //ひし形前後
+                // cv::line(bgr, cv::Point(0, 370), cv::Point(bgr.cols, 370), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 520), cv::Point(bgr.cols, 520), line_color, 2);
+                // cv::line(bgr, cv::Point(350, 0), cv::Point(350, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(580, 0), cv::Point(580, bgr.rows), line_color, 2);
+
+                //坂上
                 // cv::line(bgr, cv::Point(1280, 540), cv::Point(0, 180), line_color, 2); //realsense
-                // cv::line(bgr, cv::Point(1920, 960), cv::Point(0, 320), line_color, 2); //c1 坂上から見るやつ
-                cv::line(bgr, cv::Point(384, 0), cv::Point(384, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(768, 0), cv::Point(768, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(1152, 0), cv::Point(1152, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(1536, 0), cv::Point(1536, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(0, 640), cv::Point(bgr.cols, 640), line_color, 2);
-                cv::line(bgr, cv::Point(0, 960), cv::Point(bgr.cols, 960), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 580), cv::Point(1920, 1120),  line_color, 2); //c1 坂上斜め赤
+                // cv::line(bgr, cv::Point(0, 1170), cv::Point(1920, 630),  line_color, 2); //c1 坂上斜め青
+                // cv::line(bgr, cv::Point(0, 1115), cv::Point(1920, 570),  line_color, 2); //c1 囲い
+                // cv::line(bgr, cv::Point(0, 1310), cv::Point(1920, 700),  line_color, 2); //c1 囲い
+                // cv::line(bgr, cv::Point(0, 650), cv::Point(1920, 1250),  line_color, 2); //c1 囲い
+                // cv::line(bgr, cv::Point(0, 590), cv::Point(1920, 1020),  line_color, 2); //c1 囲い
+
+                // サイロ
+                // cv::line(bgr, cv::Point(280, 0), cv::Point(280, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(440, 0), cv::Point(440, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(600, 0), cv::Point(600, bgr.rows), line_color, 2);                
+                // cv::line(bgr, cv::Point(750, 0), cv::Point(750, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(970, 0), cv::Point(970, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(1110, 0), cv::Point(1110, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(1340, 0), cv::Point(1340, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(1500, 0), cv::Point(1500, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(1670, 0), cv::Point(1670, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(1810, 0), cv::Point(1810, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 620), cv::Point(bgr.cols, 620), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 710), cv::Point(bgr.cols, 710), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 800), cv::Point(bgr.cols, 800), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 900), cv::Point(bgr.cols, 900), line_color, 2);
             }
         }
     }
