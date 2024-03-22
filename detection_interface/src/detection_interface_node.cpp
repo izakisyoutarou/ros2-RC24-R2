@@ -105,7 +105,6 @@ namespace detection_interface
 
             center_x = (xmax + xmin) / 2;
             center_y = (ymax + ymin) / 2;
-
             //ひし形モードのときに、ひし形に向かっているとき
             if(now_sequence == "storage"){
                 std::cout << is_self_pose_range_x_str << "@"<< is_self_pose_range_y_str <<"@"<< is_self_pose_range_z_str << std::endl;
@@ -234,7 +233,7 @@ namespace detection_interface
                 }
             
                 way_point = "";
-                _pub_cotion_point->publish(*msg_collection_point);
+                _pub_collection_point->publish(*msg_collection_point);
                 _pub_ball_coordinate->publish(*msg_ball_coordinate);
             }
         }
@@ -274,25 +273,32 @@ namespace detection_interface
         }
         //坂上からひし形を見たときの斜めの線
         bool DetectionInterface::bounday_line(int x, int y){
-            float a;
-            float b;
-            float c;
-            float dx;
-            float dy;
-            float calculation;
+            // float a;
+            // float b;
+            // float c;
+            // float dx;
+            // float dy;
+            // float calculation;
+            // bool is_collection_C5;
+            // dx = str_range_point2[0] - str_range_point1[0];
+            // dy = str_range_point2[1] - str_range_point1[1];
+            // a = -(str_range_point2[1] - str_range_point1[1]);
+            // b = str_range_point2[0] - str_range_point1[0];
+            // c = -(str_range_point2[1] - str_range_point1[1]) * str_range_point2[0] - str_range_point2[1] * (str_range_point2[1] - str_range_point1[1]);
+            // calculation = (a*x + b*y + c) / sqrt(a*a + b*b);
+            // is_collection_C5 = (calculation >= 0) ? true : false;
+            // std::cout << calculation << std::endl;
+            // return is_collection_C5;
+            
+            float a = 0;
+            float b = 0;
+            float Y = 0;
             bool is_collection_C5;
-
-            dx = str_range_point2[0] - str_range_point1[0];
-            dy = str_range_point2[1] - str_range_point1[1];
-
-            a = -(str_range_point2[1] - str_range_point1[1]);
-            b = str_range_point2[0] - str_range_point1[0];
-            c = -(str_range_point2[1] - str_range_point1[1]) * str_range_point2[0] - str_range_point2[1] * (str_range_point2[1] - str_range_point1[1]);
-
-            calculation = (a*x + b*y + c) / sqrt(a*a + b*b);
-
-            is_collection_C5 = (calculation >= 0) ? true : false;
-
+            a=(str_range_point2[1] - str_range_point1[1]) / (str_range_point2[0] - str_range_point1[0]);
+            b=((str_range_point2[0]*str_range_point1[1])-(str_range_point1[0]*str_range_point2[1])) / (str_range_point2[0] - str_range_point1[0]);
+            Y =a*x+b;
+            is_collection_C5 = (Y >= y) ? true : false;
+            std::cout << Y - y << std::endl;
             return is_collection_C5;
         }
 
