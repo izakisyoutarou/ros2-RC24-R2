@@ -58,6 +58,7 @@ namespace controller_interface
         can_restart_id(get_parameter("canid.restart").as_int()),
         can_calibrate_id(get_parameter("canid.calibrate").as_int()),
         can_reset_id(get_parameter("canid.reset").as_int()),
+        can_emergency_state_id(get_parameter("canid.emergency_state").as_int()),
         can_linear_id(get_parameter("canid.linear").as_int()),
         can_angular_id(get_parameter("canid.angular").as_int()),
         can_steer_reset_id(get_parameter("canid.steer_reset").as_int()),
@@ -94,13 +95,22 @@ namespace controller_interface
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_main_pad, this, std::placeholders::_1)
             );
-            //controller_mainから
             _sub_screen_pad = this->create_subscription<std_msgs::msg::String>(
                 "SCRN_info",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_screen_pad, this, std::placeholders::_1)
             );
+            _sub_connection_state = this->create_subscription<std_msgs::msg::Empty>(
+                "connection_state",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_connection_state, this, std::placeholders::_1)
+            );    
             //mainからsub
+            _sub_emergency_state = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+                "can_rx_"+ (boost::format("%x") % can_emergency_state_id).str(),
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_emergency_state, this, std::placeholders::_1)
+            );
             _sub_arm_convergence = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
                 "can_rx_"+ (boost::format("%x") % can_paddy_convergence_id).str(),
                 _qos,
@@ -197,6 +207,19 @@ namespace controller_interface
                 }
             );
 
+            check_connection = this->create_wall_timer(
+                std::chrono::milliseconds(200),
+                [this] {
+                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_time).count() > 100 * 2){
+                        auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                        msg_emergency->canid = can_emergency_id;
+                        msg_emergency->candlc = 1;
+                        msg_emergency->candata[0] = 1;
+                        _pub_canusb->publish(*msg_emergency);
+                    }
+                }
+            );
+
             //速度計画機のリミットを初期設定
             high_velPlanner_linear_x.limit(high_limit_linear);
             high_velPlanner_linear_y.limit(high_limit_linear);
@@ -205,7 +228,7 @@ namespace controller_interface
             slow_velPlanner_linear_y.limit(slow_limit_linear);
 
             velPlanner_angular_z.limit(limit_angular);
-                    }
+        }
 
         void SmartphoneGamepad::callback_main_pad(const std_msgs::msg::String::SharedPtr msg){
             //リスタート
@@ -230,7 +253,6 @@ namespace controller_interface
             if(msg->data == "g"){
                 cout<<"emergency"<<endl;
                 robotcontrol_flag = true;
-                is_emergency = true;
                 is_restart = false;
             }
             else if(msg->data == "s"){
@@ -311,7 +333,6 @@ namespace controller_interface
             if(msg->data == "s"){
                 _pub_canusb->publish(*msg_restart);
                 _pub_canusb->publish(*msg_emergency);
-
             }
         }
 
@@ -319,6 +340,23 @@ namespace controller_interface
             auto msg_move_node = std::make_shared<std_msgs::msg::String>();
             msg_move_node->data = msg->data;
             _pub_move_node->publish(*msg_move_node);
+        }
+
+        void SmartphoneGamepad::callback_connection_state(const std_msgs::msg::Empty::SharedPtr msg){
+            get_time = std::chrono::system_clock::now();
+        }
+
+        void SmartphoneGamepad::callback_emergency_state(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+            if(is_emergency != static_cast<bool>(msg->candata[0])) {
+                is_emergency = static_cast<bool>(msg->candata[0]);
+                is_restart = false; 
+                msg_base_control.is_restart = is_restart;
+                msg_base_control.is_emergency = is_emergency;
+                msg_base_control.is_move_autonomous = is_move_autonomous;
+                msg_base_control.is_slow_speed = is_slow_speed;
+                msg_base_control.initial_state = initial_state;
+                _pub_base_control->publish(msg_base_control);
+            }
         }
 
         void SmartphoneGamepad::callback_arm_convergence(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
