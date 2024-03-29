@@ -1,7 +1,7 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: false
-    scan: false
+    slcan: true
+    scan: true
     trajectory_planner: true
     
 
