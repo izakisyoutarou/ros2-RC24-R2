@@ -72,7 +72,8 @@ namespace controller_interface
             rclcpp::TimerBase::SharedPtr _socket_timer;
             rclcpp::TimerBase::SharedPtr _start_timer;
             rclcpp::TimerBase::SharedPtr _pub_state_communication_timer;
-            rclcpp::TimerBase::SharedPtr check_connection;
+            rclcpp::TimerBase::SharedPtr check_controller_connection;
+            rclcpp::TimerBase::SharedPtr check_mainboard_connection;
 
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -206,6 +207,7 @@ namespace controller_interface
 
             RecvUDP joy_main;
             
-            std::chrono::system_clock::time_point get_time;
+            std::chrono::system_clock::time_point get_controller_time;
+            std::chrono::system_clock::time_point get_mainboard_time;
     };
 }

@@ -80,6 +80,8 @@ namespace controller_interface
             //周期
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
             const auto convergence_ms = this->get_parameter("convergence_ms").as_int();
+            const auto controller_ms = this->get_parameter("controller_ms").as_int();
+            const auto mainboard_ms = this->get_parameter("mainboard_ms").as_int();
             const auto base_state_communication_ms = this->get_parameter("base_state_communication_ms").as_int();
 
             gamebtn.canid.calibrate = can_calibrate_id;
@@ -207,15 +209,35 @@ namespace controller_interface
                 }
             );
 
-            check_connection = this->create_wall_timer(
-                std::chrono::milliseconds(200),
+            check_controller_connection = this->create_wall_timer(
+                std::chrono::milliseconds(static_cast<int>(controller_ms * 1.5)),
                 [this] {
-                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_time).count() > 100 * 2){
+                    std::chrono::system_clock::time_point now_time = std::chrono::system_clock::now();
+                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_controller_time).count() > 100 * 1.5){
                         auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                         msg_emergency->canid = can_emergency_id;
                         msg_emergency->candlc = 1;
                         msg_emergency->candata[0] = 1;
                         _pub_canusb->publish(*msg_emergency);
+                        RCLCPP_INFO(get_logger(),"controller_connection_lost!!");
+                    }
+                }
+            );
+
+            check_mainboard_connection = this->create_wall_timer(
+                std::chrono::milliseconds(static_cast<int>(mainboard_ms * 1.5)),
+                [this] { 
+                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_mainboard_time).count() > 200 * 1.5){
+                        is_emergency = true;
+                        is_restart = false; 
+                        auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();   
+                        msg_base_control->is_restart = is_restart;
+                        msg_base_control->is_emergency = is_emergency;
+                        msg_base_control->is_move_autonomous = is_move_autonomous;
+                        msg_base_control->is_slow_speed = is_slow_speed;
+                        msg_base_control->initial_state = initial_state;
+                        _pub_base_control->publish(*msg_base_control);
+                        RCLCPP_INFO(get_logger(),"mainboard_connection_lost!!");
                     }
                 }
             );
@@ -253,7 +275,7 @@ namespace controller_interface
             if(msg->data == "g"){
                 cout<<"emergency"<<endl;
                 robotcontrol_flag = true;
-                is_restart = false;
+                msg_emergency->candata[0] = true;
             }
             else if(msg->data == "s"){
                 cout<<"restart"<<endl;
@@ -323,7 +345,6 @@ namespace controller_interface
             // {
             //     _pub_canusb->publish(*msg_btn);
             // }
-            msg_emergency->candata[0] = is_emergency;
             
             if(msg->data=="g") _pub_canusb->publish(*msg_emergency);
             if(robotcontrol_flag == true) {
@@ -343,10 +364,11 @@ namespace controller_interface
         }
 
         void SmartphoneGamepad::callback_connection_state(const std_msgs::msg::Empty::SharedPtr msg){
-            get_time = std::chrono::system_clock::now();
+            get_controller_time = std::chrono::system_clock::now();
         }
 
         void SmartphoneGamepad::callback_emergency_state(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+            get_mainboard_time = std::chrono::system_clock::now();
             if(is_emergency != static_cast<bool>(msg->candata[0])) {
                 is_emergency = static_cast<bool>(msg->candata[0]);
                 is_restart = false; 

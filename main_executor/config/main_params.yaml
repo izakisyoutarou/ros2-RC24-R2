@@ -77,6 +77,52 @@ launch: #起動パラメータ
     defalt_arm_convergence: false
     defalt_net_convergence: false
 
+controller_interface_node:
+  ros__parameters:
+    # 手動の高速　並進　速度[m/s],加速度[m/s^2],加減速度[-m/s^2]
+    high_linear_max_vel: 1.5
+    high_linear_max_acc: 3.0
+    high_linear_max_dec: 2.0
+    # 手動の低速　並進　速度[m/s],加速度[m/s^2],加減速度[-m/s^2]
+    slow_linear_max_vel: 0.5
+    slow_linear_max_acc: 1.5
+    slow_linear_max_dec: 1.5
+    # 手動の回転  速度[deg/s],加速度[deg/s^2],加減速度[-deg/s^2]
+    angular_max_vel: 100.0
+    angular_max_acc: 360.0
+    angular_max_dec: 360.0
+    
+    heartbeat_ms: 100 #ハートビート周期[ms]
+    interval_ms: 50
+    start_ms: 3000
+    controller_ms: 100
+    mainboard_ms: 200
+    
+    initial_pickup_state: "A"
+    initial_inject_state: "B"
+
+rasnac_localization:
+  ros__parameters:
+    plot_mode: true #実機のときはfalse
+    laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
+    odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
+    odom_weight_angler: 5.0e-4
+    voxel_size: 0.05
+    trial_num: 50
+    inlier_dist_threshold: 0.0124
+    inlier_length_threshold: 0.5 #インライアのしきい値
+    second_ransac: false           #2回ransacをするか
+    #以下カルマンフィルタのノイズ->値を小さくするとセンサーが優先される
+    cov_sys_px: 1.5    # システム雑音の位置x[m]の標準偏差
+    cov_sys_py: 1.5    # システム雑音の位置x[m]の標準偏差
+    cov_sys_yaw: 0.5   # システム雑音の角度yaw[deg]の標準偏差 
+    cov_obs_px1: 0.6   # 観測雑音の位置x[m]の標準偏差
+    cov_obs_py1: 0.6   # 観測雑音の位置y[m]の標準偏差
+    cov_obs_px2: 0.9   # 観測雑音の位置x[m]の標準偏差
+    cov_obs_py2: 0.9   # 観測雑音の位置y[m]の標準偏差
+    cov_px: 15.0        # x誤差共分散行列
+    cov_py: 15.0        # y誤差共分散行列
+
 spline_pid_node:
   ros__parameters:
     interval_ms: 20     #サイクル周期[ms]
@@ -108,63 +154,6 @@ spline_trajectories_node:
   ros__parameters:
     resolution: 0.01  #起動点の分解能[m]
 
-controller_interface_node:
-  ros__parameters:
-    # 手動の高速　並進　速度[m/s],加速度[m/s^2],加減速度[-m/s^2]
-    high_linear_max_vel: 1.5
-    high_linear_max_acc: 3.0
-    high_linear_max_dec: 2.0
-    # 手動の低速　並進　速度[m/s],加速度[m/s^2],加減速度[-m/s^2]
-    slow_linear_max_vel: 0.5
-    slow_linear_max_acc: 1.5
-    slow_linear_max_dec: 1.5
-    # 手動の回転  速度[deg/s],加速度[deg/s^2],加減速度[-deg/s^2]
-    angular_max_vel: 100.0
-    angular_max_acc: 360.0
-    angular_max_dec: 360.0
-    
-    heartbeat_ms: 100 #ハートビート周期[ms]
-    interval_ms: 50
-    start_ms: 3000
-    
-    initial_pickup_state: "A"
-    initial_inject_state: "B"
-
-arm_interface_node:
-  ros__parameters:
-    tf_arm2robot: [0.0, 0.0] #射出機構のTF[x, y]
-    strage_backside: [0.0, 0.0, 0.0] #ストレージエリアの[x, y, 高さ]
-    strage_front: [0.1, 0.0, 0.0]
-
-rasnac_localization:
-  ros__parameters:
-    plot_mode: true #実機のときはfalse
-    laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
-    odom_weight_angler: 5.0e-4
-    voxel_size: 0.05
-    trial_num: 50
-    inlier_dist_threshold: 0.0124
-    inlier_length_threshold: 0.5 #インライアのしきい値
-    second_ransac: false           #2回ransacをするか
-    #以下カルマンフィルタのノイズ->値を小さくするとセンサーが優先される
-    cov_sys_px: 1.5    # システム雑音の位置x[m]の標準偏差
-    cov_sys_py: 1.5    # システム雑音の位置x[m]の標準偏差
-    cov_sys_yaw: 0.5   # システム雑音の角度yaw[deg]の標準偏差 
-    cov_obs_px1: 0.6   # 観測雑音の位置x[m]の標準偏差
-    cov_obs_py1: 0.6   # 観測雑音の位置y[m]の標準偏差
-    cov_obs_px2: 0.9   # 観測雑音の位置x[m]の標準偏差
-    cov_obs_py2: 0.9   # 観測雑音の位置y[m]の標準偏差
-    cov_px: 15.0        # x誤差共分散行列
-    cov_py: 15.0        # y誤差共分散行列
-
-sequencer_node:
-  ros__parameters:
-    select_algorithm: 0
-    seedling_order: ["S0", "S1", "S2", "S3"]
-    planting_order: ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7"]
-    harvesting_order: ["H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11"]
-
 injection_param_calculator_node:
   ros__parameters:
     mass: 0.157                          # リングの重量[kg]
@@ -174,3 +163,10 @@ injection_param_calculator_node:
     velocity_lim_max: 10.0               # 最大初速度[m/s]
     injection_angle: 45.0                # 射出角度[deg]
     max_loop: 100                        # ニュートン法のループ制限回数
+
+sequencer_node:
+  ros__parameters:
+    select_algorithm: 0
+    seedling_order: ["S0", "S1", "S2", "S3"]
+    planting_order: ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7"]
+    harvesting_order: ["H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11"]
