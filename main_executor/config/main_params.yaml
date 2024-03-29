@@ -153,20 +153,3 @@ spline_pid_node:
 spline_trajectories_node:
   ros__parameters:
     resolution: 0.01  #起動点の分解能[m]
-
-injection_param_calculator_node:
-  ros__parameters:
-    mass: 0.157                          # リングの重量[kg]
-    gravitational_accelerastion: 9.80665 # 重力加速度[m/s^2]
-    air_resistance: 7.78e-3              # 空気抵抗係数[kg/s]
-    foundation_hight: 0.0                # 射出機構の地面からの高さ[m]
-    velocity_lim_max: 10.0               # 最大初速度[m/s]
-    injection_angle: 45.0                # 射出角度[deg]
-    max_loop: 100                        # ニュートン法のループ制限回数
-
-sequencer_node:
-  ros__parameters:
-    select_algorithm: 0
-    seedling_order: ["S0", "S1", "S2", "S3"]
-    planting_order: ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7"]
-    harvesting_order: ["H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11"]
