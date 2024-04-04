@@ -83,18 +83,25 @@ namespace detection_interface
             void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
 
             //坂上から見たときにC3かC5かをみる境界線の計算
-            bool bounday_line(int x, int y);
+            bool bounday_line(int x, int y, const std::vector<double> point1, const std::vector<double> point2);
+
+            //坂上から見たときに(C2付近)ひし形の内側かどうかの計算をまとめる関数
+            bool rhombus_inside(int x, int y);
 
             Vector3d pose;
             std::string now_sequence;
             std::string way_point;
 
-            bool is_self_pose_range_x_str;
-            bool is_self_pose_range_y_str;
-            bool is_self_pose_range_z_str;
-            bool is_self_pose_range_x_siro;
-            bool is_self_pose_range_y_siro;
-            bool is_self_pose_range_z_siro;
+            chrono::system_clock::time_point time_start, time_end;
+
+            bool is_self_pose_range_x_str = false;
+            bool is_self_pose_range_y_str = false;
+            bool is_self_pose_range_z_str = false;
+            bool is_self_pose_range_x_siro = false;
+            bool is_self_pose_range_y_siro = false;
+            bool is_self_pose_range_z_siro = false;
+
+            // int n = 0;
 
             //定数
             //坂上の自己位置の範囲
@@ -102,20 +109,34 @@ namespace detection_interface
             const std::vector<double> siro_self_pose_range;
 
             //坂上の画像認識の範囲
-            const std::vector<double> str_range_point1;
-            const std::vector<double> str_range_point2;
+            const std::vector<double> str_range_point1_blue;
+            const std::vector<double> str_range_point2_blue;
+            const std::vector<double> str_range_point1_red;
+            const std::vector<double> str_range_point2_red;
 
-            //C3かC5についたときの画像認識の範囲
+            //C2から見たひし形の枠の範囲
+            const std::vector<double> str_range_point1_1_C2;
+            const std::vector<double> str_range_point1_2_C2;
+            const std::vector<double> str_range_point2_1_C2;
+            const std::vector<double> str_range_point2_2_C2;
+            const std::vector<double> str_range_point3_1_C2;
+            const std::vector<double> str_range_point3_2_C2;
+            const std::vector<double> str_range_point4_1_C2;
+            const std::vector<double> str_range_point4_2_C2;
+
+            //C3かC5についたときのST1~8につながる画像認識の範囲
             const std::vector<double> str_range_x_C3orC5;
+            const double str_range_y_C3orC5;
+
+            //STについたときのボールが手前か奥か判断する画像認識の範囲
+            const std::vector<double> str_range_x_ST;
+            const std::vector<double> str_range_y_ST;
 
             //サイロのボールが何段目か
             const std::vector<double> siro_ball_range_y;
 
             //サイロのボールの画像認識の範囲
             const std::vector<double> siro_ball_range_x;
-
-            //ひし形のボールが手前か奥か
-            const double str_ball_range_y;
 
             //フィールド
             geometry_msgs::msg::Vector3 self_pose;
@@ -124,5 +145,7 @@ namespace detection_interface
             coordinate_transformation ct;
 
             cv::Mat cv_image_;
+
+            const std::string court_color;
     };
 }

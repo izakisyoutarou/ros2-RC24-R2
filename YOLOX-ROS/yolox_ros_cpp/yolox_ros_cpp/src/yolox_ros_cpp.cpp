@@ -108,6 +108,7 @@ namespace yolox_ros_cpp
     {
         auto img = cv_bridge::toCvCopy(ptr, "bgr8");
         cv::Mat frame = img->image;
+        cv::Mat frame_prev;
 
         auto now = std::chrono::system_clock::now();
         auto objects = this->yolox_->inference(frame);
@@ -119,7 +120,9 @@ namespace yolox_ros_cpp
         yolox_cpp::utils::draw_objects(frame, objects, this->class_names_);
         if (this->params_.imshow_isshow)
         {
-            cv::imshow("yolox", frame);
+            cv::Size target_size(1280, 720); // Set your desired size here
+            cv::resize(frame, frame_prev, target_size);
+            cv::imshow("yolox", frame_prev);
             auto key = cv::waitKey(1);
             if (key == 27)
             {
@@ -151,7 +154,6 @@ namespace yolox_ros_cpp
             box.img_width = frame.cols;
             box.img_height = frame.rows;
             boxes.bounding_boxes.emplace_back(box);
-
         }
         return boxes;
     }

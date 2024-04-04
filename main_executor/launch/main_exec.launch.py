@@ -26,17 +26,11 @@ def generate_launch_description():
         'config',
         'slcan_add.sh'
     )
-    # yolox_c1起動ファイルのパス設定
-    yolox_c1_launch_path = os.path.join(
+    # yolox_c1,yolox_realsense起動ファイルのパス設定
+    yolox_launch_path = os.path.join(
         get_package_share_directory('yolox_ros_cpp'),
         'launch',
-        'yolox_tensorrt_c1.launch.py'
-    )
-    # yolox_realesnseカメラ起動ファイルのパス設定
-    yolox_realsense_launch_path = os.path.join(
-        get_package_share_directory('yolox_ros_cpp'),
-        'launch',
-        'yolox_tensorrt_realsense.launch.py'
+        'yolox_tensorrt_rc24.launch.py'
     )
 
     # 起動パラメータファイルのロード
@@ -63,14 +57,9 @@ def generate_launch_description():
         output='screen'
     )
     
-    # yolox_c1ノードの作成
-    yolox_c1_launch = launch.actions.IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([yolox_c1_launch_path])
-    )
-    
-    # yolox_realsenseノードの作成
-    yolox_realsense_launch = launch.actions.IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([yolox_realsense_launch_path])
+    # yolox_c1,yolox_realsenseノードの作成
+    yolox_launch = launch.actions.IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([yolox_launch_path])
     )
 
     # 起動エンティティクラスの作成
@@ -83,10 +72,8 @@ def generate_launch_description():
         launch_discription.add_entity(urg_launch)
     if(launch_params['trajectory_planner'] is True):
         launch_discription.add_entity(trajectory_planner_node)
-    if(launch_params['yolox_c1'] is True):
-        launch_discription.add_entity(yolox_c1_launch)
-    if(launch_params['yolox_realsense'] is True):
-        launch_discription.add_entity(yolox_realsense_launch)
+    if(launch_params['yolox_launch'] is True):
+        launch_discription.add_entity(yolox_launch)
         
     launch_discription.add_entity(main_exec_node)
 

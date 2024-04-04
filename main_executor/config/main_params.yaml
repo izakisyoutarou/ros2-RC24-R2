@@ -3,8 +3,7 @@ launch: #起動パラメータ
     slcan: false
     scan: false
     trajectory_planner: false
-    yolox_realsense: false
-    yolox_c1: true
+    yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
@@ -20,7 +19,7 @@ launch: #起動パラメータ
     linear_max_acc: 5.0
     linear_max_dec: 2.0
     linear_max_jer: 0.0
-    # 回転  速度[deg/s],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
+    # 回転  速度[deg/sint x, int y, const std::vector<double> point1, const std::vector<double> point2],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
     angular_max_vel: 100.0
     angular_max_acc: 360.0
     angular_max_dec: 360.0
@@ -172,15 +171,31 @@ detection_interface_node:
   ros__parameters:
     #ひし形モードのひし形に向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
     str_self_pose_range: [9.7, 10.3, -3.58, -3.52, -0.05, 0.05]
-
-    str_range_point1: [1920.0, 1120.0] #ボール識別から、どの回収ポイントかを判断するポイント1(右上)[x,y]
-    str_range_point2: [0.0, 580.0] #ボール識別から、どの回収ポイントかを判断するポイント2(左下)[x,y]
-    str_range_x_C3orC5: [320.0, 640.0, 960.0] #ボール識別から、どの回収ポイントかを判断するポイント_C3orC5[x1,x2,x3]
-
-    str_ball_range_y: 640.0 #ボールが手前と奥のどちらにあるのか[y]
-
     #ひし形モードのサイロに向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
     siro_self_pose_range: [9.8, 10.2, -3.8, -3.0, -2.5, -2.3]
 
-    siro_ball_range_y: [640.0, 960.0] #ボールが何段目か[y1, y2]
-    siro_ball_range_x: [384.0, 768.0, 1152.0, 1536.0] #ボールがどのサイロか[x1, x2, x3, x4]
+    str_range_point1_blue: [0.0, 1170.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_blue: [1920.0, 630.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+    str_range_point1_red: [0.0, 580.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_red: [1920.0, 1120.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+
+    #C2からひし形を見たときの囲い
+    str_range_point1_1_C2: [0.0, 1115.0] #左上の線
+    str_range_point1_2_C2: [1920.0, 570.0]
+    str_range_point2_1_C2: [0.0, 1310.0] #右下の線
+    str_range_point2_2_C2: [1920.0, 700.0]
+    str_range_point3_1_C2: [0.0, 650.0] #左下の線
+    str_range_point3_2_C2: [1920.0, 1250.0]
+    str_range_point4_1_C2: [0.0, 590.0] #右上の線
+    str_range_point4_2_C2: [1920.0, 1020.0]
+
+    #C3とC5から、ST1~8の中のどの回収ポイントかを判断するポイント_C3orC5[x1,x2,x3]
+    str_range_x_C3orC5: [390.0, 560.0, 710.0] 
+    str_range_y_C3orC5: 250.0 
+
+    #ST1~8から手前か奥か判断するポイント
+    str_range_x_ST: [390.0, 560.0] 
+    str_range_y_ST: [350.0, 500.0] 
+
+    siro_ball_range_y: [780.0, 700.0] #ボールが何段目か[y1, y2]
+    siro_ball_range_x: [520.0, 768.0, 1152.0, 1450.0] #ボールがどのサイロか[x1, x2, x3, x4]

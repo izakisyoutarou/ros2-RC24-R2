@@ -40,5 +40,7 @@ namespace yolox_ros_cpp{
         image_transport::Publisher pub_image_;
 
         bboxes_ex_msgs::msg::BoundingBoxes objects_to_bboxes(cv::Mat, std::vector<yolox_cpp::Object>, std_msgs::msg::Header);
+
+        int num;
     };
 }
