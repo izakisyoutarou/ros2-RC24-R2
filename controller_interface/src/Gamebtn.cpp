@@ -70,7 +70,7 @@ void Gamebtn::paddy_install(bool is_arm_convergence,rclcpp::Publisher<socketcan_
 }
 
 void Gamebtn::net_open(bool is_net_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
-    if(!is_net_convergence){
+    if(is_net_convergence){
         cout<<"net_open"<<endl;
         auto msg_net_open = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         msg_net_open->canid = canid.net;
@@ -81,7 +81,7 @@ void Gamebtn::net_open(bool is_net_convergence,rclcpp::Publisher<socketcan_inter
 }
 
 void Gamebtn::net_close(bool is_net_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
-    if(!is_net_convergence){
+    if(is_net_convergence){
         cout<<"net_close"<<endl;
         auto msg_net_close = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
         msg_net_close->canid = canid.net;
