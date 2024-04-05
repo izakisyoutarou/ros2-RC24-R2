@@ -67,17 +67,17 @@ namespace yolox_cpp{
                 //ここで補助ラインの描写
                 cv::Scalar line_color(0, 255, 0);  // BGR 色空間での色
 
-                //c4
+                //c3、c4
                 // cv::line(bgr, cv::Point(390, 0), cv::Point(390, bgr.rows), line_color, 2);
                 // cv::line(bgr, cv::Point(560, 0), cv::Point(560, bgr.rows), line_color, 2);
                 // cv::line(bgr, cv::Point(710, 0), cv::Point(710, bgr.rows), line_color, 2);
                 // cv::line(bgr, cv::Point(0, 250), cv::Point(bgr.cols, 250), line_color, 2);
 
                 //ST1~8
-                cv::line(bgr, cv::Point(390, 0), cv::Point(390, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(560, 0), cv::Point(560, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(0, 350), cv::Point(bgr.cols, 350), line_color, 2);
-                cv::line(bgr, cv::Point(0, 500), cv::Point(bgr.cols, 500), line_color, 2);
+                // cv::line(bgr, cv::Point(390, 0), cv::Point(390, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(560, 0), cv::Point(560, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 350), cv::Point(bgr.cols, 350), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 500), cv::Point(bgr.cols, 500), line_color, 2);
 
                 //ひし形前後
                 // cv::line(bgr, cv::Point(0, 370), cv::Point(bgr.cols, 370), line_color, 2);
@@ -95,12 +95,13 @@ namespace yolox_cpp{
                 // cv::line(bgr, cv::Point(0, 590), cv::Point(1920, 1020),  line_color, 2); //c1 囲い
 
                 // サイロ
-                // cv::line(bgr, cv::Point(520, 0), cv::Point(520, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(768, 0), cv::Point(768, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(1152, 0), cv::Point(1152, bgr.rows), line_color, 2);                
-                // cv::line(bgr, cv::Point(1450, 0), cv::Point(1450, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(0, 700), cv::Point(bgr.cols, 700), line_color, 2);
-                // cv::line(bgr, cv::Point(0, 780), cv::Point(bgr.cols, 780), line_color, 2);
+                cv::line(bgr, cv::Point(520, 0), cv::Point(520, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(768, 0), cv::Point(768, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(1152, 0), cv::Point(1152, bgr.rows), line_color, 2);                
+                cv::line(bgr, cv::Point(1450, 0), cv::Point(1450, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(0, 700), cv::Point(bgr.cols, 700), line_color, 2);
+                cv::line(bgr, cv::Point(0, 780), cv::Point(bgr.cols, 780), line_color, 2);
+                cv::line(bgr, cv::Point(0, 880), cv::Point(bgr.cols, 880), line_color, 2);
             }
         }
     }

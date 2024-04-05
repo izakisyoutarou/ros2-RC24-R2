@@ -98,9 +98,12 @@ namespace detection_interface
             auto msg_siro_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
 
             std::vector<std::string> class_id;
+            std::vector<int> ymax;
             std::vector<int> center_x;
             std::vector<int> center_y;
             std::vector<int> bbounbox_size;
+            
+            std::vector<std::string> c3_or_c4;
 
             std::vector<std::string> ball_color;
             std::vector<int> before_ball_place;
@@ -111,6 +114,7 @@ namespace detection_interface
             //boxeesの配列からboxの内容を取り出し
             for (const auto& box : msg->bounding_boxes) {
                 class_id.push_back(box.class_id);
+                ymax.push_back(box.ymax);
 
                 int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
                 int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
@@ -123,61 +127,74 @@ namespace detection_interface
             // RCLCPP_INFO(this->get_logger(), "x@%d", center_x[0]);
             // RCLCPP_INFO(this->get_logger(), "y@%d", center_y[0]);
 
-            for (size_t i = 0; i < center_x.size(); ++i) {
                 //ひし形モードのときに、ひし形に向かっているとき
-                if(now_sequence == "storage"){
-                    if(is_self_pose_range_x_str && is_self_pose_range_y_str && is_self_pose_range_z_str){
-                        //坂上からc1で見たときにひし形の中にある
-                        if(rhombus_inside(center_x[i], center_y[i])){
-                            bool is_collection_C4;
-                            if(court_color == "blue") is_collection_C4 = bounday_line(center_x[i], center_y[i], str_range_point1_blue, str_range_point2_blue);
-                            else is_collection_C4 = bounday_line(center_x[i], center_y[i], str_range_point1_red, str_range_point2_red);
+            if(now_sequence == "storage"){
+                if(is_self_pose_range_x_str && is_self_pose_range_y_str && is_self_pose_range_z_str){
+                    if(storage_flag){//認識区間内で一回だけc3 or c4 or ""を送るようにする。サイロに向かうところで再度tureになる
+                        for (size_t i = 0; i < center_x.size(); ++i) {
+                            if(rhombus_inside(center_x[i], center_y[i])){//坂上からc1で見たときにひし形の中にある
+                                bool is_collection_C4 = false;
 
-                            if(is_collection_C4) msg_collection_point->data = "c4";
-                            else msg_collection_point->data = "c3";
-                            // std::cout << msg_collection_point->data << std::endl;
+                                if(court_color == "blue") is_collection_C4 = bounday_line(center_x[i], center_y[i], str_range_point1_blue, str_range_point2_blue);
+                                else is_collection_C4 = bounday_line(center_x[i], center_y[i], str_range_point1_red, str_range_point2_red);
 
-                            _pub_collection_point->publish(*msg_collection_point);
+                                if(is_collection_C4) c3_or_c4.push_back("c4");
+                                else c3_or_c4.push_back("c3");
+                            }
                         }
+                        auto c3 = std::find(c3_or_c4.begin(), c3_or_c4.end(), "c3");
+                        auto c4 = std::find(c3_or_c4.begin(), c3_or_c4.end(), "c4");
+
+                        if(c3 != c3_or_c4.end())msg_collection_point->data = "c3";
+                        else if(c4 != c3_or_c4.end())msg_collection_point->data = "c4";
+                        _pub_collection_point->publish(*msg_collection_point);
+
+                        storage_flag = false;
                     }
-                }
-
-                //モード問わず、サイロに向かっているとき
-                if(is_self_pose_range_x_siro && is_self_pose_range_y_siro && is_self_pose_range_z_siro){
-
-                    // if(way_point == "C1") siro_num = 3;
-
-                    //ボールの段数
-                    if(center_y[i] < siro_ball_range_y[1]) siro_num += 1;
-                    else if(center_y[i] > siro_ball_range_y[1] && center_y[i] < siro_ball_range_y[0]) siro_num += 2;
-                    else if(center_y[i] > siro_ball_range_y[0]) siro_num += 3;
-
-                    //どのサイロか
-                    if(siro_num != 0){
-                        if(court_color == "blue"){
-                            if(center_x[i] < siro_ball_range_x[0]) siro_num += 12;
-                            else if(center_x[i] > siro_ball_range_x[0] && center_x[i] < siro_ball_range_x[1]) siro_num += 9;
-                            else if(center_x[i] > siro_ball_range_x[1] && center_x[i] < siro_ball_range_x[2]) siro_num += 6;
-                            else if(center_x[i] > siro_ball_range_x[2] && center_x[i] < siro_ball_range_x[3]) siro_num += 3;
-                            else if(center_x[i] > siro_ball_range_x[3]) siro_num += 0;
-                        }
-                        else{
-                            if(center_x[i] < siro_ball_range_x[0]) siro_num += 0;
-                            else if(center_x[i] > siro_ball_range_x[0] && center_x[i] < siro_ball_range_x[1]) siro_num += 3;
-                            else if(center_x[i] > siro_ball_range_x[1] && center_x[i] < siro_ball_range_x[2]) siro_num += 6;
-                            else if(center_x[i] > siro_ball_range_x[2] && center_x[i] < siro_ball_range_x[3]) siro_num += 9;
-                            else if(center_x[i] > siro_ball_range_x[3]) siro_num += 12;
-                        }
-                    }
-
-                    before_ball_place.push_back(siro_num);
-                    siro_num = 0;
-
-                    if(class_id[i] == "redball") ball_color.push_back("R");
-                    else if(class_id[i] == "blueball") ball_color.push_back("B");
                 }
             }
 
+                //モード問わず、サイロに向かっているとき
+                if(is_self_pose_range_x_siro && is_self_pose_range_y_siro && is_self_pose_range_z_siro){
+                    storage_flag = true;//c1カメラのストレージゾーン認識のflag
+                    for (size_t i = 0; i < center_x.size(); ++i) {
+                        RCLCPP_INFO(this->get_logger(), "ymax@%d", ymax[i]);
+                        siro_num = 0;
+                        // if(way_point == "C1") siro_num = 3;
+
+                        //ボールの段数
+                        if(center_y[i] < siro_ball_range_y[0]) siro_num += 1;
+                        else if(center_y[i] > siro_ball_range_y[0] && center_y[i] < siro_ball_range_y[1]) siro_num += 2;
+                        else if(ymax[i] > siro_ball_range_y[1] && ymax[i] < siro_ball_range_y[2]) siro_num += 3;
+
+                        //どのサイロか
+                        if(siro_num != 0){
+                            if(court_color == "blue"){
+                                if(center_x[i] < siro_ball_range_x[0]) siro_num += 12;
+                                else if(center_x[i] > siro_ball_range_x[0] && center_x[i] < siro_ball_range_x[1]) siro_num += 9;
+                                else if(center_x[i] > siro_ball_range_x[1] && center_x[i] < siro_ball_range_x[2]) siro_num += 6;
+                                else if(center_x[i] > siro_ball_range_x[2] && center_x[i] < siro_ball_range_x[3]) siro_num += 3;
+                                else if(center_x[i] > siro_ball_range_x[3]) siro_num += 0;
+                            }
+                            else{
+                                if(center_x[i] < siro_ball_range_x[0]) siro_num += 0;
+                                else if(center_x[i] > siro_ball_range_x[0] && center_x[i] < siro_ball_range_x[1]) siro_num += 3;
+                                else if(center_x[i] > siro_ball_range_x[1] && center_x[i] < siro_ball_range_x[2]) siro_num += 6;
+                                else if(center_x[i] > siro_ball_range_x[2] && center_x[i] < siro_ball_range_x[3]) siro_num += 9;
+                                else if(center_x[i] > siro_ball_range_x[3]) siro_num += 12;
+                            }
+                            before_ball_place.push_back(siro_num);
+
+                            if(class_id[i] == "redball") ball_color.push_back("R");
+                            else if(class_id[i] == "blueball") ball_color.push_back("B");
+                        }
+
+
+                        
+                    }
+                }
+
+            //サイロ方面の検出が行われると入るところ
             if(before_ball_place.size() != 0){
                 // for (int z = 0; z < before_ball_place.size(); ++z) {
                 //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d,サイズ@%d", z, before_ball_place[z],bbounbox_size[z]);
@@ -238,14 +255,15 @@ namespace detection_interface
                 // for (int z = 0; z < after_ball_place.size(); ++z) {
                 //     RCLCPP_INFO(this->get_logger(), "あと%d@%d,サイズ@%d", z, after_ball_place[z],bbounbox_size[z]);
                 // }
+
+                for (int i = 0; i < after_ball_place.size(); ++i) {
+                    msg_siro_param->ball_color[after_ball_place[i] - 1] = ball_color[i];
+                }
+
+                _pub_siro_param->publish(*msg_siro_param);
             }
             
-            for (int i = 0; i < after_ball_place.size(); ++i) {
-                // msg_siro_param->ball_place[after_ball_place[i] - 1] = true;
-                msg_siro_param->ball_color[after_ball_place[i] - 1] = ball_color[i];
-            }
-
-            _pub_siro_param->publish(*msg_siro_param);
+            
 
             time_end = chrono::system_clock::now();
             // RCLCPP_INFO(this->get_logger(), "scan time->%d[ms]", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
@@ -273,7 +291,9 @@ namespace detection_interface
                 // center_dist = cv_image_.at<uint32_t>(center_y, center_x);
                 // RCLCPP_INFO(this->get_logger(), "%d", center_dist);
 
-                // Vector3d test = ct.Rx_Ry_Rz(center_x, center_y, /*(double)center_dist*/200, pose);
+                // Vector3d test111 = ct.Rx_Ry_Rz(static_cast<double>(center_x[0]), static_cast<double>(center_y[0]), /*(double)center_dist*/200, pose);
+                // cout << "1111111111111111" << endl;
+                // Vector3d test111 = ct.Rx_Ry_Rz(center_x, center_y, /*(double)center_dist*/200, pose);
 
                 // msg_ball_coordinate->x = test[0];
                 // msg_ball_coordinate->y = test[1];

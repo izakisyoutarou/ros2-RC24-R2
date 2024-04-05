@@ -101,7 +101,7 @@ namespace detection_interface
             bool is_self_pose_range_y_siro = false;
             bool is_self_pose_range_z_siro = false;
 
-            // int n = 0;
+            bool storage_flag = true;
 
             //定数
             //坂上の自己位置の範囲
@@ -143,7 +143,7 @@ namespace detection_interface
 
             //座標変換
             coordinate_transformation ct;
-
+            Vector3d test111;
             cv::Mat cv_image_;
 
             const std::string court_color;

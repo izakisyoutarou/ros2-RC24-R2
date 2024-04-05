@@ -43,7 +43,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#しきい値
             'conf',
-            default_value='0.90',
+            default_value='0.80',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(
@@ -170,7 +170,7 @@ def generate_launch_description():
     )
     return launch.LaunchDescription(
         launch_args +   [
-                        # container, c1_launch, 
-                        container_realsense, realsense_launch
+                        container, c1_launch, 
+                        # container_realsense, realsense_launch
                         ]
     )

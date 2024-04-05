@@ -53,7 +53,7 @@
     }
 
     Vector3d coordinate_transformation::Rx_Ry_Rz(double px, double py, double depth, Vector3d pose){ //variation
-        // cout << "x" << px << "y" << py << "depth" << depth << endl;
+        cout << "x" << px << "y" << py << "depth" << depth << endl;
         Matrix3d before_xyz = conversion(px, py, depth);
         Matrix3d R = euler_angle();
         // cout << "before_xyz" << endl;
@@ -75,7 +75,7 @@
         
         Vector3d XYZ;
         for(int i=0; i<3; i++) XYZ[i] = after_xyz(i,0);
-        // cout << "x" << XYZ[0] << "y" << XYZ[1] << "z" << XYZ[2] << endl;
+        cout << "x" << XYZ[0] << "y" << XYZ[1] << "z" << XYZ[2] << endl;
         
         XYZ = XYZ + pose;
         return XYZ;
