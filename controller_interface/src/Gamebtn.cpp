@@ -91,3 +91,12 @@ void Gamebtn::net_close(bool is_net_convergence,rclcpp::Publisher<socketcan_inte
         _pub_canusb->publish(*msg_net_close);
     }
 }
+
+void Gamebtn::canusb_test(const int16_t id, const uint8_t data, rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
+        cout<<"id:"<<id<<", "<<"data:"<<data<<endl;
+        auto msg_test = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+        msg_test->canid = id;
+        msg_test->candlc = 1;
+        msg_test->candata[0] = data;
+        _pub_canusb->publish(*msg_test);   
+}
