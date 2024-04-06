@@ -11,22 +11,12 @@ void Gamebtn::calibrate(rclcpp::Publisher<socketcan_interface_msg::msg::Socketca
     _pub_canusb->publish(*msg_calibrate);
 }
 
-void Gamebtn::main_reset(rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
-    cout<<"main_reset"<<endl;
-    auto msg_main_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_main_reset->canid = canid.reset;
-    msg_main_reset->candlc = 1;
-    msg_main_reset->candata[0] = 0;
-    _pub_canusb->publish(*msg_main_reset);
-}
-
-void Gamebtn::io_reset(rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
-    cout<<"io_reset"<<endl;
-    auto msg_io_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-    msg_io_reset->canid = canid.reset;
-    msg_io_reset->candlc = 1;
-    msg_io_reset->candata[0] = 1;
-    _pub_canusb->publish(*msg_io_reset);
+void Gamebtn::board_reset(rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
+    cout<<"board_reset"<<endl;
+    auto msg_board_reset = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+    msg_board_reset->canid = canid.reset;
+    msg_board_reset->candlc = 1;
+    _pub_canusb->publish(*msg_board_reset);
 }
 
 void Gamebtn::steer_reset(rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
@@ -55,6 +45,17 @@ void Gamebtn::paddy_collect_1(bool is_arm_convergence,rclcpp::Publisher<socketca
         msg_paddy_collect->canid = canid.paddy_collect;
         msg_paddy_collect->candlc = 1;
         msg_paddy_collect->candata[0] = 1;
+        _pub_canusb->publish(*msg_paddy_collect);
+    }
+}
+
+void Gamebtn::paddy_collect_2(bool is_arm_convergence,rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _pub_canusb){
+    if(is_arm_convergence){
+        cout<<"paddy_collect_2"<<endl;
+        auto msg_paddy_collect = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+        msg_paddy_collect->canid = canid.paddy_collect;
+        msg_paddy_collect->candlc = 1;
+        msg_paddy_collect->candata[0] = 2;
         _pub_canusb->publish(*msg_paddy_collect);
     }
 }
