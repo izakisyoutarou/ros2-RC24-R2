@@ -289,26 +289,16 @@ namespace controller_interface
                 is_arm_convergence = defalt_arm_convergence;
                 is_net_convergence = defalt_net_convergence;
             }
-            //ステアリセット
             else if(msg->data == "up") gamebtn.steer_reset(_pub_canusb);
-            //キャリブレーション
             else if(msg->data == "down") gamebtn.calibrate(_pub_canusb);
-            //main基盤リセット
-            else if(msg->data == "right") gamebtn.main_reset(_pub_canusb);
-            //IO基盤リセット
-            else if(msg->data == "left") gamebtn.io_reset(_pub_canusb);
-            //ボール回収
+            else if(msg->data == "left") gamebtn.board_reset(_pub_canusb);
+            // else if(msg->data == "right") 
+            else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);  
             else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
-            //ボール回収
-            else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);
-            //サイロ
-            else if(msg->data == "x") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
+            else if(msg->data == "x") gamebtn.paddy_collect_2(is_arm_convergence,_pub_canusb);
+            else if(msg->data == "y") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
             else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
-           
             else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
-            //低速モード
-            else if(msg->data == "l2") is_slow_speed = !is_slow_speed;
-            //足回りの手自動
             else if(msg->data == "r3"){
                 robotcontrol_flag = true;
                 if(is_move_autonomous == false){
@@ -320,11 +310,9 @@ namespace controller_interface
                     is_move_autonomous = false;
                 }
             }
-            else if(msg->data == "l3"){
-                auto initial_sequense_pickup = std::make_shared<std_msgs::msg::String>();
-                initial_sequense_pickup->data = initial_pickup_state;
-                _pub_initial_sequense->publish(*initial_sequense_pickup);
-            }
+            // else if(msg->data == "l1") 
+            else if(msg->data == "l2") is_slow_speed = !is_slow_speed;
+            else if(msg->data == "l3")
 
             //リセットボタンを押しているか確認する
             is_restart = msg->data == "s";
@@ -335,16 +323,6 @@ namespace controller_interface
             msg_base_control.is_move_autonomous = is_move_autonomous;
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
-            
-            // for(int i=0; i<msg_btn->candlc; i++){
-            //     msg_btn->candata[i] = _candata_btn[i];
-            // }
-
-            //どれか１つのボタンを押すとすべてのボタン情報がpublishされる
-            // if( a == true ||b == true ||y == true ||x == true ||right == true ||down == true ||left == true ||up == true )
-            // {
-            //     _pub_canusb->publish(*msg_btn);
-            // }
             
             if(msg->data=="g") _pub_canusb->publish(*msg_emergency);
             if(robotcontrol_flag == true) {
