@@ -23,6 +23,7 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(controller_interface_msg REQUIRED)
 find_package(socketcan_interface_msg REQUIRED)
+find_package(detection_interface_msg REQUIRED)
 find_package(path_msg REQUIRED)
 find_package(utilities REQUIRED)
 
@@ -43,6 +44,7 @@ ament_target_dependencies(sequencer_node
   std_msgs
   controller_interface_msg
   socketcan_interface_msg
+  detection_interface_msg
   geometry_msgs
   path_msg
   utilities
@@ -102,6 +104,7 @@ ament_export_dependencies(
   std_msgs
   controller_interface_msg
   socketcan_interface_msg
+  detection_interface_msg
   geometry_msgs
   path_msg
   utilities

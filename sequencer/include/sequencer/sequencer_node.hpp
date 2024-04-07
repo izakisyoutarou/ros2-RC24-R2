@@ -11,6 +11,7 @@
 #include "controller_interface_msg/msg/convergence.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
+#include "detection_interface_msg/msg/siro_param.hpp"
 #include "path_msg/msg/turning.hpp"
 #include "utilities/utils.hpp"
 
@@ -44,6 +45,7 @@ private:
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _subscription_front_ball;
     rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _subscription_tof;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_ball_coordinate;
+    rclcpp::Subscription<detection_interface_msg::msg::SiroParam>::SharedPtr _subscription_siro_param;
 
     void callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg);
     void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
@@ -54,6 +56,7 @@ private:
     void callback_front_ball(const std_msgs::msg::Bool::SharedPtr msg);
     void callback_tof(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
     void callback_ball_coordinate(const geometry_msgs::msg::Vector3::SharedPtr msg);
+    void callback_siro_param(const detection_interface_msg::msg::SiroParam::SharedPtr msg);
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_node;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _publisher_canusb;
@@ -87,9 +90,7 @@ private:
     void command_hand_wrist_down();
     void command_hand_suction_on();
     void command_hand_suction_off();
-    void silo_accumulation(std::string camera[2]);
-    int silo_evaluate();
-    void silo_reset();
+    int silo_evaluate(std::string camera[15]);
 
     const int16_t can_paddy_collect_id;
     const int16_t can_paddy_install_id;
@@ -132,6 +133,8 @@ private:
 
     bool tof_mode = false;
     
+    int target_silo = 0;
+    bool silo_flag = false;
 };
 
 }  // namespace sequencer
