@@ -3,6 +3,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
+#include <chrono>
 #include <geometry_msgs/msg/vector3.hpp>
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -76,9 +77,11 @@ private:
     void command_hand_lift_suction_before();
     void command_hand_lift_suction();
     void command_hand_lift_pickup();
+    void command_hand_lift_inside();
     void command_hand_lift_silo();
     void command_hand_fb_front();
     void command_hand_fb_back();
+    void command_hand_fb_inside();
     void command_hand_fb_silo();
     void command_hand_wrist_up();
     void command_hand_wrist_down();
@@ -119,14 +122,15 @@ private:
     std::string silo_norm[11][4];//3,2,1,num
     int silo_priority[5] = {}; 
     const std::string court_color;
-
-    const std::string R2_state;
-    
     bool tof[3] = {false, false, false};
 
     SEQUENCE_MODE pre_sequence = SEQUENCE_MODE::stop;
 
     std::string way_point = "";
+
+    std::chrono::system_clock::time_point suction_time;
+
+    bool tof_mode = false;
     
 };
 
