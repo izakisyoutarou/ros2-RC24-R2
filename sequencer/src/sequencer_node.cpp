@@ -89,7 +89,6 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
     _publisher_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
     _publisher_now_sequence = this->create_publisher<std_msgs::msg::String>("now_sequence", _qos);
     _publisher_move_interrupt_node = this->create_publisher<std_msgs::msg::String>("move_interrupt_node", _qos);
-    _pub_spin_position = this->create_publisher<path_msg::msg::Turning>("spin_position", 10);    
     _publisher_ball_tracking = this->create_publisher<geometry_msgs::msg::Vector3>("ball_tracking", _qos);
 
     std::ifstream ifs1(ament_index_cpp::get_package_share_directory("main_executor") + "/config/sequencer/silo_priority.cfg");
@@ -115,6 +114,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
     int n = 0;
     if(!is_start) return;
     if(sequence_mode == SEQUENCE_MODE::storage){
+        //初期移動&&アーム初期状態移行
         if(progress == n++){
             command_move_node("c2");
             command_hand_fb_front();
@@ -123,22 +123,26 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             command_hand_suction_on();
             suction_time = std::chrono::system_clock::now();
             progress++;
-        } 
+        }
+        //吸引をボール直上に
         else if(progress == n++ && msg->spline_convergence && msg->arm_convergence){
             if(front_ball) command_hand_fb_front();
             else command_hand_fb_back();
             command_hand_lift_suction_before();
             progress++;
         }
+        //籾吸着
         else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 5000){
             command_hand_lift_suction();
             suction_time = std::chrono::system_clock::now();
             progress++;       
         }
+        //籾上昇
         else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
             command_hand_lift_pickup();
             progress++;
         }
+        //シーケンス移行
         else if(progress == n++ && msg->arm_convergence){
             if(tof_mode){
                 if(tof[0]){
@@ -152,6 +156,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
     }
     else if(sequence_mode == SEQUENCE_MODE::transfer){
+        //初期移動&&アーム初期状態移行
         if(progress == n++){
             command_move_interrupt_node("ST8");
             command_hand_fb_inside();
@@ -160,17 +165,20 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             command_net_open();
             progress++;
         }
+        //吸引起動&&待機状態移行
         else if(progress == n++ && msg->spline_convergence && msg->net_convergence){
             command_net_close();
             command_hand_suction_on();
             suction_time = std::chrono::system_clock::now();
             progress++;
         }
+        //籾吸着
         else if(progress == n++ && msg->net_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 5000){
             command_hand_lift_inside();
             suction_time = std::chrono::system_clock::now();
             progress++;
         }
+        //シーケンス移行
         else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
             if(tof_mode){
                 if(tof[0]){
@@ -185,6 +193,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
     }
     else if(sequence_mode == SEQUENCE_MODE::collect){
+        //初期移動&&アーム初期状態移行
         if(progress == n++){
             command_move_node("c2");
             command_hand_lift_suction_before();
@@ -194,6 +203,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             suction_time = std::chrono::system_clock::now();
             progress++;
         }
+        //籾回収位置計算&&追従
         else if(progress == n++ && get_ball_pose){
             auto ball_tracking = std::make_shared<geometry_msgs::msg::Vector3>();
             float length = 0.3 + 0.095;
@@ -211,15 +221,18 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             get_ball_pose = false;
             progress++;
         } 
+        //籾吸着
         else if(progress == n++ && msg->spline_convergence && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 5000){
             command_hand_lift_suction();
             suction_time = std::chrono::system_clock::now();
             progress++;
         } 
+        //籾上昇
         else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
             command_hand_lift_pickup();
             progress++;
         }
+        //シーケンス移行
         else if(progress == n++ && msg->arm_convergence) {
             if(tof_mode){
                 if(tof[0]){
@@ -375,13 +388,6 @@ void Sequencer::command_move_interrupt_node(const std::string node){
     _publisher_move_interrupt_node->publish(*msg_move_interrupt_node);
 }
 
-void Sequencer::command_spin_position(const float angle){
-    auto spin_angle = std::make_shared<path_msg::msg::Turning>();
-    spin_angle->angle_pos = angle;
-    spin_angle->accurate_convergence = true;
-    _pub_spin_position->publish(*spin_angle);
-};
-
 void Sequencer::command_sequence(const SEQUENCE_MODE sequence){
     pre_sequence = sequence_mode;
     sequence_mode = sequence;
@@ -426,7 +432,6 @@ void Sequencer::command_hand_suction_on(){ command_canusb_uint8(can_hand_suction
 void Sequencer::command_hand_suction_off(){ command_canusb_uint8(can_hand_suction_id, 1); }
 
 int Sequencer::silo_evaluate(std::string camera[15]){
-  
     //コート色による情報反転
     if(court_color == "blue"){
         std::string data[15]; 
@@ -434,7 +439,6 @@ int Sequencer::silo_evaluate(std::string camera[15]){
         for(int i = 0; i < 15; i++) data[i] = camera[i];
         for(int i = 0; i < 15; i++) camera[i] = data[num[i]];
     }    
-    
     //データの格納
     for(int i = 0; i < 15; i++) {
         if(court_color == "blue"){
@@ -448,7 +452,6 @@ int Sequencer::silo_evaluate(std::string camera[15]){
             else silo_data[i/3][i%3] = "";
         }
     }
-
     //評価判定
     for(int i = 0; i < 5; i++){
         bool check = false;
@@ -461,7 +464,6 @@ int Sequencer::silo_evaluate(std::string camera[15]){
         }
         if(!check) silo_priority[i] = 10;
     }
-
     //評価比較
     int silo_num = 0;
     int priority_min = silo_priority[0];
@@ -470,8 +472,7 @@ int Sequencer::silo_evaluate(std::string camera[15]){
             priority_min = silo_priority[i];
             silo_num = i;
         }
-    }
-         
+    }    
     return silo_num;
 }
 
