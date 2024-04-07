@@ -255,7 +255,6 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                 else command_sequence(SEQUENCE_MODE::collect);
             }
         }
-
         if(progress == n++){
             silo_reset();
             command_move_node("c1");
@@ -266,9 +265,9 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             command_hand_fb_silo();
             progress++;
         }
-        }
+        
         else if(progress == n++&& msg->arm_convergence){
-            command_hand_lift_silo():
+            command_hand_lift_silo();
             progress++;
         }
         else if(progress == n++&& msg->arm_convergence){
