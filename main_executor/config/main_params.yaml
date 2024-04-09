@@ -46,12 +46,6 @@ launch: #起動パラメータ
       paddy_collect: 0x200
       paddy_install: 0x201
       paddy_convergence: 0x202
-      #自動化用
-      hand_lift: 0x203
-      hand_fb: 0x204
-      hand_wrist: 0x205
-      hand_suction: 0x206
-      tof: 0x207
 
       #網
       net: 0x210
