@@ -40,8 +40,10 @@ namespace controller_interface
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_screen_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_state_num_R2;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_initial_state;
+            rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr _sub_connection_state;            
 
             //mainボードから
+            rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_emergency_state;
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_arm_convergence;
             rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _sub_net_convergence;
 
@@ -73,16 +75,20 @@ namespace controller_interface
             rclcpp::TimerBase::SharedPtr _socket_timer;
             rclcpp::TimerBase::SharedPtr _start_timer;
             rclcpp::TimerBase::SharedPtr _pub_state_communication_timer;
+            rclcpp::TimerBase::SharedPtr check_controller_connection;
+            rclcpp::TimerBase::SharedPtr check_mainboard_connection;
 
             //QoS
             rclcpp::QoS _qos = rclcpp::QoS(10);
             
             //controller_mainからのcallback
             void callback_main_pad(const std_msgs::msg::String::SharedPtr msg);
-            void callback_screen_pad(const std_msgs::msg::String::SharedPtr msg);
+            void callback_screen_pad(const std_msgs::msg::String::SharedPtr msg);             
             void callback_initial_state(const std_msgs::msg::String::SharedPtr msg);
+            void callback_connection_state(const std_msgs::msg::Empty::SharedPtr msg);
 
             //mainからのcallback
+            void callback_emergency_state(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
             void callback_arm_convergence(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
             void callback_net_convergence(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
 
@@ -160,6 +166,7 @@ namespace controller_interface
             const int16_t can_restart_id;
             const int16_t can_calibrate_id;
             const int16_t can_reset_id;
+            const int16_t can_emergency_state_id;            
             const int16_t can_linear_id;
             const int16_t can_angular_id;
             const int16_t can_steer_reset_id;
@@ -202,5 +209,8 @@ namespace controller_interface
             Gamebtn gamebtn;
 
             RecvUDP joy_main;
+            
+            std::chrono::system_clock::time_point get_controller_time;
+            std::chrono::system_clock::time_point get_mainboard_time;
     };
 }

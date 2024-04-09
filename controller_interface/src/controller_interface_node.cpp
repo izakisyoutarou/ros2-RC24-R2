@@ -58,6 +58,7 @@ namespace controller_interface
         can_restart_id(get_parameter("canid.restart").as_int()),
         can_calibrate_id(get_parameter("canid.calibrate").as_int()),
         can_reset_id(get_parameter("canid.reset").as_int()),
+        can_emergency_state_id(get_parameter("canid.emergency_state").as_int()),
         can_linear_id(get_parameter("canid.linear").as_int()),
         can_angular_id(get_parameter("canid.angular").as_int()),
         can_steer_reset_id(get_parameter("canid.steer_reset").as_int()),
@@ -79,6 +80,8 @@ namespace controller_interface
             //周期
             const auto heartbeat_ms = this->get_parameter("heartbeat_ms").as_int();
             const auto convergence_ms = this->get_parameter("convergence_ms").as_int();
+            const auto controller_ms = this->get_parameter("controller_ms").as_int();
+            const auto mainboard_ms = this->get_parameter("mainboard_ms").as_int();
             const auto base_state_communication_ms = this->get_parameter("base_state_communication_ms").as_int();
 
             gamebtn.canid.calibrate = can_calibrate_id;
@@ -94,13 +97,22 @@ namespace controller_interface
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_main_pad, this, std::placeholders::_1)
             );
-            //controller_mainから
             _sub_screen_pad = this->create_subscription<std_msgs::msg::String>(
                 "SCRN_info",
                 _qos,
                 std::bind(&SmartphoneGamepad::callback_screen_pad, this, std::placeholders::_1)
             );
+            _sub_connection_state = this->create_subscription<std_msgs::msg::Empty>(
+                "connection_state",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_connection_state, this, std::placeholders::_1)
+            );    
             //mainからsub
+            _sub_emergency_state = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
+                "can_rx_"+ (boost::format("%x") % can_emergency_state_id).str(),
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_emergency_state, this, std::placeholders::_1)
+            );
             _sub_arm_convergence = this->create_subscription<socketcan_interface_msg::msg::SocketcanIF>(
                 "can_rx_"+ (boost::format("%x") % can_paddy_convergence_id).str(),
                 _qos,
@@ -200,6 +212,39 @@ namespace controller_interface
                 }
             );
 
+            check_controller_connection = this->create_wall_timer(
+                std::chrono::milliseconds(static_cast<int>(controller_ms)),
+                [this] {
+                    std::chrono::system_clock::time_point now_time = std::chrono::system_clock::now();
+                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_controller_time).count() > 100 * 10){
+                        auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                        msg_emergency->canid = can_emergency_id;
+                        msg_emergency->candlc = 1;
+                        msg_emergency->candata[0] = 1;
+                        _pub_canusb->publish(*msg_emergency);
+                        RCLCPP_INFO(get_logger(),"controller_connection_lost!!");
+                    }
+                }
+            );
+
+            check_mainboard_connection = this->create_wall_timer(
+                std::chrono::milliseconds(static_cast<int>(mainboard_ms)),
+                [this] { 
+                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_mainboard_time).count() > 200 * 10){
+                        is_emergency = true;
+                        is_restart = false; 
+                        auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();   
+                        msg_base_control->is_restart = is_restart;
+                        msg_base_control->is_emergency = is_emergency;
+                        msg_base_control->is_move_autonomous = is_move_autonomous;
+                        msg_base_control->is_slow_speed = is_slow_speed;
+                        msg_base_control->initial_state = initial_state;
+                        _pub_base_control->publish(*msg_base_control);
+                        RCLCPP_INFO(get_logger(),"mainboard_connection_lost!!");
+                    }
+                }
+            );
+
             //速度計画機のリミットを初期設定
             high_velPlanner_linear_x.limit(high_limit_linear);
             high_velPlanner_linear_y.limit(high_limit_linear);
@@ -208,7 +253,7 @@ namespace controller_interface
             slow_velPlanner_linear_y.limit(slow_limit_linear);
 
             velPlanner_angular_z.limit(limit_angular);
-                    }
+        }
 
         void SmartphoneGamepad::callback_main_pad(const std_msgs::msg::String::SharedPtr msg){
             //リスタート
@@ -233,8 +278,7 @@ namespace controller_interface
             if(msg->data == "g"){
                 cout<<"emergency"<<endl;
                 robotcontrol_flag = true;
-                is_emergency = true;
-                is_restart = false;             
+                msg_emergency->candata[0] = true;
             }
             else if(msg->data == "s"){
                 cout<<"restart"<<endl;
@@ -248,35 +292,16 @@ namespace controller_interface
                 is_arm_convergence = defalt_arm_convergence;
                 is_net_convergence = defalt_net_convergence;
             }
-            //ステアリセット
             else if(msg->data == "up") gamebtn.steer_reset(_pub_canusb);
-            //キャリブレーション
             else if(msg->data == "down") gamebtn.calibrate(_pub_canusb);
-            //main基盤リセット
-            else if(msg->data == "right") gamebtn.main_reset(_pub_canusb);
-            //IO基盤リセット
-            else if(msg->data == "left") gamebtn.io_reset(_pub_canusb);
-            //ボール回収
-            else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);
-            //ボール回収
+            else if(msg->data == "left") gamebtn.board_reset(_pub_canusb);
+            // else if(msg->data == "right") 
+            else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);  
             else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
-            //サイロ
-            // else if(msg->data == "x") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
-            else if(msg->data == "x") {
-                auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
-                msg_is_start->data = 0;
-                _pub_is_start->publish(*msg_is_start);
-            }
-            else if(msg->data == "y") {
-                auto msg_process_skip = std::make_shared<std_msgs::msg::Empty>();
-                _pub_process_skip->publish(*msg_process_skip);
-            }
-
+            else if(msg->data == "x") gamebtn.paddy_collect_2(is_arm_convergence,_pub_canusb);
+            else if(msg->data == "y") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
             else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
             else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
-            //低速モード
-            else if(msg->data == "l2") is_slow_speed = !is_slow_speed;
-            //足回りの手自動
             else if(msg->data == "r3"){
                 robotcontrol_flag = true;
                 if(is_move_autonomous == false){
@@ -288,11 +313,9 @@ namespace controller_interface
                     is_move_autonomous = false;
                 }
             }
-            else if(msg->data == "l3"){
-                auto initial_sequense_pickup = std::make_shared<std_msgs::msg::String>();
-                initial_sequense_pickup->data = initial_pickup_state;
-                _pub_initial_sequense->publish(*initial_sequense_pickup);
-            }
+            // else if(msg->data == "l1") 
+            else if(msg->data == "l2") is_slow_speed = !is_slow_speed;
+            else if(msg->data == "l3")
 
             //リセットボタンを押しているか確認する
             is_restart = msg->data == "s";
@@ -304,17 +327,6 @@ namespace controller_interface
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
             
-            // for(int i=0; i<msg_btn->candlc; i++){
-            //     msg_btn->candata[i] = _candata_btn[i];
-            // }
-
-            //どれか１つのボタンを押すとすべてのボタン情報がpublishされる
-            // if( a == true ||b == true ||y == true ||x == true ||right == true ||down == true ||left == true ||up == true )
-            // {
-            //     _pub_canusb->publish(*msg_btn);
-            // }
-            msg_emergency->candata[0] = is_emergency;
-            
             if(msg->data=="g") _pub_canusb->publish(*msg_emergency);
             if(robotcontrol_flag == true) {
                 _pub_base_control->publish(msg_base_control);
@@ -323,7 +335,6 @@ namespace controller_interface
             if(msg->data == "s"){
                 _pub_canusb->publish(*msg_restart);
                 _pub_canusb->publish(*msg_emergency);
-
             }
         }
 
@@ -331,6 +342,24 @@ namespace controller_interface
             auto msg_move_node = std::make_shared<std_msgs::msg::String>();
             msg_move_node->data = msg->data;
             _pub_move_node->publish(*msg_move_node);
+        }
+
+        void SmartphoneGamepad::callback_connection_state(const std_msgs::msg::Empty::SharedPtr msg){
+            get_controller_time = std::chrono::system_clock::now();
+        }
+
+        void SmartphoneGamepad::callback_emergency_state(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
+            get_mainboard_time = std::chrono::system_clock::now();
+            if(is_emergency != static_cast<bool>(msg->candata[0])) {
+                is_emergency = static_cast<bool>(msg->candata[0]);
+                is_restart = false; 
+                msg_base_control.is_restart = is_restart;
+                msg_base_control.is_emergency = is_emergency;
+                msg_base_control.is_move_autonomous = is_move_autonomous;
+                msg_base_control.is_slow_speed = is_slow_speed;
+                msg_base_control.initial_state = initial_state;
+                _pub_base_control->publish(msg_base_control);
+            }
         }
 
         void SmartphoneGamepad::callback_arm_convergence(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg){
@@ -377,8 +406,8 @@ namespace controller_interface
                 //低速モード
                 if(is_slow_speed == true){
                     slow_velPlanner_linear_x.vel(static_cast<double>(values[1]));//unityとロボットにおける。xとyが違うので逆にしている。
-                    slow_velPlanner_linear_y.vel(static_cast<double>(values[0]));
-                    velPlanner_angular_z.vel(static_cast<double>(values[2]));
+                    slow_velPlanner_linear_y.vel(static_cast<double>(-values[0]));
+                    velPlanner_angular_z.vel(static_cast<double>(-values[2]));
 
                     slow_velPlanner_linear_x.cycle();
                     slow_velPlanner_linear_y.cycle();
@@ -386,10 +415,10 @@ namespace controller_interface
 
                     //floatからバイト(メモリ)に変換
                     float_to_bytes(_candata_joy, static_cast<float>(slow_velPlanner_linear_x.vel()) * slow_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(-slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
                     
                     msg_gazebo->linear.x = slow_velPlanner_linear_x.vel();
@@ -399,18 +428,18 @@ namespace controller_interface
                 //高速モードのとき
                 else {
                     high_velPlanner_linear_x.vel(static_cast<double>(values[1]));
-                    high_velPlanner_linear_y.vel(static_cast<double>(values[0]));
-                    velPlanner_angular_z.vel(static_cast<double>(values[2]));
+                    high_velPlanner_linear_y.vel(static_cast<double>(-values[0]));
+                    velPlanner_angular_z.vel(static_cast<double>(-values[2]));
 
                     high_velPlanner_linear_x.cycle();
                     high_velPlanner_linear_y.cycle();
                     velPlanner_angular_z.cycle();
 
                     float_to_bytes(_candata_joy, static_cast<float>(high_velPlanner_linear_x.vel()) * high_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(-high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
                     msg_gazebo->linear.x = high_velPlanner_linear_x.vel();

@@ -129,7 +129,8 @@ namespace detection_interface
 
                 //ひし形モードのときに、ひし形に向かっているとき
             if(now_sequence == "storage"){
-                if(is_self_pose_range_x_str && is_self_pose_range_y_str && is_self_pose_range_z_str){
+                // if(is_self_pose_range_x_str && is_self_pose_range_y_str && is_self_pose_range_z_str){
+                if(way_point == "c2"){
                     if(storage_flag){//認識区間内で一回だけc3 or c4 or ""を送るようにする。サイロに向かうところで再度tureになる
                         for (size_t i = 0; i < center_x.size(); ++i) {
                             if(rhombus_inside(center_x[i], center_y[i])){//坂上からc1で見たときにひし形の中にある
@@ -155,7 +156,8 @@ namespace detection_interface
             }
 
                 //モード問わず、サイロに向かっているとき
-                if(is_self_pose_range_x_siro && is_self_pose_range_y_siro && is_self_pose_range_z_siro){
+                // if(is_self_pose_range_x_siro && is_self_pose_range_y_siro && is_self_pose_range_z_siro){
+                if(way_point == "c1"){
                     storage_flag = true;//c1カメラのストレージゾーン認識のflag
                     for (size_t i = 0; i < center_x.size(); ++i) {
                         RCLCPP_INFO(this->get_logger(), "ymax@%d", ymax[i]);
@@ -369,12 +371,12 @@ namespace detection_interface
         }
 
         void DetectionInterface::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg){
-            is_self_pose_range_x_str = (msg->x > str_self_pose_range[0] && msg->x < str_self_pose_range[1]) ? true : false;
-            is_self_pose_range_y_str = (msg->y > str_self_pose_range[2] && msg->y < str_self_pose_range[3]) ? true : false;
-            is_self_pose_range_z_str = (msg->z > str_self_pose_range[4] && msg->z < str_self_pose_range[5]) ? true : false;
-            is_self_pose_range_x_siro = (msg->x > siro_self_pose_range[0] && msg->x < siro_self_pose_range[1]) ? true : false;
-            is_self_pose_range_y_siro = (msg->y > siro_self_pose_range[2] && msg->y < siro_self_pose_range[3]) ? true : false;
-            is_self_pose_range_z_siro = (msg->z > siro_self_pose_range[4] && msg->z < siro_self_pose_range[5]) ? true : false;
+            // is_self_pose_range_x_str = (msg->x > str_self_pose_range[0] && msg->x < str_self_pose_range[1]) ? true : false;
+            // is_self_pose_range_y_str = (msg->y > str_self_pose_range[2] && msg->y < str_self_pose_range[3]) ? true : false;
+            // is_self_pose_range_z_str = (msg->z > str_self_pose_range[4] && msg->z < str_self_pose_range[5]) ? true : false;
+            // is_self_pose_range_x_siro = (msg->x > siro_self_pose_range[0] && msg->x < siro_self_pose_range[1]) ? true : false;
+            // is_self_pose_range_y_siro = (msg->y > siro_self_pose_range[2] && msg->y < siro_self_pose_range[3]) ? true : false;
+            // is_self_pose_range_z_siro = (msg->z > siro_self_pose_range[4] && msg->z < siro_self_pose_range[5]) ? true : false;
 
             // std::cout << is_self_pose_range_x_str << "@"<< is_self_pose_range_y_str <<"@"<< is_self_pose_range_z_str << std::endl;
             pose[0] = msg->x;

@@ -1,23 +1,23 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: false
-    scan: false
-    trajectory_planner: false
+    slcan: true
+    scan: true
+    trajectory_planner: true
     yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
-    initial_pose: [0.35, 0.56, 0.0]  #初期位置[x,y,yaw]
+    initial_pose: [0.35, 0.55, 0.0]  #初期位置[x,y,yaw]
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
-    tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
-    # tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,-1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    # tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
 
     court_color: "red" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
     linear_max_vel: 1.5
-    linear_max_acc: 5.0
-    linear_max_dec: 2.0
+    linear_max_acc: 2.5
+    linear_max_dec: 1.0
     linear_max_jer: 0.0
     # 回転  速度[deg/sint x, int y, const std::vector<double> point1, const std::vector<double> point2],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
     angular_max_vel: 100.0
@@ -32,6 +32,7 @@ launch: #起動パラメータ
       restart: 0x002
       calibrate: 0x003
       reset: 0x004
+      emergency_state: 0x005
       #100番台(足回り)
       linear: 0x100
       angular: 0x101
@@ -45,23 +46,22 @@ launch: #起動パラメータ
       paddy_collect: 0x200
       paddy_install: 0x201
       paddy_convergence: 0x202
-      #自動化用
-      hand_lift: 0x203
-      hand_fb: 0x204
-      hand_wrist: 0x205
-      hand_suction: 0x206
-      tof: 0x207
 
       #網
       net: 0x210
       net_convergence: 0x211
+      #自動化
+      tof: 0x220
+      hand_lift: 0x221
+      hand_fb: 0x222
+      hand_wrist: 0x223
+      suction: 0x224
+      
       #デジタルボタン
       main_button: 0x230
 
       vel: 0x400 #適当
       ang: 0x401 #適当
-
-    R2_state: old
         
     port:
       joy_main: 50000
@@ -85,65 +85,39 @@ launch: #起動パラメータ
     defalt_arm_convergence: false
     defalt_net_convergence: false
 
-spline_pid_node:
-  ros__parameters:
-    interval_ms: 20     #サイクル周期[ms]
-    curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
-    linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
-
-    linear_planner_gain: 5.0 #並進速度計画機ゲイン
-    linear_pos_gain: 5.0  #並進位置ズレのゲイン
-    linear_pos_diff_gain: 2.0
-    linear_pos_integral_gain: 0.02  #並進位置ズレの積分ゲイン
-
-    angular_planner_gain: 8.0 #回転速度計画機ゲイン
-    angular_pos_gain: 4.0 #回転位置ズレのゲイン
-    angular_pos_integral_gain: 0.03 #回転位置ズレの積分ゲイン
-
-    linear_pos_tolerance: 0.02  #並進到達位置の許容誤差[m]
-    angular_pos_tolerance: 2.0  #回転到達位置の許容誤差[deg]
-
-spline_trajectories_node:
-  ros__parameters:
-    resolution: 0.01  #起動点の分解能[m]
-
 controller_interface_node:
   ros__parameters:
     # 手動の高速　並進　速度[m/s],加速度[m/s^2],加減速度[-m/s^2]
-    high_linear_max_vel: 1.0
+    high_linear_max_vel: 1.5
     high_linear_max_acc: 3.0
-    high_linear_max_dec: 3.0
+    high_linear_max_dec: 2.0
     # 手動の低速　並進　速度[m/s],加速度[m/s^2],加減速度[-m/s^2]
     slow_linear_max_vel: 0.5
     slow_linear_max_acc: 1.5
     slow_linear_max_dec: 1.5
     # 手動の回転  速度[deg/s],加速度[deg/s^2],加減速度[-deg/s^2]
-    angular_max_vel: 90.0
-    angular_max_acc: 180.0
-    angular_max_dec: 180.0
+    angular_max_vel: 100.0
+    angular_max_acc: 360.0
+    angular_max_dec: 360.0
     
     heartbeat_ms: 100 #ハートビート周期[ms]
     interval_ms: 50
     start_ms: 3000
+    controller_ms: 100
+    mainboard_ms: 200
     
     initial_pickup_state: "A"
     initial_inject_state: "B"
-
-arm_interface_node:
-  ros__parameters:
-    tf_arm2robot: [0.0, 0.0] #射出機構のTF[x, y]
-    strage_backside: [0.0, 0.0, 0.0] #ストレージエリアの[x, y, 高さ]
-    strage_front: [0.1, 0.0, 0.0]
 
 rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
     laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
-    odom_weight_angler: 2.0e-3
+    odom_weight_liner: 4.0e-4 #値が大きくなると共分散が小さくなる 
+    odom_weight_angler: 3.0e-4
     voxel_size: 0.05
-    trial_num: 60
-    inlier_dist_threshold: 0.0125
+    trial_num: 50
+    inlier_dist_threshold: 0.0126
     inlier_length_threshold: 0.5 #インライアのしきい値
     second_ransac: false           #2回ransacをするか
     #以下カルマンフィルタのノイズ->値を小さくするとセンサーが優先される
@@ -157,15 +131,27 @@ rasnac_localization:
     cov_px: 15.0        # x誤差共分散行列
     cov_py: 15.0        # y誤差共分散行列
 
-injection_param_calculator_node:
+spline_pid_node:
   ros__parameters:
-    mass: 0.157                          # リングの重量[kg]
-    gravitational_accelerastion: 9.80665 # 重力加速度[m/s^2]
-    air_resistance: 7.78e-3              # 空気抵抗係数[kg/s]
-    foundation_hight: 0.0                # 射出機構の地面からの高さ[m]
-    velocity_lim_max: 10.0               # 最大初速度[m/s]
-    injection_angle: 45.0                # 射出角度[deg]
-    max_loop: 100                        # ニュートン法のループ制限回数
+    interval_ms: 20     #サイクル周期[ms]
+    curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
+    linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
+
+    linear_planner_gain: 2.0 #並進速度計画機ゲイン
+    linear_pos_gain: 3.0  #並進位置ズレのゲイン
+    linear_pos_diff_gain: 1.0
+    linear_pos_integral_gain: 0.01  #並進位置ズレの積分ゲイン
+
+    angular_planner_gain: 1.0 #回転速度計画機ゲイン
+    angular_pos_gain: 1.0 #回転位置ズレのゲイン
+    angular_pos_integral_gain: 0.01 #回転位置ズレの積分ゲイン
+
+    linear_pos_tolerance: 0.02  #並進到達位置の許容誤差[m]
+    angular_pos_tolerance: 2.0  #回転到達位置の許容誤差[deg]
+
+spline_trajectories_node:
+  ros__parameters:
+    resolution: 0.01  #起動点の分解能[m]
 
 detection_interface_node:
   ros__parameters:

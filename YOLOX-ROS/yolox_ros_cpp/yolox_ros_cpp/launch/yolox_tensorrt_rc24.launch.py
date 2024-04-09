@@ -171,6 +171,6 @@ def generate_launch_description():
     return launch.LaunchDescription(
         launch_args +   [
                         container, c1_launch, 
-                        # container_realsense, realsense_launch
+                        container_realsense, realsense_launch
                         ]
     )

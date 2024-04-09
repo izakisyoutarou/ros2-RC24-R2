@@ -15,6 +15,7 @@
   <depend>geometry_msgs</depend>
   <depend>socketcan_interface_msg</depend>
   <depend>controller_interface_msg</depend>
+  <depend>detection_interface_msg</depend>
   <depend>path_msg</depend>
   <depend>utilities</depend>
 
