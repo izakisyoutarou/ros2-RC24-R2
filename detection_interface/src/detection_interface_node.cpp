@@ -93,7 +93,7 @@ namespace detection_interface
 
         void DetectionInterface::callback_c1(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
             // RCLCPP_INFO(this->get_logger(), "%d", n);
-            RCLCPP_INFO(this->get_logger(), "st_flag@%d", storage_flag);
+            RCLCPP_INFO(this->get_logger(), "まえ:st_flag@%d", storage_flag);
             time_start = chrono::system_clock::now();
             auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
             auto msg_siro_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
@@ -161,7 +161,8 @@ namespace detection_interface
                 if(now_sequence == "silo"){
                 if(way_point == "c1"){
                     storage_flag = true;//c1カメラのストレージゾーン認識のflag
-                    c3_c4_flag = true; //realsense
+                    c3_c4_flag = true; //realsenseのc3、c4からの認識
+                    RCLCPP_INFO(this->get_logger(), "あと:st_flag@%d", storage_flag);
                     for (size_t i = 0; i < center_x.size(); ++i) {
                         // RCLCPP_INFO(this->get_logger(), "ymax@%d", ymax[i]);
                         siro_num = 0;
@@ -258,9 +259,9 @@ namespace detection_interface
                     after_ball_place.push_back(siro_num);
                 }
 
-                for (int z = 0; z < after_ball_place.size(); ++z) {
-                    // RCLCPP_INFO(this->get_logger(), "あと%d@%d,サイズ@%d", z, after_ball_place[z],bbounbox_size[z]);
-                }
+                // for (int z = 0; z < after_ball_place.size(); ++z) {
+                //     RCLCPP_INFO(this->get_logger(), "あと%d@%d,サイズ@%d", z, after_ball_place[z],bbounbox_size[z]);
+                // }
 
                 for (int i = 0; i < after_ball_place.size(); ++i) {
                     msg_siro_param->ball_color[after_ball_place[i] - 1] = ball_color[i];
@@ -285,7 +286,7 @@ namespace detection_interface
                 std::vector<int> center_x;
                 std::vector<int> center_y;
 
-                bool c3_flag = false;
+                bool to_c3_flag = false;
 
                 for (const auto& box : msg->bounding_boxes) {
                     class_id.push_back(box.class_id);
@@ -326,7 +327,7 @@ namespace detection_interface
                                     else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST0";
                                 }                            
                             }
-                            c3_flag = true;
+                            to_c3_flag = true;
                         }
                         else if(way_point == "c4"){
                         // RCLCPP_INFO(this->get_logger(), "y@%d,i@%d", center_y[i], i);
@@ -347,15 +348,11 @@ namespace detection_interface
                                 }
                             }
                         }
-                        c3_flag = false;
+                        to_c3_flag = false;
                     }
 
                     c3_c4_flag = false;
 
-                    if(msg_collection_point->data == ""){ 
-                        msg_collection_point->data = way_point;
-                        c3_c4_flag = true;
-                    }
                     way_point = "";
 
                     _pub_collection_point->publish(*msg_collection_point);
@@ -364,14 +361,24 @@ namespace detection_interface
 
                 //ボールが手前かどうか
                 if(!way_point.empty()){
+                    bool msg_flag = false;
+
                     for (size_t i = 0; i < center_x.size(); ++i) {
                         if(center_y[i] > str_range_y_ST[0]){
                             if(center_x[i] > str_range_x_ST[0] && center_x[i] < str_range_x_ST[1]){
                                 if(center_y[i] < str_range_y_ST[0]) msg_front_ball->data = true;
                                 else if (center_y[i] > str_range_y_ST[0] && center_y[i] < str_range_y_ST[1])msg_front_ball->data = false;
                                 _pub_front_ball->publish(*msg_front_ball);
+                                msg_flag = true;
                             }
                         }
+                    }
+
+                    if(!msg_flag){
+                        if(to_c3_flag)msg_collection_point->data = "c3";
+                        else msg_collection_point->data = "c4";
+                        _pub_collection_point->publish(*msg_collection_point);
+                        c3_c4_flag = true;
                     }
                     way_point = "";
                 }
