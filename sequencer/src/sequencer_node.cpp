@@ -185,7 +185,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             progress++;
         }
         //籾吸着
-        else if(progress == n++ && msg->net_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 5000){
+        else if(progress == n++ && msg->net_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
             command_hand_lift_inside();
             suction_time = std::chrono::system_clock::now();
             progress++;
@@ -257,35 +257,35 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
     }
     else if(sequence_mode == SEQUENCE_MODE::silo){
-        if(tof_mode){        
-            if(progress == 1 && !tof[0]){
-                if(pre_sequence == SEQUENCE_MODE::storage) {
-                    if(ball_num < 6) {
-                        command_sequence(SEQUENCE_MODE::storage);
-                        command_move_interrupt_node("c1");
-                        progress = 1;
-                    }
-                    else {
-                        command_sequence(SEQUENCE_MODE::storage);
-                        command_move_interrupt_node("ST8");
-                        progress = 1;
-                        ball_num = 0;                        
-                    }
-                }
-                else if(pre_sequence == SEQUENCE_MODE::transfer) {
-                    if(ball_num < 6) {
-                        command_sequence(SEQUENCE_MODE::storage);
-                        command_move_interrupt_node("ST8");
-                        progress = 1;
-                    }
-                    else {
-                        command_sequence(SEQUENCE_MODE::collect);
-                        ball_num = 0;                    
-                    }
-                }
-                else command_sequence(SEQUENCE_MODE::collect);
-            }
-        }
+        // if(tof_mode){        
+        //     if(progress == 1 && !tof[0]){
+        //         if(pre_sequence == SEQUENCE_MODE::storage) {
+        //             if(ball_num < 6) {
+        //                 command_sequence(SEQUENCE_MODE::storage);
+        //                 command_move_interrupt_node("c1");
+        //                 progress = 1;
+        //             }
+        //             else {
+        //                 command_sequence(SEQUENCE_MODE::storage);
+        //                 command_move_interrupt_node("ST8");
+        //                 progress = 1;
+        //                 ball_num = 0;                        
+        //             }
+        //         }
+        //         else if(pre_sequence == SEQUENCE_MODE::transfer) {
+        //             if(ball_num < 6) {
+        //                 command_sequence(SEQUENCE_MODE::storage);
+        //                 command_move_interrupt_node("ST8");
+        //                 progress = 1;
+        //             }
+        //             else {
+        //                 command_sequence(SEQUENCE_MODE::collect);
+        //                 ball_num = 0;                    
+        //             }
+        //         }
+        //         else command_sequence(SEQUENCE_MODE::collect);
+        //     }
+        // }
         if(progress == n++){
             command_move_node("c1");
             command_hand_lift_pickup();
@@ -293,19 +293,18 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
         else if(progress == n++ && msg->arm_convergence){
             command_hand_fb_inside();
-            command_hand_wrist_down();
+            command_hand_wrist_up();
             progress++;
         }
         else if(progress == n++ && silo_flag){
             std::string silo_node = "SI" + std::to_string(target_silo);
             command_move_interrupt_node(silo_node);
             silo_flag = false;
-            command_hand_fb_silo();
+            command_hand_lift_silo();
             progress++;
         } 
         else if(progress == n++&& msg->arm_convergence){
-            command_hand_lift_silo();
-            command_hand_wrist_up();
+            command_hand_fb_silo();
             progress++;
         }
         else if(progress == n++ && !msg->spline_convergence){
@@ -313,7 +312,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             suction_time = std::chrono::system_clock::now();            
             progress++;
         } 
-        else if(progress == n++ && msg->arm_convergence && !tof[0]) {
+        else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000 /*&& !tof[0]*/) {
             if(pre_sequence == SEQUENCE_MODE::storage) {
                 if(ball_num < 6) command_sequence(SEQUENCE_MODE::storage);
                 else {
