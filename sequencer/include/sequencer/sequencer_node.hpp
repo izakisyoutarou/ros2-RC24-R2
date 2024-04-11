@@ -144,6 +144,7 @@ private:
     bool silo_flag = false;
 
     std::string interrupt_node = "";
+    bool c3orc4_flag = false; 
 };
 
 }  // namespace sequencer
