@@ -145,6 +145,9 @@ namespace controller_interface
             //gazeboへ
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
+            _pub_is_start = this->create_publisher<std_msgs::msg::UInt8>("is_start", _qos);
+            _pub_process_skip = this->create_publisher<std_msgs::msg::Empty>("process_skip", _qos);
+
             //sequenserへ
             _pub_initial_sequense = this->create_publisher<std_msgs::msg::String>("initial_sequense", _qos);
 
@@ -292,7 +295,11 @@ namespace controller_interface
             else if(msg->data == "up") gamebtn.steer_reset(_pub_canusb);
             else if(msg->data == "down") gamebtn.calibrate(_pub_canusb);
             else if(msg->data == "left") gamebtn.board_reset(_pub_canusb);
-            // else if(msg->data == "right") 
+            else if(msg->data == "right") {
+                auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
+                msg_is_start->data = 0;
+                _pub_is_start->publish(*msg_is_start);
+            }
             else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);  
             else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
             else if(msg->data == "x") gamebtn.paddy_collect_2(is_arm_convergence,_pub_canusb);

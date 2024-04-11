@@ -3,23 +3,23 @@ launch: #起動パラメータ
     slcan: true
     scan: true
     trajectory_planner: true
-    
+    yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
     initial_pose: [0.35, 0.55, 0.0]  #初期位置[x,y,yaw]
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
     # tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
-    tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,-1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
 
-    court_color: "blue" #コート情報
+    court_color: "red" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
     linear_max_vel: 1.5
     linear_max_acc: 2.5
     linear_max_dec: 1.0
     linear_max_jer: 0.0
-    # 回転  速度[deg/s],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
+    # 回転  速度[deg/sint x, int y, const std::vector<double> point1, const std::vector<double> point2],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
     angular_max_vel: 100.0
     angular_max_acc: 360.0
     angular_max_dec: 360.0
@@ -152,3 +152,36 @@ spline_pid_node:
 spline_trajectories_node:
   ros__parameters:
     resolution: 0.01  #起動点の分解能[m]
+
+detection_interface_node:
+  ros__parameters:
+    #ひし形モードのひし形に向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
+    str_self_pose_range: [9.7, 10.3, -3.58, -3.52, -0.05, 0.05]
+    #ひし形モードのサイロに向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
+    siro_self_pose_range: [9.8, 10.2, -3.8, -3.0, -2.5, -2.3]
+
+    str_range_point1_blue: [0.0, 1170.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_blue: [1920.0, 630.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+    str_range_point1_red: [0.0, 580.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_red: [1920.0, 1230.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+
+    #C2からひし形を見たときの囲い
+    str_range_point1_1_C2: [0.0, 1180.0] #左上の線
+    str_range_point1_2_C2: [1920.0, 560.0]
+    str_range_point2_1_C2: [0.0, 1650.0] #右下の線
+    str_range_point2_2_C2: [1920.0, 590.0]
+    str_range_point3_1_C2: [0.0, 650.0] #左下の線
+    str_range_point3_2_C2: [1920.0, 1550.0]
+    str_range_point4_1_C2: [0.0, 620.0] #右上の線
+    str_range_point4_2_C2: [1920.0, 1100.0]
+
+    #C3とC5から、ST1~8の中のどの回収ポイントかを判断するポイント_C3orC5[x1,x2,x3]
+    str_range_x_C3orC5: [450.0, 620.0, 770.0] 
+    str_range_y_C3orC5: 650.0 
+
+    #ST1~8から手前か奥か判断するポイント
+    str_range_x_ST: [550.0, 800.0] 
+    str_range_y_ST: [340.0, 500.0] 
+
+    siro_ball_range_y: [780.0, 900.0, 1030.0] #ボールが何段目か[y1, y2]
+    siro_ball_range_x: [350.0, 768.0, 1220.0, 1600.0] #ボールがどのサイロか[x1, x2, x3, x4]

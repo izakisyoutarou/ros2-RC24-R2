@@ -16,7 +16,7 @@
 #include "utilities/utils.hpp"
 #include "socket_udp.hpp"
 #include "trapezoidal_velocity_planner.hpp"
-
+#include "std_msgs/msg/u_int8.hpp"
 #include "visibility_control.h"
 
 
@@ -65,6 +65,9 @@ namespace controller_interface
 
             //sprine_pid
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_move_node;
+
+            rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr _pub_is_start;
+            rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_process_skip;
 
             //timer
             rclcpp::TimerBase::SharedPtr _pub_heartbeat;
