@@ -102,6 +102,7 @@ namespace detection_interface
             bool is_self_pose_range_z_siro = false;
 
             bool storage_flag = true;
+            bool c3_c4_flag = true;
 
             //定数
             //坂上の自己位置の範囲

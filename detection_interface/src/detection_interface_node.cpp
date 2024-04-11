@@ -93,6 +93,7 @@ namespace detection_interface
 
         void DetectionInterface::callback_c1(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
             // RCLCPP_INFO(this->get_logger(), "%d", n);
+            RCLCPP_INFO(this->get_logger(), "st_flag@%d", storage_flag);
             time_start = chrono::system_clock::now();
             auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
             auto msg_siro_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
@@ -157,10 +158,12 @@ namespace detection_interface
 
                 //モード問わず、サイロに向かっているとき
                 // if(is_self_pose_range_x_siro && is_self_pose_range_y_siro && is_self_pose_range_z_siro){
+                if(now_sequence == "silo"){
                 if(way_point == "c1"){
                     storage_flag = true;//c1カメラのストレージゾーン認識のflag
+                    c3_c4_flag = true; //realsense
                     for (size_t i = 0; i < center_x.size(); ++i) {
-                        RCLCPP_INFO(this->get_logger(), "ymax@%d", ymax[i]);
+                        // RCLCPP_INFO(this->get_logger(), "ymax@%d", ymax[i]);
                         siro_num = 0;
                         // if(way_point == "C1") siro_num = 3;
 
@@ -186,14 +189,15 @@ namespace detection_interface
                                 else if(center_x[i] > siro_ball_range_x[3]) siro_num += 12;
                             }
                             before_ball_place.push_back(siro_num);
+                            // for (int z = 0; z < before_ball_place.size(); ++z) {
+                            //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d,サイズ@%d", z, before_ball_place[z],bbounbox_size[z]);
+                            // }
 
                             if(class_id[i] == "redball") ball_color.push_back("R");
                             else if(class_id[i] == "blueball") ball_color.push_back("B");
                         }
-
-
-                        
                     }
+                }
                 }
 
             //サイロ方面の検出が行われると入るところ
@@ -254,9 +258,9 @@ namespace detection_interface
                     after_ball_place.push_back(siro_num);
                 }
 
-                // for (int z = 0; z < after_ball_place.size(); ++z) {
-                //     RCLCPP_INFO(this->get_logger(), "あと%d@%d,サイズ@%d", z, after_ball_place[z],bbounbox_size[z]);
-                // }
+                for (int z = 0; z < after_ball_place.size(); ++z) {
+                    // RCLCPP_INFO(this->get_logger(), "あと%d@%d,サイズ@%d", z, after_ball_place[z],bbounbox_size[z]);
+                }
 
                 for (int i = 0; i < after_ball_place.size(); ++i) {
                     msg_siro_param->ball_color[after_ball_place[i] - 1] = ball_color[i];
@@ -281,6 +285,8 @@ namespace detection_interface
                 std::vector<int> center_x;
                 std::vector<int> center_y;
 
+                bool c3_flag = false;
+
                 for (const auto& box : msg->bounding_boxes) {
                     class_id.push_back(box.class_id);
 
@@ -301,47 +307,59 @@ namespace detection_interface
                 // msg_ball_coordinate->y = test[1];
                 // msg_ball_coordinate->z = test[2];
                 if(way_point == "c3" || way_point == "c4"){
+                    if(c3_c4_flag){
                     for (size_t i = 0; i < center_x.size(); ++i) {
                         if(way_point == "c3"){
                             if(court_color == "blue"){
-                                if(center_y[i] > str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST1";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
+                                if(center_y[i] < str_range_y_C3orC5){
+                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST0";
+                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST1";
+                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST2";
+                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
                                 }
                             }
                             else {
-                                if(center_y[i] > str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST4";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST3";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST2";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST1";
+                                if(center_y[i] < str_range_y_C3orC5){
+                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST3";
+                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
+                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST1";
+                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST0";
                                 }                            
                             }
+                            c3_flag = true;
                         }
                         else if(way_point == "c4"){
                         // RCLCPP_INFO(this->get_logger(), "y@%d,i@%d", center_y[i], i);
                             if(court_color == "blue"){
-                                if(center_y[i] > str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST8";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST7";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST6";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
+                                if(center_y[i] < str_range_y_C3orC5){
+                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST7";
+                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST6";
+                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
+                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
                                 }
                             }
                             else{
-                                if(center_y[i] > str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST5";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST6";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST7";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST8";
+                                if(center_y[i] < str_range_y_C3orC5){
+                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST4";
+                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST5";
+                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST6";
+                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST7";
                                 }
                             }
                         }
+                        c3_flag = false;
+                    }
+
+                    c3_c4_flag = false;
+
+                    if(msg_collection_point->data == ""){ 
+                        msg_collection_point->data = way_point;
+                        c3_c4_flag = true;
                     }
                     way_point = "";
+
                     _pub_collection_point->publish(*msg_collection_point);
+                    }
                 }
 
                 //ボールが手前かどうか
@@ -349,8 +367,8 @@ namespace detection_interface
                     for (size_t i = 0; i < center_x.size(); ++i) {
                         if(center_y[i] > str_range_y_ST[0]){
                             if(center_x[i] > str_range_x_ST[0] && center_x[i] < str_range_x_ST[1]){
-                                if(center_y[i] > str_range_y_ST[1]) msg_front_ball->data = true;
-                                else msg_front_ball->data = false;
+                                if(center_y[i] < str_range_y_ST[0]) msg_front_ball->data = true;
+                                else if (center_y[i] > str_range_y_ST[0] && center_y[i] < str_range_y_ST[1])msg_front_ball->data = false;
                                 _pub_front_ball->publish(*msg_front_ball);
                             }
                         }
@@ -388,6 +406,8 @@ namespace detection_interface
             if(msg->is_restart){
                 way_point = "";
                 now_sequence = "";
+                storage_flag = true;
+                c3_c4_flag = true;
             }
         }
 
