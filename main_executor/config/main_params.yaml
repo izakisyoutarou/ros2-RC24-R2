@@ -54,7 +54,7 @@ launch: #起動パラメータ
       tof: 0x220
       hand_lift: 0x221
       hand_fb: 0x222
-      hand_twist: 0x223
+      hand_wrist: 0x223
       suction: 0x224
       
       #デジタルボタン
