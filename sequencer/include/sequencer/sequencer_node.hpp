@@ -142,6 +142,8 @@ private:
     
     int target_silo = 0;
     bool silo_flag = false;
+
+    std::string interrupt_node = "";
 };
 
 }  // namespace sequencer

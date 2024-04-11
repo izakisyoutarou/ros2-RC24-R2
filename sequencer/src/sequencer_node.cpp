@@ -120,21 +120,27 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
     int n = 0;
     if(!is_start) return;
     if(sequence_mode == SEQUENCE_MODE::storage){
+        // if(progress == 1) RCLCPP_INFO(get_logger(),"%d, %s",progress, interrupt_node.c_str());
+        // if(progress == 2) RCLCPP_INFO(get_logger(),"%d, %d, %d",msg->spline_convergence, msg->arm_convergence, get_front_ball);
         //初期移動&&アーム初期状態移行
         if(progress == n++){
             command_move_node("c2");
-            command_hand_fb_front();
+            command_hand_fb_inside();
             command_hand_lift_pickup();
             command_hand_wrist_down();
+            progress++;
+        }
+        else if(progress == n++ && (interrupt_node == "c3" || interrupt_node == "c4")){
             command_hand_suction_on();
             suction_time = std::chrono::system_clock::now();
             progress++;
         }
         //吸引をボール直上に
-        else if(progress == n++ && msg->spline_convergence && msg->arm_convergence){
+        else if(progress == n++ && !msg->spline_convergence && msg->arm_convergence && get_front_ball && (way_point == "ST0" || way_point == "ST1" || way_point == "ST2" || way_point == "ST3" || way_point == "ST4" || way_point == "ST5" || way_point == "ST6" || way_point == "ST7")){
             if(front_ball) command_hand_fb_front();
             else command_hand_fb_back();
             command_hand_lift_suction_before();
+            get_front_ball = false;
             progress++;
         }
         //籾吸着
@@ -172,7 +178,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             progress++;
         }
         //吸引起動&&待機状態移行
-        else if(progress == n++ && msg->spline_convergence && msg->net_convergence){
+        else if(progress == n++ && !msg->spline_convergence && msg->net_convergence){
             command_net_close();
             command_hand_suction_on();
             suction_time = std::chrono::system_clock::now();
@@ -228,7 +234,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             progress++;
         } 
         //籾吸着
-        else if(progress == n++ && msg->spline_convergence && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 5000){
+        else if(progress == n++ && !msg->spline_convergence && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 5000){
             command_hand_lift_suction();
             suction_time = std::chrono::system_clock::now();
             progress++;
@@ -286,24 +292,23 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             progress++;
         }
         else if(progress == n++ && msg->arm_convergence){
-            command_hand_fb_silo();
-            progress++;
-        }
-        
-        else if(progress == n++&& msg->arm_convergence){
-            command_hand_lift_silo();
-            progress++;
-        }
-        else if(progress == n++&& msg->arm_convergence){
-            command_hand_wrist_up();
+            command_hand_fb_inside();
+            command_hand_wrist_down();
             progress++;
         }
         else if(progress == n++ && silo_flag){
-            command_move_node("SI" + std::to_string(target_silo));
+            std::string silo_node = "SI" + std::to_string(target_silo);
+            command_move_interrupt_node(silo_node);
             silo_flag = false;
+            command_hand_fb_silo();
             progress++;
         } 
-        else if(progress == n++ && msg->spline_convergence){
+        else if(progress == n++&& msg->arm_convergence){
+            command_hand_lift_silo();
+            command_hand_wrist_up();
+            progress++;
+        }
+        else if(progress == n++ && !msg->spline_convergence){
             command_hand_suction_off();
             suction_time = std::chrono::system_clock::now();            
             progress++;
@@ -349,6 +354,7 @@ void Sequencer::callback_process_skip(const std_msgs::msg::Empty::SharedPtr msg)
 void Sequencer::callback_collection_point(const std_msgs::msg::String::SharedPtr msg){
     if(msg->data == "" && sequence_mode == SEQUENCE_MODE::storage) command_sequence(SEQUENCE_MODE::transfer);
     else command_move_interrupt_node(msg->data);
+    interrupt_node = msg->data;
 }
 
 void Sequencer::callback_way_point(const std_msgs::msg::String::SharedPtr msg){
@@ -383,6 +389,7 @@ void Sequencer::callback_siro_param(const detection_interface_msg::msg::SiroPara
     std::string ball_color[15];
     for(int i = 0; i < 15; i++) ball_color[i] = msg->ball_color[i];
     target_silo = silo_evaluate(ball_color);
+    RCLCPP_INFO(get_logger(),"silo : %d",target_silo);
     silo_flag = true;
 }
 
