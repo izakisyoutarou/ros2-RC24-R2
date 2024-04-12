@@ -293,18 +293,18 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
         else if(progress == n++ && msg->arm_convergence){
             command_hand_fb_inside();
-            command_hand_wrist_up();
             progress++;
         }
         else if(progress == n++ && silo_flag){
             std::string silo_node = "SI" + std::to_string(target_silo);
             command_move_interrupt_node(silo_node);
             silo_flag = false;
-            command_hand_lift_silo();
+            command_hand_fb_silo();
             progress++;
         } 
         else if(progress == n++&& msg->arm_convergence){
-            command_hand_fb_silo();
+            command_hand_lift_silo();
+            command_hand_wrist_up();
             progress++;
         }
         else if(progress == n++ && !msg->spline_convergence){
