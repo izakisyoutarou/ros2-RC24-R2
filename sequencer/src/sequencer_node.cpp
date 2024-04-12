@@ -130,7 +130,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             command_hand_wrist_down();
             progress++;
         }
-        else if(progress == n++ && (interrupt_node == "c3" || interrupt_node == "c4")){
+        else if(progress == n++ && c3orc4_flag){
             command_hand_suction_on();
             suction_time = std::chrono::system_clock::now();
             progress++;
@@ -344,6 +344,7 @@ void Sequencer::callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg){
     else if(msg->data == 2) command_sequence(SEQUENCE_MODE::collect);
     else if(msg->data == 3) command_sequence(SEQUENCE_MODE::silo);
     is_start = true;
+    c3orc4_flag = false;
 }
 
 void Sequencer::callback_process_skip(const std_msgs::msg::Empty::SharedPtr msg){
@@ -354,6 +355,7 @@ void Sequencer::callback_collection_point(const std_msgs::msg::String::SharedPtr
     if(msg->data == "" && sequence_mode == SEQUENCE_MODE::storage) command_sequence(SEQUENCE_MODE::transfer);
     else command_move_interrupt_node(msg->data);
     interrupt_node = msg->data;
+    if((msg->data == "c3" || msg->data == "c4") && sequence_mode == SEQUENCE_MODE::storage) c3orc4_flag = true;
 }
 
 void Sequencer::callback_way_point(const std_msgs::msg::String::SharedPtr msg){
