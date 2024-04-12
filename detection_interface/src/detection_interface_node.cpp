@@ -93,7 +93,7 @@ namespace detection_interface
 
         void DetectionInterface::callback_c1(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
             // RCLCPP_INFO(this->get_logger(), "%d", n);
-            RCLCPP_INFO(this->get_logger(), "まえ:st_flag@%d", storage_flag);
+            // RCLCPP_INFO(this->get_logger(), "まえ:st_flag@%d", storage_flag);
             time_start = chrono::system_clock::now();
             auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
             auto msg_siro_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
@@ -162,6 +162,7 @@ namespace detection_interface
                 if(way_point == "c1"){
                     storage_flag = true;//c1カメラのストレージゾーン認識のflag
                     c3_c4_flag = true; //realsenseのc3、c4からの認識
+                    st_flag = true;
                     RCLCPP_INFO(this->get_logger(), "あと:st_flag@%d", storage_flag);
                     for (size_t i = 0; i < center_x.size(); ++i) {
                         // RCLCPP_INFO(this->get_logger(), "ymax@%d", ymax[i]);
@@ -286,8 +287,6 @@ namespace detection_interface
                 std::vector<int> center_x;
                 std::vector<int> center_y;
 
-                bool to_c3_flag = false;
-
                 for (const auto& box : msg->bounding_boxes) {
                     class_id.push_back(box.class_id);
 
@@ -347,11 +346,12 @@ namespace detection_interface
                                     else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST7";
                                 }
                             }
-                        }
-                        to_c3_flag = false;
+                            to_c3_flag = false;
+                        }  
                     }
 
                     c3_c4_flag = false;
+                    st_flag = true;
 
                     way_point = "";
 
@@ -360,7 +360,8 @@ namespace detection_interface
                 }
 
                 //ボールが手前かどうか
-                if(!way_point.empty()){
+                if(way_point[0] == 'S' && way_point[1] == 'T'){
+                    if(st_flag){
                     bool msg_flag = false;
 
                     for (size_t i = 0; i < center_x.size(); ++i) {
@@ -375,12 +376,15 @@ namespace detection_interface
                     }
 
                     if(!msg_flag){
+                        RCLCPP_INFO(this->get_logger(), "%d", to_c3_flag);
                         if(to_c3_flag)msg_collection_point->data = "c3";
                         else msg_collection_point->data = "c4";
                         _pub_collection_point->publish(*msg_collection_point);
                         c3_c4_flag = true;
                     }
                     way_point = "";
+                    st_flag = false;
+                    }
                 }
             
                     // _pub_collection_point->publish(*msg_collection_point);
@@ -415,6 +419,8 @@ namespace detection_interface
                 now_sequence = "";
                 storage_flag = true;
                 c3_c4_flag = true;
+                st_flag = true;
+                to_c3_flag = true;
             }
         }
 

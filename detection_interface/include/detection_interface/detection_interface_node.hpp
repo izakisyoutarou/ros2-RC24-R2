@@ -103,6 +103,8 @@ namespace detection_interface
 
             bool storage_flag = true;
             bool c3_c4_flag = true;
+            bool st_flag = true;
+            bool to_c3_flag = true;
 
             //定数
             //坂上の自己位置の範囲
