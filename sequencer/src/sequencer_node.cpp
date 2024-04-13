@@ -117,14 +117,9 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
 }
 
 void Sequencer::callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg){
-    // RCLCPP_INFO(get_logger(),"@@@@@ silo_flag : %d @@@@@", silo_flag);
-    //   RCLCPP_INFO(get_logger(),"@@@@@ progress : %d @@@@@", progress);  
     int n = 0;
     if(!is_start) return;
     if(sequence_mode == SEQUENCE_MODE::storage){
-        // if(progress == 1) RCLCPP_INFO(get_logger(),"%d, %s",progress, interrupt_node.c_str());
-        // RCLCPP_INFO(get_logger(),"%d, %d, %d",msg->spline_convergence, msg->arm_convergence, get_front_ball);
-        // RCLCPP_INFO(get_logger(),"@@@@@ silo_flag : %d @@@@@", silo_flag);
         //初期移動&&アーム初期状態移行
         if(progress == n++ && !msg->spline_convergence){
             RCLCPP_INFO(get_logger(),"_____strage0_____");
@@ -172,14 +167,18 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                 }
                 else progress--;            
             }
-            else command_sequence(SEQUENCE_MODE::silo);
+            else {
+                command_sequence(SEQUENCE_MODE::silo);
+                ball_num++; 
+            }
         }
     }
     else if(sequence_mode == SEQUENCE_MODE::transfer){
         //初期移動&&アーム初期状態移行
         if(progress == n++){
             RCLCPP_INFO(get_logger(),"_____transfer0_____");
-            command_move_interrupt_node("ST8");
+            if(way_point == "O") command_move_node("ST8");
+            else command_move_interrupt_node("ST8");
             command_hand_fb_inside();
             command_hand_lift_pickup();
             command_hand_wrist_down();
@@ -315,7 +314,6 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         else if(progress == n++ && silo_flag && way_point == "c1"){
             RCLCPP_INFO(get_logger(),"_____silo2_____");
             std::string silo_node = "SI" + std::to_string(target_silo);
-            // RCLCPP_INFO(get_logger(),"@@@@@ silo_node : %s @@@@@", silo_node.c_str());
             command_move_interrupt_node(silo_node);
             silo_flag = false;
             command_hand_fb_silo();
@@ -416,7 +414,6 @@ void Sequencer::callback_siro_param(const detection_interface_msg::msg::SiroPara
         std::string ball_color[15];
         for(int i = 0; i < 15; i++) ball_color[i] = msg->ball_color[i];
         target_silo = silo_evaluate(ball_color);
-        // RCLCPP_INFO(get_logger(),"@@@@@ silo_num : %d @@@@@",target_silo);
         silo_flag = true;
     }
 }
