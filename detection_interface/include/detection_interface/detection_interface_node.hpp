@@ -106,6 +106,8 @@ namespace detection_interface
             bool st_flag = true;
             bool to_c3_flag = true;
 
+            int n = 0;
+
             //定数
             //坂上の自己位置の範囲
             const std::vector<double> str_self_pose_range;

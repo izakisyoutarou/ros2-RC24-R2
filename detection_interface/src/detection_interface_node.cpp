@@ -160,10 +160,11 @@ namespace detection_interface
                 // if(is_self_pose_range_x_siro && is_self_pose_range_y_siro && is_self_pose_range_z_siro){
                 if(now_sequence == "silo"){
                 if(way_point == "c1"){
+                    n++;
                     storage_flag = true;//c1カメラのストレージゾーン認識のflag
                     c3_c4_flag = true; //realsenseのc3、c4からの認識
                     st_flag = true;
-                    RCLCPP_INFO(this->get_logger(), "あと:st_flag@%d", storage_flag);
+                    // RCLCPP_INFO(this->get_logger(), "nnnnnnnnnnnnnnn@@@@@@@@@@@@@@@@%d", n);
                     for (size_t i = 0; i < center_x.size(); ++i) {
                         // RCLCPP_INFO(this->get_logger(), "ymax@%d", ymax[i]);
                         siro_num = 0;
@@ -286,9 +287,14 @@ namespace detection_interface
                 std::vector<std::string> class_id;
                 std::vector<int> center_x;
                 std::vector<int> center_y;
-
+                // std::vector<int> min_x;
+                // std::vector<int> max_y;
+                
                 for (const auto& box : msg->bounding_boxes) {
                     class_id.push_back(box.class_id);
+
+                    // min_x.push_back(box.xmin);
+                    // max_y.push_back(box.ymax);
 
                     int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
                     int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
@@ -306,24 +312,28 @@ namespace detection_interface
                 // msg_ball_coordinate->x = test[0];
                 // msg_ball_coordinate->y = test[1];
                 // msg_ball_coordinate->z = test[2];
+
+                //しきい値の計算
+                
+
                 if(way_point == "c3" || way_point == "c4"){
                     if(c3_c4_flag){
                     for (size_t i = 0; i < center_x.size(); ++i) {
                         if(way_point == "c3"){
                             if(court_color == "blue"){
                                 if(center_y[i] < str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST0";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST1";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST2";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
-                                }
-                            }
-                            else {
-                                if(center_y[i] < str_range_y_C3orC5){
                                     if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST3";
                                     else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
                                     else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST1";
                                     else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST0";
+                                }
+                            }
+                            else {
+                                if(center_y[i] < str_range_y_C3orC5){
+                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST0";
+                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST1";
+                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST2";
+                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
                                 }                            
                             }
                             to_c3_flag = true;
@@ -332,18 +342,18 @@ namespace detection_interface
                         // RCLCPP_INFO(this->get_logger(), "y@%d,i@%d", center_y[i], i);
                             if(court_color == "blue"){
                                 if(center_y[i] < str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST7";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST6";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
-                                }
-                            }
-                            else{
-                                if(center_y[i] < str_range_y_C3orC5){
                                     if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST4";
                                     else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST5";
                                     else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST6";
                                     else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST7";
+                                }
+                            }
+                            else{
+                                if(center_y[i] < str_range_y_C3orC5){
+                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST7";
+                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST6";
+                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
+                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
                                 }
                             }
                             to_c3_flag = false;
@@ -365,7 +375,7 @@ namespace detection_interface
                     bool msg_flag = false;
 
                     for (size_t i = 0; i < center_x.size(); ++i) {
-                        if(center_y[i] > str_range_y_ST[0]){
+                        if(center_y[i] < str_range_y_ST[1]){
                             if(center_x[i] > str_range_x_ST[0] && center_x[i] < str_range_x_ST[1]){
                                 if(center_y[i] < str_range_y_ST[0]) msg_front_ball->data = true;
                                 else if (center_y[i] > str_range_y_ST[0] && center_y[i] < str_range_y_ST[1])msg_front_ball->data = false;
