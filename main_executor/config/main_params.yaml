@@ -143,7 +143,7 @@ spline_pid_node:
     linear_pos_integral_gain: 0.01  #並進位置ズレの積分ゲイン
 
     angular_planner_gain: 1.2 #回転速度計画機ゲイン
-    angular_pos_gain: 1.0 #回転位置ズレのゲイン
+    angular_pos_gain: 2.0 #回転位置ズレのゲイン
     angular_pos_integral_gain: 0.01 #回転位置ズレの積分ゲイン
 
     linear_pos_tolerance: 0.02  #並進到達位置の許容誤差[m]
@@ -181,7 +181,7 @@ detection_interface_node:
 
     #ST1~8から手前か奥か判断するポイント
     str_range_x_ST: [550.0, 800.0] 
-    str_range_y_ST: [340.0, 500.0] 
+    str_range_y_ST: [300.0, 500.0] 
 
     siro_ball_range_y: [780.0, 900.0, 1030.0] #ボールが何段目か[y1, y2]
     siro_ball_range_x: [350.0, 768.0, 1220.0, 1600.0] #ボールがどのサイロか[x1, x2, x3, x4]
