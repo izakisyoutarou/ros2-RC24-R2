@@ -133,6 +133,13 @@ namespace detection_interface
             const std::vector<double> str_range_x_ST;
             const std::vector<double> str_range_y_ST;
 
+            //C3かC5についたときのST1~8につながる画像認識の範囲
+            const int str_range_x_C3orC5_2;
+            const int str_range_y_C3orC5_2;
+
+            //STについたときのボールが手前か奥か判断する画像認識の範囲
+            const int str_range_y_ST2;
+
             //サイロのボールが何段目か
             const std::vector<double> siro_ball_range_y;
 

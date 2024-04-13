@@ -27,6 +27,11 @@ namespace detection_interface
 
         str_range_x_ST(get_parameter("str_range_x_ST").as_double_array()),
         str_range_y_ST(get_parameter("str_range_y_ST").as_double_array()),
+
+        str_range_x_C3orC5_2(get_parameter("str_range_x_C3orC5_2").int()),
+        str_range_y_C3orC5_2(get_parameter("str_range_y_C3orC5_2").int()),
+
+        str_range_y_ST2(get_parameter("str_range_y_ST2").int()),
         
         siro_ball_range_y(get_parameter("siro_ball_range_y").as_double_array()),
         siro_ball_range_x(get_parameter("siro_ball_range_x").as_double_array()),
@@ -285,6 +290,9 @@ namespace detection_interface
                 std::vector<int> center_x;
                 std::vector<int> center_y;
 
+                std::vector<int> min_x;
+                std::vector<int> max_y;
+
                 bool c3_flag = false;
 
                 for (const auto& box : msg->bounding_boxes) {
@@ -294,6 +302,9 @@ namespace detection_interface
                     int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
                     center_x.push_back(center_x_value);
                     center_y.push_back(center_y_value);
+
+                    min_x.push_back(box.xmin);
+                    max_y.push_back(box.ymax);
                 }
 
                 // center_dist = cv_image_.at<uint32_t>(center_y, center_x);
@@ -306,6 +317,91 @@ namespace detection_interface
                 // msg_ball_coordinate->x = test[0];
                 // msg_ball_coordinate->y = test[1];
                 // msg_ball_coordinate->z = test[2];
+
+                // //c3とc4で物体検出をするとこ
+
+                // int ymax_in_max_y = max_element(begin(max_y), end(max_y));
+
+                // int xmin_in_min_x = min_element(begin(min_x), end(min_x));
+                // int ymax_in_max_y = max_element(begin(max_y), end(max_y));
+
+                // if(way_point == "c3" || way_point == "c4"){
+                //     int xmin_in_min_x_C3orC5_2 = xmin_in_min_x + str_range_x_C3orC5_2;
+                //     int xmin_in_min_x_C3orC5_3 = xmin_in_min_x + str_range_x_C3orC5_2*2;
+
+                //     int ymax_in_max_y_C3orC5 = ymax_in_max_y - str_range_y_C3orC5_2;
+
+                //     if(c3_c4_flag){
+                //     for (size_t i = 0; i < center_x.size(); ++i) {
+                //         if(way_point == "c3"){
+                //             if(court_color == "blue"){
+                //                 if(center_y[i] < ymax_in_max_y_C3orC5){
+                //                     if(center_x[i] < xmin_in_min_x) msg_collection_point->data = "ST0";
+                //                     else if(center_x[i] > xmin_in_min_x && center_x[i] < xmin_in_min_x_C3orC5_2) msg_collection_point->data = "ST1";
+                //                     else if(center_x[i] > xmin_in_min_x_C3orC5_2 && center_x[i] < xmin_in_min_x_C3orC5_3) msg_collection_point->data = "ST2";
+                //                     else if(center_x[i] > xmin_in_min_x_C3orC5_3) msg_collection_point->data = "ST3";
+                //                 }
+                //             }
+                //             else {
+                //                 if(center_y[i] < ymax_in_max_y_C3orC5){
+                //                     if(center_x[i] < xmin_in_min_x) msg_collection_point->data = "ST3";
+                //                     else if(center_x[i] > xmin_in_min_x && center_x[i] < xmin_in_min_x_C3orC5_2) msg_collection_point->data = "ST2";
+                //                     else if(center_x[i] > xmin_in_min_x_C3orC5_2 && center_x[i] < xmin_in_min_x_C3orC5_3) msg_collection_point->data = "ST1";
+                //                     else if(center_x[i] > xmin_in_min_x_C3orC5_3) msg_collection_point->data = "ST0";
+                //                 }                            
+                //             }
+                //             c3_flag = true;
+                //         }
+                //         else if(way_point == "c4"){
+                //             if(court_color == "blue"){
+                //                 if(center_y[i] < ymax_in_max_y_C3orC5){
+                //                     if(center_x[i] < xmin_in_min_x) msg_collection_point->data = "ST7";
+                //                     else if(center_x[i] > xmin_in_min_x && center_x[i] < xmin_in_min_x_C3orC5_2) msg_collection_point->data = "ST6";
+                //                     else if(center_x[i] > xmin_in_min_x_C3orC5_2 && center_x[i] < xmin_in_min_x_C3orC5_3) msg_collection_point->data = "ST5";
+                //                     else if(center_x[i] > xmin_in_min_x_C3orC5_3) msg_collection_point->data = "ST4";
+                //                 }
+                //             }
+                //             else{
+                //                 if(center_y[i] < ymax_in_max_y_C3orC5){
+                //                     if(center_x[i] < xmin_in_min_x) msg_collection_point->data = "ST4";
+                //                     else if(center_x[i] > xmin_in_min_x && center_x[i] < xmin_in_min_x_C3orC5_2) msg_collection_point->data = "ST5";
+                //                     else if(center_x[i] > xmin_in_min_x_C3orC5_2 && center_x[i] < xmin_in_min_x_C3orC5_3) msg_collection_point->data = "ST6";
+                //                     else if(center_x[i] > xmin_in_min_x_C3orC5_3) msg_collection_point->data = "ST7";
+                //                 }
+                //             }
+                //         }
+                //         c3_flag = false;
+                //     }
+
+                //     c3_c4_flag = false;
+
+                //     if(msg_collection_point->data == ""){ 
+                //         msg_collection_point->data = way_point;
+                //         c3_c4_flag = true;
+                //     }
+                //     way_point = "";
+
+                //     _pub_collection_point->publish(*msg_collection_point);
+                //     }
+                // }
+
+                // //ボールが手前かどうか
+                // if(!way_point.empty()){
+                //     int ymax_in_max_y_ST2 = ymax_in_max_y - str_range_y_ST2;
+
+                //     for (size_t i = 0; i < center_x.size(); ++i) {
+                //         if(center_y[i] < ymax_in_max_y){
+                //             if(center_x[i] > str_range_x_ST[0] && center_x[i] < str_range_x_ST[1]){
+                //                 if(center_y[i] > ymax_in_max_y_ST2) msg_front_ball->data = true;
+                //                 else if (center_y[i] > ymax_in_max_y_ST2)msg_front_ball->data = false;
+                //                 _pub_front_ball->publish(*msg_front_ball);
+                //             }
+                //         }
+                //     }
+                //     way_point = "";
+                // }
+
+                //c3とc4で物体検出をするところ
                 if(way_point == "c3" || way_point == "c4"){
                     if(c3_c4_flag){
                     for (size_t i = 0; i < center_x.size(); ++i) {
