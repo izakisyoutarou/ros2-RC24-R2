@@ -13,8 +13,8 @@ def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument(#学習済みデータの指定
             'model_path',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_ano_stage_test2.trt',
             default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_0408.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_0415.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(
@@ -25,11 +25,13 @@ def generate_launch_description():
         DeclareLaunchArgument(#ラベル情報の指定
             'class_labels_path',
             default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano_honban.txt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano_honban_0415.txt',
             description='if use custom model, set class name labels. '
         ),
         DeclareLaunchArgument(#ラベル数の指定
             'num_classes',
             default_value='2',
+            # default_value='4',
             description='num classes.'
         ),
         DeclareLaunchArgument(
