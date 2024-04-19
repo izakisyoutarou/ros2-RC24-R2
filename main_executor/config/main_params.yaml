@@ -16,13 +16,13 @@ launch: #起動パラメータ
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
     linear_max_vel: 1.5
-    linear_max_acc: 2.5
+    linear_max_acc: 2.0
     linear_max_dec: 1.0
     linear_max_jer: 0.0
     # 回転  速度[deg/sint x, int y, const std::vector<double> point1, const std::vector<double> point2],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
     angular_max_vel: 100.0
-    angular_max_acc: 360.0
-    angular_max_dec: 360.0
+    angular_max_acc: 100.0
+    angular_max_dec: 100.0
     angular_max_jer: 0.0
     
     canid:
@@ -46,7 +46,6 @@ launch: #起動パラメータ
       paddy_collect: 0x200
       paddy_install: 0x201
       paddy_convergence: 0x202
-
       #網
       net: 0x210
       net_convergence: 0x211
@@ -56,9 +55,17 @@ launch: #起動パラメータ
       hand_fb: 0x222
       hand_wrist: 0x223
       suction: 0x224
+      #
+      base_state: 0x230
+      strage_state: 0x231
+      strage_state2: 0x232
+      transfer_state: 0x233
+      silo_state: 0x234
+      silo_state2: 0x235
+
       
       #デジタルボタン
-      main_button: 0x230
+      main_button: 0x410
 
       vel: 0x400 #適当
       ang: 0x401 #適当
@@ -113,11 +120,11 @@ rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
     laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 4.0e-4 #値が大きくなると共分散が小さくなる 
-    odom_weight_angler: 3.0e-4
-    voxel_size: 0.05
+    odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
+    odom_weight_angler: 3.0e-5
+    voxel_size: 0.04
     trial_num: 50
-    inlier_dist_threshold: 0.0126
+    inlier_dist_threshold: 0.0123
     inlier_length_threshold: 0.5 #インライアのしきい値
     second_ransac: false           #2回ransacをするか
     #以下カルマンフィルタのノイズ->値を小さくするとセンサーが優先される
@@ -137,13 +144,13 @@ spline_pid_node:
     curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
     linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
 
-    linear_planner_gain: 2.0 #並進速度計画機ゲイン
-    linear_pos_gain: 3.0  #並進位置ズレのゲイン
+    linear_planner_gain: 1.5 #並進速度計画機ゲイン
+    linear_pos_gain: 2.0  #並進位置ズレのゲイン
     linear_pos_diff_gain: 1.0
     linear_pos_integral_gain: 0.01  #並進位置ズレの積分ゲイン
 
-    angular_planner_gain: 1.2 #回転速度計画機ゲイン
-    angular_pos_gain: 2.0 #回転位置ズレのゲイン
+    angular_planner_gain: 1.3 #回転速度計画機ゲイン
+    angular_pos_gain: 3.0 #回転位置ズレのゲイン
     angular_pos_integral_gain: 0.01 #回転位置ズレの積分ゲイン
 
     linear_pos_tolerance: 0.02  #並進到達位置の許容誤差[m]
@@ -185,3 +192,9 @@ detection_interface_node:
 
     siro_ball_range_y: [780.0, 900.0, 1030.0] #ボールが何段目か[y1, y2]
     siro_ball_range_x: [350.0, 768.0, 1220.0, 1600.0] #ボールがどのサイロか[x1, x2, x3, x4]
+
+sequencer_node:
+  ros__parameters:
+    strage_dist: [0.38 , 0.20] #m
+    suction_wait: 5.0 #ms 
+    silo_wait: 5.0 #ms 
