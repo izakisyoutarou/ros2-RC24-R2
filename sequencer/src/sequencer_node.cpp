@@ -4,6 +4,8 @@
 #include <fstream>
 #include <boost/format.hpp>
 
+#include "utilities/can_utils.hpp"
+
 using namespace utils;
 
 namespace sequencer{
@@ -13,15 +15,27 @@ Sequencer::Sequencer(const rclcpp::NodeOptions &options) : Sequencer("", options
 Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &options)
 : rclcpp::Node("sequencer_node", name_space, options),
 
-        court_color(get_parameter("court_color").as_string()),
         can_paddy_collect_id(get_parameter("canid.paddy_collect").as_int()),
         can_paddy_install_id(get_parameter("canid.paddy_install").as_int()),
         can_net_id(get_parameter("canid.net").as_int()),
+
+        can_tof_id(get_parameter("canid.tof").as_int()),
         can_hand_lift_id(get_parameter("canid.hand_lift").as_int()),
         can_hand_fb_id(get_parameter("canid.hand_fb").as_int()),
         can_hand_wrist_id(get_parameter("canid.hand_wrist").as_int()),
         can_hand_suction_id(get_parameter("canid.suction").as_int()),
-        can_tof_id(get_parameter("canid.tof").as_int())
+
+        can_base_state_id(get_parameter("canid.base_state").as_int()),
+        can_strage_state_id(get_parameter("canid.strage_state").as_int()),
+        can_strage_state2_id(get_parameter("canid.strage_state2").as_int()),
+        can_transfer_state_id(get_parameter("canid.transfer_state").as_int()),
+        can_silo_state_id(get_parameter("canid.silo_state").as_int()),
+        can_silo_state2_id(get_parameter("canid.silo_state2").as_int()),
+
+        court_color(get_parameter("court_color").as_string()),
+        strage_dist(get_parameter("strage_dist").as_double_array()),
+        suction_wait(get_parameter("suction_wait").as_double()),
+        silo_wait(get_parameter("silo_wait").as_double())
 
 {
 
@@ -111,63 +125,44 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
         }
         n++;
     }
-
     command_sequence(SEQUENCE_MODE::stop);
-
 }
 
 void Sequencer::callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg){
     int n = 0;
     if(!is_start) return;
     if(sequence_mode == SEQUENCE_MODE::storage){
-        //初期移動&&アーム初期状態移行
         if(progress == n++ && !msg->spline_convergence){
             RCLCPP_INFO(get_logger(),"_____strage0_____");
             command_move_node("c2");
-            command_hand_fb_inside();
-            command_hand_lift_pickup();
-            command_hand_wrist_down();
             progress++;
         }
         else if(progress == n++ && c3orc4_flag){
             RCLCPP_INFO(get_logger(),"_____strage1_____");
+            command_base_state();
             command_hand_suction_on();
             suction_time = std::chrono::system_clock::now();
             progress++;
         }
-        //吸引をボール直上に
-        else if(progress == n++ && !msg->spline_convergence && msg->arm_convergence && get_front_ball && (way_point == "ST0" || way_point == "ST1" || way_point == "ST2" || way_point == "ST3" || way_point == "ST4" || way_point == "ST5" || way_point == "ST6" || way_point == "ST7")){
-            RCLCPP_INFO(get_logger(),"_____strage2_____");            
-            if(front_ball) command_hand_fb_front();
-            else command_hand_fb_back();
-            command_hand_lift_suction_before();
+        else if(progress == n++ && !msg->spline_convergence && msg->arm_convergence && get_front_ball && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 5000 && (way_point == "ST0" || way_point == "ST1" || way_point == "ST2" || way_point == "ST3" || way_point == "ST4" || way_point == "ST5" || way_point == "ST6" || way_point == "ST7")){
+            RCLCPP_INFO(get_logger(),"_____strage2_____");
+            command_strage_state(front_ball); 
             get_front_ball = false;
-            progress++;
-        }
-        //籾吸着
-        else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 5000){
-            RCLCPP_INFO(get_logger(),"_____strage3_____");
-            command_hand_lift_suction();
-            suction_time = std::chrono::system_clock::now();
-            progress++;       
-        }
-        //籾上昇
-        else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
-            RCLCPP_INFO(get_logger(),"_____strage4_____");
-            command_hand_lift_pickup();
             progress++;
         }
         //シーケンス移行
         else if(progress == n++ && msg->arm_convergence){
-            RCLCPP_INFO(get_logger(),"_____strage5_____");
+            RCLCPP_INFO(get_logger(),"_____strage3_____");
             if(tof_mode){
                 if(tof[0]){
+                    command_strage_state2();
                     command_sequence(SEQUENCE_MODE::silo);
                     ball_num++;                       
                 }
                 else progress--;            
             }
             else {
+                command_strage_state2();
                 command_sequence(SEQUENCE_MODE::silo);
                 ball_num++; 
             }
@@ -179,96 +174,93 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             RCLCPP_INFO(get_logger(),"_____transfer0_____");
             if(way_point == "O") command_move_node("ST8");
             else command_move_interrupt_node("ST8");
-            command_hand_fb_inside();
-            command_hand_lift_pickup();
-            command_hand_wrist_down();
             command_net_open();
             progress++;
         }
         //吸引起動&&待機状態移行
         else if(progress == n++ && !msg->spline_convergence && msg->net_convergence){
             RCLCPP_INFO(get_logger(),"_____transfer1_____");
+            command_base_state();
             command_net_close();
-            command_hand_suction_on();
-            suction_time = std::chrono::system_clock::now();
-            progress++;
-        }
-        //籾吸着
-        else if(progress == n++ && msg->net_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
-            RCLCPP_INFO(get_logger(),"_____transfer2_____");
-            command_hand_lift_inside();
             suction_time = std::chrono::system_clock::now();
             progress++;
         }
         //シーケンス移行
-        else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
-            RCLCPP_INFO(get_logger(),"_____transfer3_____");
+        else if(progress == n++ && msg->arm_convergence && msg->net_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
+            RCLCPP_INFO(get_logger(),"_____transfer2_____");
+            command_hand_suction_on();
+            progress++;
             if(tof_mode){
                 if(tof[0]){
+                    command_transfer_state();
                     command_sequence(SEQUENCE_MODE::silo);
                     ball_num++;                       
                 }
                 else progress--;            
             }
-            else command_sequence(SEQUENCE_MODE::silo);
+            else {
+                command_transfer_state();
+                command_sequence(SEQUENCE_MODE::silo);
+                ball_num++;    
+            }
         }
     }
     else if(sequence_mode == SEQUENCE_MODE::collect){
-        //初期移動&&アーム初期状態移行
-        if(progress == n++ && !msg->spline_convergence){
-            RCLCPP_INFO(get_logger(),"_____collect0_____");
-            command_move_node("c2");
-            command_hand_lift_suction_before();
-            command_hand_fb_front();
-            command_hand_wrist_down();
-            command_hand_suction_on();
-            suction_time = std::chrono::system_clock::now();
-            progress++;
-        }
-        //籾回収位置計算&&追従
-        else if(progress == n++ && get_ball_pose){
-            RCLCPP_INFO(get_logger(),"_____collect1_____");
-            auto ball_tracking = std::make_shared<geometry_msgs::msg::Vector3>();
-            float length = 0.3 + 0.095;
-            if(ball_pose.x > self_pose.x){
-                ball_tracking->x = ball_pose.x - length*sin(ball_pose.z);
-                ball_tracking->y = ball_pose.y - length*cos(ball_pose.z);
-                ball_tracking->z = ball_pose.z;
-            }
-            else if(self_pose.x > ball_pose.x){
-                ball_tracking->x = ball_pose.x + length*sin(ball_pose.z);
-                ball_tracking->y = ball_pose.y - length*cos(ball_pose.z);
-                ball_tracking->z = ball_pose.z;                        
-            }
-            _publisher_ball_tracking->publish(*ball_tracking);
-            get_ball_pose = false;
-            progress++;
-        } 
-        //籾吸着
-        else if(progress == n++ && !msg->spline_convergence && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
-            RCLCPP_INFO(get_logger(),"_____collect2_____");            
-            command_hand_lift_suction();
-            suction_time = std::chrono::system_clock::now();
-            progress++;
-        } 
-        //籾上昇
-        else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
-            RCLCPP_INFO(get_logger(),"_____collect3_____");            
-            command_hand_lift_pickup();
-            progress++;
-        }
-        //シーケンス移行
-        else if(progress == n++ && msg->arm_convergence) {
-            RCLCPP_INFO(get_logger(),"_____collect4_____");
-            if(tof_mode){
-                if(tof[0]){
-                    command_sequence(SEQUENCE_MODE::silo);
-                    ball_num++;                       
-                }
-                else progress--;
-            }
-            else command_sequence(SEQUENCE_MODE::silo);
-        }
+        // //初期移動&&アーム初期状態移行
+        // if(progress == n++ && !msg->spline_convergence){
+        //     RCLCPP_INFO(get_logger(),"_____collect0_____");
+        //     command_move_node("c2");
+        //     command_hand_lift_suction_before();
+        //     command_hand_fb_front();
+        //     command_hand_wrist_down();
+        //     command_hand_suction_on();
+        //     suction_time = std::chrono::system_clock::now();
+        //     progress++;
+        // }
+        // //籾回収位置計算&&追従
+        // else if(progress == n++ && get_ball_pose){
+        //     RCLCPP_INFO(get_logger(),"_____collect1_____");
+        //     auto ball_tracking = std::make_shared<geometry_msgs::msg::Vector3>();
+        //     float length = 0.3 + 0.095;
+        //     if(ball_pose.x > self_pose.x){
+        //         ball_tracking->x = ball_pose.x - length*sin(ball_pose.z);
+        //         ball_tracking->y = ball_pose.y - length*cos(ball_pose.z);
+        //         ball_tracking->z = ball_pose.z;
+        //     }
+        //     else if(self_pose.x > ball_pose.x){
+        //         ball_tracking->x = ball_pose.x + length*sin(ball_pose.z);
+        //         ball_tracking->y = ball_pose.y - length*cos(ball_pose.z);
+        //         ball_tracking->z = ball_pose.z;                        
+        //     }
+        //     _publisher_ball_tracking->publish(*ball_tracking);
+        //     get_ball_pose = false;
+        //     progress++;
+        // } 
+        // //籾吸着
+        // else if(progress == n++ && !msg->spline_convergence && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
+        //     RCLCPP_INFO(get_logger(),"_____collect2_____");            
+        //     command_hand_lift_suction();
+        //     suction_time = std::chrono::system_clock::now();
+        //     progress++;
+        // } 
+        // //籾上昇
+        // else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000){
+        //     RCLCPP_INFO(get_logger(),"_____collect3_____");            
+        //     command_hand_lift_pickup();
+        //     progress++;
+        // }
+        // //シーケンス移行
+        // else if(progress == n++ && msg->arm_convergence) {
+        //     RCLCPP_INFO(get_logger(),"_____collect4_____");
+        //     if(tof_mode){
+        //         if(tof[0]){
+        //             command_sequence(SEQUENCE_MODE::silo);
+        //             ball_num++;                       
+        //         }
+        //         else progress--;
+        //     }
+        //     else command_sequence(SEQUENCE_MODE::silo);
+        // }
     }
     else if(sequence_mode == SEQUENCE_MODE::silo){
         // if(tof_mode){        
@@ -300,39 +292,32 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         //         else command_sequence(SEQUENCE_MODE::collect);
         //     }
         // }
-        if(progress == n++ && !msg->spline_convergence){
+        if(progress == n++){
             RCLCPP_INFO(get_logger(),"_____silo0_____");
             command_move_node("c1");
-            command_hand_lift_pickup();
             progress++;
         }
-        else if(progress == n++ && msg->arm_convergence){
+        else if(progress == n++ && msg->arm_convergence && way_point == "c1"){
             RCLCPP_INFO(get_logger(),"_____silo1_____");
-            command_hand_fb_inside();
-            progress++;
+            command_silo_state();
+            progress++; 
         }
-        else if(progress == n++ && silo_flag && way_point == "c1"){
+        else if(progress == n++ && msg->arm_convergence && silo_flag){
             RCLCPP_INFO(get_logger(),"_____silo2_____");
             std::string silo_node = "SI" + std::to_string(target_silo);
             command_move_interrupt_node(silo_node);
             silo_flag = false;
-            command_hand_fb_silo();
             progress++; 
         } 
-        else if(progress == n++&& msg->arm_convergence){
-            RCLCPP_INFO(get_logger(),"_____silo3_____");
-            command_hand_lift_silo();
-            command_hand_wrist_up();
-            progress++;
-        }
         else if(progress == n++ && !msg->spline_convergence){
-            RCLCPP_INFO(get_logger(),"_____silo4_____");
+            RCLCPP_INFO(get_logger(),"_____silo3_____");
             command_hand_suction_off();
-            suction_time = std::chrono::system_clock::now();            
+            suction_time = std::chrono::system_clock::now();          
             progress++;
         } 
         else if(progress == n++ && msg->arm_convergence && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - suction_time).count() > 2000 /*&& !tof[0]*/) {
-            RCLCPP_INFO(get_logger(),"_____silo5_____");
+            RCLCPP_INFO(get_logger(),"_____silo4_____");
+            command_silo_state2();
             if(pre_sequence == SEQUENCE_MODE::storage) {
                 if(ball_num < 6) command_sequence(SEQUENCE_MODE::storage);
                 else {
@@ -460,6 +445,7 @@ void Sequencer::command_paddy_collect_back(){ command_canusb_uint8(can_paddy_col
 void Sequencer::command_paddy_install(){ command_canusb_empty(can_paddy_install_id); }
 void Sequencer::command_net_open(){ command_canusb_uint8(can_net_id, 0); }
 void Sequencer::command_net_close(){ command_canusb_uint8(can_net_id, 1); }
+
 void Sequencer::command_hand_lift_suction_before(){ command_canusb_uint8(can_hand_lift_id, 0); }
 void Sequencer::command_hand_lift_suction(){ command_canusb_uint8(can_hand_lift_id, 1); }
 void Sequencer::command_hand_lift_pickup(){ command_canusb_uint8(can_hand_lift_id, 2); }
@@ -473,6 +459,22 @@ void Sequencer::command_hand_wrist_up(){ command_canusb_uint8(can_hand_wrist_id,
 void Sequencer::command_hand_wrist_down(){ command_canusb_uint8(can_hand_wrist_id, 1); }
 void Sequencer::command_hand_suction_on(){ command_canusb_uint8(can_hand_suction_id, 0); }
 void Sequencer::command_hand_suction_off(){ command_canusb_uint8(can_hand_suction_id, 1); }
+
+void Sequencer::command_base_state(){ command_canusb_empty(can_base_state_id); }
+void Sequencer::command_strage_state(bool front_ball){ 
+    auto msg_canusb = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+    msg_canusb->canid = can_strage_state_id;
+    msg_canusb->candlc = 8;
+    uint8_t candata[8];
+    float_to_bytes(candata, static_cast<float>(strage_dist[front_ball]));
+    float_to_bytes(candata+4, static_cast<float>(suction_wait));
+    for(int i=0; i<msg_canusb->candlc; i++) msg_canusb->candata[i] = candata[i];
+    _publisher_canusb->publish(*msg_canusb);
+}
+void Sequencer::command_strage_state2(){ command_canusb_empty(can_strage_state2_id); }
+void Sequencer::command_transfer_state(){ command_canusb_empty(can_transfer_state_id); }
+void Sequencer::command_silo_state(){ command_canusb_empty(can_silo_state_id); }
+void Sequencer::command_silo_state2(){ command_canusb_empty(can_silo_state2_id); }
 
 int Sequencer::silo_evaluate(std::string camera[15]){
     //コート色による情報反転
