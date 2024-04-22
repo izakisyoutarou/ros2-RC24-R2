@@ -141,157 +141,17 @@ namespace detection_interface
                 }
             }
 
-            // if(now_sequence == "storage"){
-            //     if(way_point == "c2") c1camera_c2(center_x, center_y, c3_or_c4);
-            // }
-
-            // if(now_sequence == "silo"){
-                // if(way_point == "c1") c1camera_c1(min_x, max_y, class_id, center_x, center_y, before_ball_place, ball_color);
-            // }
-
-            // if(before_ball_place.size() != 0){
-            //     c1camera_pick_best_BoundingBox(before_ball_place, bbounbox_size, ball_color);
-            //     c1camera_correct_silo_levels(before_ball_place, ball_color, after_ball_place)
-            // }
-
-            //ひし形モードのときに、ひし形に向かっているとき
             if(now_sequence == "storage"){
-                if(way_point == "c2"){
-                    if(storage_flag){//認識区間内で一回だけc3 or c4 or ""を送るようにする。サイロに向かうところで再度tureになる
-                        for (size_t i = 0; i < center_x.size(); ++i) {
-                            if(rhombus_inside(center_x[i], center_y[i])){//坂上からc1で見たときにひし形の中にある
-                                bool is_collection_C4 = false;
-
-                                if(court_color == "blue") is_collection_C4 = bounday_line(center_x[i], center_y[i], str_range_point1_blue, str_range_point2_blue);
-                                else is_collection_C4 = bounday_line(center_x[i], center_y[i], str_range_point1_red, str_range_point2_red);
-
-                                if(is_collection_C4) c3_or_c4.push_back("c4");
-                                else c3_or_c4.push_back("c3");
-                            }
-                        }
-                        auto c3 = std::find(c3_or_c4.begin(), c3_or_c4.end(), "c3");
-                        auto c4 = std::find(c3_or_c4.begin(), c3_or_c4.end(), "c4");
-
-                        if(c3 != c3_or_c4.end())msg_collection_point->data = "c3";
-                        else if(c4 != c3_or_c4.end())msg_collection_point->data = "c4";
-                        _pub_collection_point->publish(*msg_collection_point);
-
-                        storage_flag = false;
-                    }
-                }
+                if(way_point == "c2") c1camera_c2(center_x, center_y, c3_or_c4);
             }
 
             if(now_sequence == "silo"){
-                if(way_point == "c1"){
-                    storage_flag = true;//c1カメラのストレージゾーン認識のflag
-                    c3_c4_flag = true; //realsenseのc3、c4からの認識
-                    st_flag = true;
-                    for (size_t i = 0; i < center_x.size(); ++i) {
-                        siro_num = 0;
-
-                        //ボールの段数
-                        if(center_y[i] < siro_ball_range_y[0]) siro_num += 1;
-                        else if(center_y[i] > siro_ball_range_y[0] && center_y[i] < siro_ball_range_y[1]) siro_num += 2;
-                        else if(ymax[i] > siro_ball_range_y[1] && ymax[i] < siro_ball_range_y[2]) siro_num += 3;
-
-                        //どのサイロか
-                        if(siro_num != 0){
-                            if(court_color == "blue"){
-                                if(center_x[i] < siro_ball_range_x[0]) siro_num += 12;
-                                else if(center_x[i] > siro_ball_range_x[0] && center_x[i] < siro_ball_range_x[1]) siro_num += 9;
-                                else if(center_x[i] > siro_ball_range_x[1] && center_x[i] < siro_ball_range_x[2]) siro_num += 6;
-                                else if(center_x[i] > siro_ball_range_x[2] && center_x[i] < siro_ball_range_x[3]) siro_num += 3;
-                                else if(center_x[i] > siro_ball_range_x[3]) siro_num += 0;
-                            }
-                            else{
-                                if(center_x[i] < siro_ball_range_x[0]) siro_num += 0;
-                                else if(center_x[i] > siro_ball_range_x[0] && center_x[i] < siro_ball_range_x[1]) siro_num += 3;
-                                else if(center_x[i] > siro_ball_range_x[1] && center_x[i] < siro_ball_range_x[2]) siro_num += 6;
-                                else if(center_x[i] > siro_ball_range_x[2] && center_x[i] < siro_ball_range_x[3]) siro_num += 9;
-                                else if(center_x[i] > siro_ball_range_x[3]) siro_num += 12;
-                            }
-                            before_ball_place.push_back(siro_num);
-                            // for (int z = 0; z < before_ball_place.size(); ++z) {
-                            //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d,サイズ@%d", z, before_ball_place[z],bbounbox_size[z]);
-                            // }
-
-                            if(class_id[i] == "redball") ball_color.push_back("R");
-                            else if(class_id[i] == "blueball") ball_color.push_back("B");
-
-                            before_ball_place_flag = true;
-                        }
-                    }
-                    if(!before_ball_place_flag) _pub_siro_param->publish(*msg_siro_param);
-                }
+                if(way_point == "c1") c1camera_c1(ymax, min_x, max_y, class_id, center_x, center_y, before_ball_place, ball_color);
             }
 
-            //サイロ方面の検出が行われると入るところ
             if(before_ball_place.size() != 0){
-                // for (int z = 0; z < before_ball_place.size(); ++z) {
-                //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d,サイズ@%d", z, before_ball_place[z],bbounbox_size[z]);
-                // }
-
-                //同じ領域にボールが複数存在している場合、バウンディングボックスのサイズが大きい方を採用する。それのところ
-                for (int i = 0; i < before_ball_place.size(); ++i){
-                    for (int j = i + 1; j < before_ball_place.size(); ++j){
-                        if (before_ball_place[i] == before_ball_place[j]) {
-                            if(bbounbox_size[i] > bbounbox_size[j]){
-                                bbounbox_size.erase(bbounbox_size.begin() + j);
-                                before_ball_place.erase(before_ball_place.begin() + j);
-                                ball_color.erase(ball_color.begin() + j);
-                                --j;
-                            }
-                            else{
-                                bbounbox_size.erase(bbounbox_size.begin() + i);
-                                before_ball_place.erase(before_ball_place.begin() + i);
-                                ball_color.erase(ball_color.begin() + i);
-                                --i;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                //例えば、サイロの1段目が空いている状態で2段目が埋まったとき、2段目のボールは空中に浮いていることになり、正しくない。
-                //そういうときに1段目が埋まって、2段目が埋まったように修正するためのところ
-                for(int i = 0; i < before_ball_place.size(); ++i){
-                    bool stage_three = false;
-                    bool stage_two = false;
-                    int ball_height = 0;
-                    int ball_width = 0;
-
-                    ball_width = before_ball_place[i] / 3;
-                    ball_height = before_ball_place[i] % 3;
-
-                    if(ball_height != 0){
-                        for(int j = 0; j < 3; ++j){//ball_heightの可能性として1%3と2%3と3%3なのでd < 3
-                            if(ball_height == j){//ballが他に存在しているか。
-                                for(size_t k = 0; k < before_ball_place.size(); ++k){
-                                    if(before_ball_place[k] == ball_width * 3 + 3) stage_three = true;
-                                    if(before_ball_place[k] == ball_width * 3 + 2) stage_two = true;
-                                }
-                                if(stage_three && stage_two) siro_num = ball_width * 3 + 1;
-                                else if(stage_three && !stage_two) siro_num = ball_width * 3 + 2;
-                                else if(!stage_three && stage_two) siro_num = ball_width * 3 + 3;
-                                else if(!stage_three && !stage_two) siro_num = ball_width * 3 + 3;
-                            }
-                        }
-                    }
-                    else{
-                        siro_num = ball_width * 3;
-                    }
-                    after_ball_place.push_back(siro_num);
-                }
-
-                // for (int z = 0; z < after_ball_place.size(); ++z) {
-                //     RCLCPP_INFO(this->get_logger(), "あと%d@%d,サイズ@%d", z, after_ball_place[z],bbounbox_size[z]);
-                // }
-
-                for (int i = 0; i < after_ball_place.size(); ++i) {
-                    msg_siro_param->ball_color[after_ball_place[i] - 1] = ball_color[i];
-                }
-
-                _pub_siro_param->publish(*msg_siro_param);
+                c1camera_pick_best_BoundingBox(before_ball_place, bbounbox_size, ball_color);
+                c1camera_correct_silo_levels(before_ball_place, ball_color, after_ball_place);
             }
 
             time_end = chrono::system_clock::now();
@@ -335,101 +195,14 @@ namespace detection_interface
                 // msg_ball_coordinate->y = test[1];
                 // msg_ball_coordinate->z = test[2];
 
-                // int xmin_in_min_x = min_element(begin(min_x), end(min_x));
-                // int ymax_in_max_y = max_element(begin(max_y), end(max_y));
+                int xmin_in_min_x = min_element(begin(min_x), end(min_x));
+                int ymax_in_max_y = max_element(begin(max_y), end(max_y));
 
                 // //realseneのc3、c4から見たとき、どこのSTに行くか
-                // if(way_point == "c3" || way_point == "c4") realsense_c3_c4(xmin_in_min_x, ymax_in_max_y, class_id, center_x, center_y);
+                if(way_point == "c3" || way_point == "c4") realsense_c3_c4(xmin_in_min_x, ymax_in_max_y, class_id, center_x, center_y);
 
                 // //realsenseのST系から見たとき、ボールが手前かどうか
-                // if(way_point[0] == 'S' && way_point[1] == 'T') realsense_ST(ymax_in_max_y, class_id, center_x, center_y);
-
-                //c3とc4で物体検出をするところ
-                if(way_point == "c3" || way_point == "c4"){
-                    if(c3_c4_flag){
-                    for (size_t i = 0; i < center_x.size(); ++i) {
-                        if(way_point == "c3"){
-                            if(court_color == "blue"){
-                                if(center_y[i] < str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST3";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST2";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST1";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST0";
-                                }
-                            }
-                            else {
-                                if(center_y[i] < str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST0";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST1";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST2";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST3";
-                                }                            
-                            }
-                            to_c3_flag = true;
-                        }
-                        else if(way_point == "c4"){
-                        // RCLCPP_INFO(this->get_logger(), "y@%d,i@%d", center_y[i], i);
-                            if(court_color == "blue"){
-                                if(center_y[i] < str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST4";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST5";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST6";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST7";
-                                }
-                            }
-                            else{
-                                if(center_y[i] < str_range_y_C3orC5){
-                                    if(center_x[i] < str_range_x_C3orC5[0]) msg_collection_point->data = "ST7";
-                                    else if(center_x[i] > str_range_x_C3orC5[0] && center_x[i] < str_range_x_C3orC5[1]) msg_collection_point->data = "ST6";
-                                    else if(center_x[i] > str_range_x_C3orC5[1] && center_x[i] < str_range_x_C3orC5[2]) msg_collection_point->data = "ST5";
-                                    else if(center_x[i] > str_range_x_C3orC5[2]) msg_collection_point->data = "ST4";
-                                }
-                            }
-                            to_c3_flag = false;
-                        }  
-                    }
-
-                    c3_c4_flag = false;
-                    st_flag = true;
-
-                    way_point = "";
-
-                    _pub_collection_point->publish(*msg_collection_point);
-                    }
-                }
-
-                //ボールが手前かどうか
-                if(way_point[0] == 'S' && way_point[1] == 'T'){
-                    if(st_flag){
-                    bool msg_flag = false;
-
-                    for (size_t i = 0; i < center_x.size(); ++i) {
-                        if(center_y[i] < str_range_y_ST[1]){
-                            if(center_x[i] > str_range_x_ST[0] && center_x[i] < str_range_x_ST[1]){
-                                if(center_y[i] < str_range_y_ST[0]) msg_front_ball->data = true;
-                                else if (center_y[i] > str_range_y_ST[0] && center_y[i] < str_range_y_ST[1])msg_front_ball->data = false;
-                                _pub_front_ball->publish(*msg_front_ball);
-                                msg_flag = true;
-                            }
-                        }
-                    }
-
-                    if(!msg_flag){
-                        RCLCPP_INFO(this->get_logger(), "%d", to_c3_flag);
-                        if(to_c3_flag)msg_collection_point->data = "c3";
-                        else msg_collection_point->data = "c4";
-                        _pub_collection_point->publish(*msg_collection_point);
-                        c3_c4_flag = true;
-                    }
-                    way_point = "";
-                    st_flag = false;
-                    }
-                }
-            
-                    // _pub_collection_point->publish(*msg_collection_point);
-                    // _pub_ball_coordinate->publish(*msg_ball_coordinate);
-                
-                // if(msg_collection_point->data != "") _pub_collection_point->publish(*msg_collection_point);
+                if(way_point[0] == 'S' && way_point[1] == 'T') realsense_ST(ymax_in_max_y, class_id, center_x, center_y);
             }
         }
 
