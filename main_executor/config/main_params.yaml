@@ -142,8 +142,8 @@ spline_pid_node:
     linear_pos_diff_gain: 1.0
     linear_pos_integral_gain: 0.01  #並進位置ズレの積分ゲイン
 
-    angular_planner_gain: 1.0 #回転速度計画機ゲイン
-    angular_pos_gain: 1.0 #回転位置ズレのゲイン
+    angular_planner_gain: 1.2 #回転速度計画機ゲイン
+    angular_pos_gain: 2.0 #回転位置ズレのゲイン
     angular_pos_integral_gain: 0.01 #回転位置ズレの積分ゲイン
 
     linear_pos_tolerance: 0.02  #並進到達位置の許容誤差[m]
@@ -155,11 +155,6 @@ spline_trajectories_node:
 
 detection_interface_node:
   ros__parameters:
-    #ひし形モードのひし形に向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
-    str_self_pose_range: [9.7, 10.3, -3.58, -3.52, -0.05, 0.05]
-    #ひし形モードのサイロに向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
-    siro_self_pose_range: [9.8, 10.2, -3.8, -3.0, -2.5, -2.3]
-
     str_range_point1_blue: [0.0, 1170.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
     str_range_point2_blue: [1920.0, 630.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
     str_range_point1_red: [0.0, 580.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
@@ -181,7 +176,7 @@ detection_interface_node:
 
     #ST1~8から手前か奥か判断するポイント
     str_range_x_ST: [550.0, 800.0] 
-    str_range_y_ST: [340.0, 500.0] 
+    str_range_y_ST: [300.0, 500.0] 
 
     siro_ball_range_y: [780.0, 900.0, 1030.0] #ボールが何段目か[y1, y2]
     siro_ball_range_x: [350.0, 768.0, 1220.0, 1600.0] #ボールがどのサイロか[x1, x2, x3, x4]
@@ -192,3 +187,6 @@ detection_interface_node:
 
    #ST1~8から手前か奥か判断するポイントかを判断するときに一番手前のバウンディングボックスから一定量引く
     str_range_y_ST2: 160
+
+    siro_ball_range_y_2: 130 #ボールが何段目か。siloの中の一番手前のバウンディングボックスから一定量引く
+    siro_ball_range_x_2: 400 #ボールがどのサイロか。siloの中の一番左のバウンディングボックスから一定量引く

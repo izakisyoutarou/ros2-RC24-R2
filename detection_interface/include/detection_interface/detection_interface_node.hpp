@@ -82,32 +82,55 @@ namespace detection_interface
             //ransacからのcallback
             void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
 
+            //C1cameraのc2から見たとき、c3とc4のどっちに行くか
+            void c1camera_c2(const std::vector<int> center_x, const std::vector<int> center_y, std::vector<std::string> c3_or_c4);
+
+            //C1cameraのc1から見たとき、サイロのボール情報取得
+            void c1camera_c1(const std::vector<int> ymax, const std::vector<int> min_x, const std::vector<int> max_y, const std::vector<std::string> class_id, const std::vector<int> center_x, const std::vector<int> center_y, std::vector<int> before_ball_place, std::vector<std::string> ball_color);
+
+            //同じ領域にボールが複数存在している場合、バウンディングボックスのサイズが大きい方を採用する。それのところ
+            void c1camera_pick_best_BoundingBox(std::vector<int> before_ball_place, std::vector<int> bbounbox_size, std::vector<std::string> ball_color);
+
+            //例えば、サイロの1段目が空いている状態で2段目が埋まったとき、2段目のボールは空中に浮いていることになり、正しくない。
+            //そういうときに1段目が埋まって、2段目が埋まったように修正するためのところ
+            void c1camera_correct_silo_levels(std::vector<int> before_ball_place, const std::vector<std::string> ball_color, std::vector<int> after_ball_place);
+
+            //realseneのc3、c4から見たとき、どこのSTに行くか
+            void realsense_c3_c4(int xmin, int ymax, const std::vector<std::string> class_id, const std::vector<int> center_x, std::vector<int> center_y);
+
+            //realsenseのST系から見たとき、ボールが手前かどうか
+            void realsense_ST(int ymax, const std::vector<std::string> class_id, const std::vector<int> center_x, std::vector<int> center_y);
+
             //坂上から見たときにC3かC5かをみる境界線の計算
             bool bounday_line(int x, int y, const std::vector<double> point1, const std::vector<double> point2);
 
             //坂上から見たときに(C2付近)ひし形の内側かどうかの計算をまとめる関数
             bool rhombus_inside(int x, int y);
 
+            /////////////////////////トピックのグローバル変数
             Vector3d pose;
             std::string now_sequence;
             std::string way_point;
+            ////////////////////////
 
+            //実行時間の計測用
             chrono::system_clock::time_point time_start, time_end;
-
-            bool is_self_pose_range_x_str = false;
-            bool is_self_pose_range_y_str = false;
-            bool is_self_pose_range_z_str = false;
-            bool is_self_pose_range_x_siro = false;
-            bool is_self_pose_range_y_siro = false;
-            bool is_self_pose_range_z_siro = false;
-
+            
+            /////////////////////////flag系
             bool storage_flag = true;
             bool c3_c4_flag = true;
+            bool st_flag = true;
+            bool to_c3_flag = true;
+            bool c3_flag = false;
+            /////////////////////////
 
-            //定数
-            //坂上の自己位置の範囲
-            const std::vector<double> str_self_pose_range;
-            const std::vector<double> siro_self_pose_range;
+            /////////////////////////座標変換
+            coordinate_transformation ct;
+            Vector3d test111;
+            cv::Mat cv_image_;
+            ////////////////////////
+
+            ////////////////////////定数
 
             //坂上の画像認識の範囲
             const std::vector<double> str_range_point1_blue;
@@ -146,14 +169,14 @@ namespace detection_interface
             //サイロのボールの画像認識の範囲
             const std::vector<double> siro_ball_range_x;
 
-            //フィールド
-            geometry_msgs::msg::Vector3 self_pose;
+            const int siro_ball_range_y_2;
+            const int siro_ball_range_x_2;
 
-            //座標変換
-            coordinate_transformation ct;
-            Vector3d test111;
-            cv::Mat cv_image_;
-
+            //コートの色
             const std::string court_color;
+            ////////////////////////
+
+            ////////////////////////変数
+            
     };
 }
