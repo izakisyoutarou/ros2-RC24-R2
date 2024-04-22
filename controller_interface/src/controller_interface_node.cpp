@@ -301,11 +301,21 @@ namespace controller_interface
                 _pub_is_start->publish(*msg_is_start);
             }
             else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);  
-            else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
-            else if(msg->data == "x") gamebtn.paddy_collect_2(is_arm_convergence,_pub_canusb);
-            else if(msg->data == "y") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
-            else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
-            else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
+            // else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
+            // else if(msg->data == "x") gamebtn.paddy_collect_2(is_arm_convergence,_pub_canusb);
+            // else if(msg->data == "y") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
+            // else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
+            // else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
+            else if(msg->data == "r1") {
+                auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
+                msg_is_start->data = 1;
+                _pub_is_start->publish(*msg_is_start);
+            }
+            else if(msg->data == "r2") {
+                auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
+                msg_is_start->data = 3;
+                _pub_is_start->publish(*msg_is_start);
+            }
             else if(msg->data == "r3"){
                 robotcontrol_flag = true;
                 if(is_move_autonomous == false){
