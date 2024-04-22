@@ -161,10 +161,13 @@ private:
 
     std::string interrupt_node = "";
     bool c3orc4_flag = false; 
+    bool c1_flag = false; 
 
     const std::vector<double> strage_dist;
     const double suction_wait; 
     const double silo_wait; 
+
+    bool video = false;
 };
 
 }  // namespace sequencer
