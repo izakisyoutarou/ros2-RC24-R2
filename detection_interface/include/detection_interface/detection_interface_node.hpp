@@ -121,6 +121,7 @@ namespace detection_interface
             bool c3_c4_flag = true;
             bool st_flag = true;
             bool to_c3_flag = true;
+            bool c1camera_flag = false;
             bool c3_flag = false;
             /////////////////////////
 

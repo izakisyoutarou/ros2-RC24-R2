@@ -102,6 +102,7 @@ namespace detection_interface
             auto msg_siro_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
 
             int siro_num = 0;
+            bool before_ball_place_flag = false;
 
             //c1カメラから受けっとった情報を入れる配列
             std::vector<std::string> class_id;//redballとかblueballとか
@@ -216,8 +217,11 @@ namespace detection_interface
 
                             if(class_id[i] == "redball") ball_color.push_back("R");
                             else if(class_id[i] == "blueball") ball_color.push_back("B");
+
+                            before_ball_place_flag = true;
                         }
                     }
+                    if(!before_ball_place_flag) _pub_siro_param->publish(*msg_siro_param);
                 }
             }
 
@@ -289,8 +293,6 @@ namespace detection_interface
 
                 _pub_siro_param->publish(*msg_siro_param);
             }
-            
-            
 
             time_end = chrono::system_clock::now();
             // RCLCPP_INFO(this->get_logger(), "scan time->%d[ms]", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
@@ -458,7 +460,12 @@ namespace detection_interface
         }
 
         void DetectionInterface::callback_way_point(const std_msgs::msg::String::SharedPtr msg){
+            auto msg_siro_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
             way_point = msg->data;
+
+            // if(way_point == "c1"){
+            //     if(!c1camera_flag) _pub_siro_param->publish(*msg_siro_param);
+            // }
             // std::cout << way_point << std::endl;
         }
 

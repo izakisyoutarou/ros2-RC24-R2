@@ -115,14 +115,20 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(diagnostic_updater REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core)
 
 find_package(realsense2 2.54.1)
+if (BUILD_ACCELERATE_GPU_WITH_GLSL)
+  find_package(realsense2-gl 2.54.1)
+endif()
 if(NOT realsense2_FOUND)
     message(FATAL_ERROR "\n\n Intel RealSense SDK 2.0 is missing, please install it from https://github.com/IntelRealSense/librealsense/releases\n\n")
 endif()
 
 #set(CMAKE_NO_SYSTEM_FROM_IMPORTED true)
 include_directories(include)
+
+include_directories(${OpenCV_INCLUDE_DIRS})  # add OpenCV includes to the included dirs
 
 set(node_plugins "")
 
@@ -141,10 +147,18 @@ set(SOURCES
     src/tfs.cpp
   )
 
+if (BUILD_ACCELERATE_GPU_WITH_GLSL)
+  list(APPEND SOURCES src/gl_gpu_processing.cpp)
+endif()
+
 if(NOT DEFINED ENV{ROS_DISTRO})
   message(FATAL_ERROR "ROS_DISTRO is not defined." )
 endif()
-if("$ENV{ROS_DISTRO}" STREQUAL "humble")
+if("$ENV{ROS_DISTRO}" STREQUAL "foxy")
+  message(STATUS "Build for ROS2 Foxy")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFOXY")
+  set(SOURCES "${SOURCES}" src/ros_param_backend.cpp)
+elseif("$ENV{ROS_DISTRO}" STREQUAL "humble")
   message(STATUS "Build for ROS2 Humble")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHUMBLE")
   set(SOURCES "${SOURCES}" src/ros_param_backend.cpp)
@@ -171,6 +185,10 @@ if(${rclcpp_VERSION} VERSION_GREATER_EQUAL "17.0")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DRCLCPP_HAS_OnSetParametersCallbackType")
 endif()
 
+if (BUILD_ACCELERATE_GPU_WITH_GLSL)
+  add_definitions(-DACCELERATE_GPU_WITH_GLSL)
+endif()
+
 set(INCLUDES
     include/constants.h
     include/realsense_node_factory.h
@@ -184,6 +202,9 @@ set(INCLUDES
     include/profile_manager.h
     include/image_publisher.h)
 
+if (BUILD_ACCELERATE_GPU_WITH_GLSL)
+  list(APPEND INCLUDES include/gl_window.h)
+endif()
 
 if (BUILD_TOOLS)
 
@@ -200,9 +221,17 @@ add_library(${PROJECT_NAME} SHARED
     ${SOURCES}
 )
 
+if (BUILD_ACCELERATE_GPU_WITH_GLSL)
+  set(link_libraries ${realsense2-gl_LIBRARY})
+else()
+  set(link_libraries ${realsense2_LIBRARY})
+endif()
+
+list(APPEND link_libraries ${OpenCV_LIBS})  # add OpenCV libs to link_libraries
+
 target_link_libraries(${PROJECT_NAME}
-    ${realsense2_LIBRARY}
-    )
+    ${link_libraries}
+)
 
 set(dependencies
   cv_bridge
@@ -214,10 +243,15 @@ set(dependencies
   sensor_msgs
   nav_msgs
   tf2
-  realsense2
   tf2_ros
   diagnostic_updater
 )
+
+if (BUILD_ACCELERATE_GPU_WITH_GLSL)
+  list(APPEND dependencies realsense2-gl)
+else()
+  list(APPEND dependencies realsense2)
+endif()
 
 ament_target_dependencies(${PROJECT_NAME}
   ${dependencies}

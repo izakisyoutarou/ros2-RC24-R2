@@ -95,17 +95,33 @@ private:
     void command_hand_wrist_down();//アーム手首_下
     void command_hand_suction_on();//吸引on
     void command_hand_suction_off();//吸引off
+
+    void command_base_state();
+    void command_strage_state(bool front_ball);
+    void command_strage_state2();
+    void command_transfer_state();
+    void command_silo_state();
+    void command_silo_state2();
+
     //サイロ選択
     int silo_evaluate(std::string camera[15]);
 
     const int16_t can_paddy_collect_id;
     const int16_t can_paddy_install_id;
     const int16_t can_net_id;
+
+    const int16_t can_tof_id;
     const int16_t can_hand_lift_id;
     const int16_t can_hand_fb_id;
     const int16_t can_hand_wrist_id;
     const int16_t can_hand_suction_id;
-    const int16_t can_tof_id;
+
+    const int16_t can_base_state_id;
+    const int16_t can_strage_state_id;
+    const int16_t can_strage_state2_id;
+    const int16_t can_transfer_state_id;
+    const int16_t can_silo_state_id;
+    const int16_t can_silo_state2_id;
 
     //QoS
     rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -145,6 +161,13 @@ private:
 
     std::string interrupt_node = "";
     bool c3orc4_flag = false; 
+    bool c1_flag = false; 
+
+    const std::vector<double> strage_dist;
+    const double suction_wait; 
+    const double silo_wait; 
+
+    bool video = false;
 };
 
 }  // namespace sequencer
