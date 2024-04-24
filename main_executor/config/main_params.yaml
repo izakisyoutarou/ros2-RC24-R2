@@ -116,6 +116,8 @@ controller_interface_node:
     initial_pickup_state: "A"
     initial_inject_state: "B"
 
+    connection_check: false
+
 rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
