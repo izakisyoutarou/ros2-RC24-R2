@@ -76,7 +76,7 @@ namespace controller_interface
         initial_pickup_state(get_parameter("initial_pickup_state").as_string()),
         initial_inject_state(get_parameter("initial_inject_state").as_string()),
 
-        connection_check(get_parameter("connection_check").as_string())
+        connection_check(get_parameter("connection_check").as_bool())
 
         {
             //周期
