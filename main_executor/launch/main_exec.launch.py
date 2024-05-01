@@ -27,6 +27,12 @@ def generate_launch_description():
         'slcan_add.sh'
     )
 
+    merger_launch_path = os.path.join(
+        get_package_share_directory('ros2_laser_scan_merger'),
+        'launch',
+        'merge_2_scan.launch.py'
+    )
+
     # 起動パラメータファイルのロード
     with open(config_file_path, 'r') as file:
         launch_params = yaml.safe_load(file)['launch']['ros__parameters']
@@ -41,6 +47,10 @@ def generate_launch_description():
     # URG起動の作成
     urg_launch = launch.actions.IncludeLaunchDescription(
         PythonLaunchDescriptionSource([urg_launch_path])
+    )
+
+    merger_launch = launch.actions.IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([merger_launch_path])
     )
 
     # 軌道計画機ノードの作成
@@ -61,6 +71,8 @@ def generate_launch_description():
         launch_discription.add_entity(urg_launch)
     if(launch_params['trajectory_planner'] is True):
         launch_discription.add_entity(trajectory_planner_node)
+
+    launch_discription.add_entity(merger_launch)
         
     launch_discription.add_entity(main_exec_node)
 
