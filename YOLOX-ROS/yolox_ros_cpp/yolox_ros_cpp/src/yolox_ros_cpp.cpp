@@ -102,6 +102,12 @@ namespace yolox_ros_cpp
             this->params_.publish_boundingbox_topic_name,
             10);
         this->pub_image_ = image_transport::create_publisher(this, this->params_.publish_image_topic_name);
+
+        _sub_threshold = this->create_subscription<detection_interface_msg::msg::Threshold>(
+            "threshold",
+            10,
+            std::bind(&YoloXNode::ThresholdCallback, this, std::placeholders::_1)
+        );
     }
 
     void YoloXNode::colorImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &ptr)
@@ -117,7 +123,7 @@ namespace yolox_ros_cpp
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
         //RCLCPP_INFO(this->get_logger(), "Inference: %f FPS", 1000.0f / elapsed.count()); //FPSを確認できる
 
-        yolox_cpp::utils::draw_objects(frame, objects, this->class_names_);
+        yolox_cpp::utils::draw_objects(xmin, ymin, xmax, frame, objects, this->class_names_);
         if (this->params_.imshow_isshow)
         {
             cv::Size target_size(1280, 720); // Set your desired size here
@@ -156,6 +162,12 @@ namespace yolox_ros_cpp
             boxes.bounding_boxes.emplace_back(box);
         }
         return boxes;
+    }
+
+    void YoloXNode::ThresholdCallback(const detection_interface_msg::msg::Threshold::ConstSharedPtr &ptr){
+        xmax = ptr->xmax;
+        xmin = ptr->xmin;
+        ymin = ptr->ymin;
     }
 }
 

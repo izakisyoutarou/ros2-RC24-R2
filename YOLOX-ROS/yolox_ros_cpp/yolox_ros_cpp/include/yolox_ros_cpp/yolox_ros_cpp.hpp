@@ -12,6 +12,7 @@
 #include "bboxes_ex_msgs/msg/bounding_box.hpp"
 #include "bboxes_ex_msgs/msg/bounding_boxes.hpp"
 
+#include "detection_interface_msg/msg/threshold.hpp"
 
 #include "yolox_cpp/yolox.hpp"
 #include "yolox_cpp/utils.hpp"
@@ -42,6 +43,12 @@ namespace yolox_ros_cpp{
 
         bboxes_ex_msgs::msg::BoundingBoxes objects_to_bboxes(cv::Mat, std::vector<yolox_cpp::Object>, std_msgs::msg::Header);
 
+        rclcpp::Subscription<detection_interface_msg::msg::Threshold>::SharedPtr _sub_threshold;
+        void ThresholdCallback(const detection_interface_msg::msg::Threshold::ConstSharedPtr&);
+
         int num;
+        int xmax = 0;
+        int xmin = 0;
+        int ymin = 0;
     };
 }

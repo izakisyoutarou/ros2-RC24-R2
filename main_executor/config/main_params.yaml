@@ -1,8 +1,8 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: true
-    scan: true
-    trajectory_planner: true
+    slcan: false
+    scan: false
+    trajectory_planner: false
     yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
@@ -177,29 +177,15 @@ detection_interface_node:
     str_range_point4_1_C2: [0.0, 620.0] #右上の線
     str_range_point4_2_C2: [1920.0, 1100.0]
 
-    #C3とC5から、ST1~8の中のどの回収ポイントかを判断するポイント_C3orC5[x1,x2,x3]
-    str_range_x_C3orC5: [450.0, 620.0, 770.0] 
-    str_range_y_C3orC5: 650.0 
+    #C3とC5から、ST1~8の中のどの回収ポイントかを判断するときに一番手前のバウンディングボックスから一定量引く
+    str_range_y_C3orC5_2: 160
 
-    #ST1~8から手前か奥か判断するポイント
-    str_range_x_ST: [550.0, 800.0] 
-    str_range_y_ST: [300.0, 500.0] 
-
-    siro_ball_range_y: [780.0, 900.0, 1030.0] #ボールが何段目か[y1, y2]
-    siro_ball_range_x: [350.0, 768.0, 1220.0, 1600.0] #ボールがどのサイロか[x1, x2, x3, x4]
+    #ST系の行ったときの吸引判定
+    front_suction_check: [300, 300] #/front_ballがtrueだった場合(y,x)
+    back_suction_check: [300, 300] #/front_ballがfalseだった場合(y,x)
 
 sequencer_node:
   ros__parameters:
     strage_dist: [0.38 , 0.20] #m
     suction_wait: 3.0 #ms 
     silo_wait: 3.0 #ms 
-
-    #C3とC5から、ST1~8の中のどの回収ポイントかを判断するときに一番手前のバウンディングボックスから一定量引く
-    str_range_x_C3orC5_2: 170
-    str_range_y_C3orC5_2: 320 
-
-   #ST1~8から手前か奥か判断するポイントかを判断するときに一番手前のバウンディングボックスから一定量引く
-    str_range_y_ST2: 160
-
-    siro_ball_range_y_2: 130 #ボールが何段目か。siloの中の一番手前のバウンディングボックスから一定量引く
-    siro_ball_range_x_2: 400 #ボールがどのサイロか。siloの中の一番左のバウンディングボックスから一定量引く

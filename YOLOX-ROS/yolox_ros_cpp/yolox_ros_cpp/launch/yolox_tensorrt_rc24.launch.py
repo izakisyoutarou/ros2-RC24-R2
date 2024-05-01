@@ -13,8 +13,9 @@ def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument(#学習済みデータの指定
             'model_path',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_0408.trt',
             # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_0415.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_0429.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(
@@ -24,14 +25,13 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#ラベル情報の指定
             'class_labels_path',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano_honban.txt',
             # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano_honban_0415.txt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano_honban_0429.txt',
             description='if use custom model, set class name labels. '
         ),
         DeclareLaunchArgument(#ラベル数の指定
             'num_classes',
-            default_value='2',
-            # default_value='4',
+            default_value='4',
             description='num classes.'
         ),
         DeclareLaunchArgument(
@@ -47,6 +47,11 @@ def generate_launch_description():
         DeclareLaunchArgument(#しきい値
             'conf',
             default_value='0.80',
+            description='yolox confidence threshold.'
+        ),
+        DeclareLaunchArgument(#しきい値
+            'conf_d455',
+            default_value='0.85',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(
@@ -81,7 +86,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'src_image_topic_name_realsense',
-            default_value='/camera/camera/color/image_raw', #realsense
+            default_value='/camera/d455/color/image_raw', #realsense
             # default_value='/camera/camera/rgbd', #realsense
             description='topic name for source image'
         ),
@@ -108,8 +113,20 @@ def generate_launch_description():
     #公式から提供されているrealsenseのパッケージ
     realsense_file_path = get_package_share_directory('realsense2_camera')
 
-    realsense_launch = launch.actions.IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([realsense_file_path + "/launch/rs_launch.py"])
+    realsense_d455_launch = launch.actions.IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([realsense_file_path + "/launch/rs_launch.py"]),
+        launch_arguments={
+            'camera_name': 'd455',
+            'serial_no': "'151422252742'",
+        }.items()
+    )
+    
+    realsense_d435i_launch = launch.actions.IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([realsense_file_path + "/launch/rs_launch.py"]),
+        launch_arguments={
+            'camera_name': 'd435i',
+            'serial_no': "'843112074106'",
+        }.items()
     )
 
     container = ComposableNodeContainer(
@@ -160,7 +177,7 @@ def generate_launch_description():
                     'model_type': 'tensorrt',
                     'model_version': LaunchConfiguration('model_version'),
                     'tensorrt/device': LaunchConfiguration('tensorrt/device'),
-                    'conf': LaunchConfiguration('conf'),
+                    'conf': LaunchConfiguration('conf_d455'),
                     'nms': LaunchConfiguration('nms'),
                     'imshow_isshow': LaunchConfiguration('imshow_isshow_realsense'),
                     'src_image_topic_name': LaunchConfiguration('src_image_topic_name_realsense'),
@@ -173,7 +190,8 @@ def generate_launch_description():
     )
     return launch.LaunchDescription(
         launch_args +   [
-                        container, c1_launch, 
-                        container_realsense, realsense_launch
+                        # container, c1_launch, 
+                        # container_realsense, realsense_d455_launch,
+                        realsense_d435i_launch,
                         ]
     )
