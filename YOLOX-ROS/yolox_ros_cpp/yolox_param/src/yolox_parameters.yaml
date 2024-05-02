@@ -86,3 +86,7 @@ yolox_parameters:
     type: string
     description: "Publish bounding box topic name."
     default_value: "yolox/bounding_boxes"
+  depth_flag:
+    type: bool
+    description: "Publish bounding box topic name."
+    default_value: true
