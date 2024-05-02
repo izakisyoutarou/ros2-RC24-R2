@@ -100,7 +100,7 @@ namespace detection_interface
 
             //C1cameraのc1から見たとき、サイロのボール情報取得。
             void c1camera_c1(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy, 
-                                const std::vector<int> center_x, const std::vector<int> center_y,
+                                const std::vector<int> center_x, const std::vector<int> center_y, std::vector<int> bbounbox_size,
                                 std::vector<int> before_ball_place, std::vector<std::string> ball_color, const std::vector<std::string> class_id);
 
             //同じ領域にボールが複数存在している場合、バウンディングボックスのサイズが大きい方を採用する。それのところ
@@ -108,7 +108,7 @@ namespace detection_interface
 
             //例えば、サイロの1段目が空いている状態で2段目が埋まったとき、2段目のボールは空中に浮いていることになり、正しくない。
             //そういうときに1段目が埋まって、2段目が埋まったように修正するためのところ
-            void c1camera_correct_silo_levels(std::vector<int> before_ball_place, const std::vector<std::string> ball_color, std::vector<int> after_ball_place);
+            void c1camera_correct_silo_levels(std::vector<int> before_ball_place, const std::vector<std::string> ball_color);
 
             //realseneのc3、c4から見たとき、どこのSTに行くか。中でfront_ball関数を呼び出す。
             void realsense_c3_c4(int xmax, int xmin, int ymin, const std::vector<std::string> class_id, const std::vector<int> center_x, std::vector<int> center_y);

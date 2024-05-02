@@ -14,6 +14,8 @@
 
 #include "detection_interface_msg/msg/threshold.hpp"
 
+#include "realsense2_camera_msgs/msg/rgbd.hpp"
+
 #include "yolox_cpp/yolox.hpp"
 #include "yolox_cpp/utils.hpp"
 #include "yolox_param/yolox_param.hpp"
@@ -41,10 +43,13 @@ namespace yolox_ros_cpp{
         rclcpp::Publisher<bboxes_ex_msgs::msg::BoundingBoxes>::SharedPtr pub_bboxes_;
         image_transport::Publisher pub_image_;
 
-        bboxes_ex_msgs::msg::BoundingBoxes objects_to_bboxes(cv::Mat, std::vector<yolox_cpp::Object>, std_msgs::msg::Header);
+        bboxes_ex_msgs::msg::BoundingBoxes objects_to_bboxes(cv::Mat, cv::Mat, std::vector<yolox_cpp::Object>, std_msgs::msg::Header);
 
         rclcpp::Subscription<detection_interface_msg::msg::Threshold>::SharedPtr _sub_threshold;
         void ThresholdCallback(const detection_interface_msg::msg::Threshold::ConstSharedPtr&);
+
+        rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr _sub_rgbd;
+        void RgbdCallback(const realsense2_camera_msgs::msg::RGBD::ConstSharedPtr&);
 
         int num;
         int xmax = 0;
