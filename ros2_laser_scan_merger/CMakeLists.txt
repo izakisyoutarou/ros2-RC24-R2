@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(ros2_laser_merger)
+project(ros2_laser_scan_merger)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)

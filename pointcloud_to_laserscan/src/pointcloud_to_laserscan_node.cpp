@@ -94,7 +94,7 @@ PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions &
     sub_.registerCallback(std::bind(&PointCloudToLaserScanNode::cloudCallback, this, _1));
   }
 
-  std::cout << "hello" << std::endl;
+  // std::cout << "hello" << std::endl;
 
   subscription_listener_thread_ = std::thread(
     std::bind(&PointCloudToLaserScanNode::subscriptionListenerThreadLoop, this));

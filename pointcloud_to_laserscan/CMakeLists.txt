@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(pointcloud_to_Laserscan)
+project(pointcloud_to_laserscan)
 
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
