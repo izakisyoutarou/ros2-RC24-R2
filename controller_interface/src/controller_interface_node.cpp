@@ -210,10 +210,10 @@ namespace controller_interface
             );
 
             check_controller_connection = this->create_wall_timer(
-                std::chrono::milliseconds(static_cast<int>(controller_ms * 1.5)),
+                std::chrono::milliseconds(static_cast<int>(controller_ms)),
                 [this] {
                     std::chrono::system_clock::time_point now_time = std::chrono::system_clock::now();
-                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_controller_time).count() > 100 * 1.5){
+                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_controller_time).count() > 100 * 10){
                         auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
                         msg_emergency->canid = can_emergency_id;
                         msg_emergency->candlc = 1;
@@ -225,9 +225,9 @@ namespace controller_interface
             );
 
             check_mainboard_connection = this->create_wall_timer(
-                std::chrono::milliseconds(static_cast<int>(mainboard_ms * 1.5)),
+                std::chrono::milliseconds(static_cast<int>(mainboard_ms)),
                 [this] { 
-                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_mainboard_time).count() > 200 * 1.5){
+                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_mainboard_time).count() > 200 * 10){
                         is_emergency = true;
                         is_restart = false; 
                         auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();   
@@ -289,26 +289,16 @@ namespace controller_interface
                 is_arm_convergence = defalt_arm_convergence;
                 is_net_convergence = defalt_net_convergence;
             }
-            //ステアリセット
             else if(msg->data == "up") gamebtn.steer_reset(_pub_canusb);
-            //キャリブレーション
             else if(msg->data == "down") gamebtn.calibrate(_pub_canusb);
-            //main基盤リセット
-            else if(msg->data == "right") gamebtn.main_reset(_pub_canusb);
-            //IO基盤リセット
-            else if(msg->data == "left") gamebtn.io_reset(_pub_canusb);
-            //ボール回収
+            else if(msg->data == "left") gamebtn.board_reset(_pub_canusb);
+            // else if(msg->data == "right") 
+            else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);  
             else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
-            //ボール回収
-            else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);
-            //サイロ
-            else if(msg->data == "x") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
+            else if(msg->data == "x") gamebtn.paddy_collect_2(is_arm_convergence,_pub_canusb);
+            else if(msg->data == "y") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
             else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
-           
             else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
-            //低速モード
-            else if(msg->data == "l2") is_slow_speed = !is_slow_speed;
-            //足回りの手自動
             else if(msg->data == "r3"){
                 robotcontrol_flag = true;
                 if(is_move_autonomous == false){
@@ -320,11 +310,9 @@ namespace controller_interface
                     is_move_autonomous = false;
                 }
             }
-            else if(msg->data == "l3"){
-                auto initial_sequense_pickup = std::make_shared<std_msgs::msg::String>();
-                initial_sequense_pickup->data = initial_pickup_state;
-                _pub_initial_sequense->publish(*initial_sequense_pickup);
-            }
+            // else if(msg->data == "l1") 
+            else if(msg->data == "l2") is_slow_speed = !is_slow_speed;
+            else if(msg->data == "l3")
 
             //リセットボタンを押しているか確認する
             is_restart = msg->data == "s";
@@ -335,16 +323,6 @@ namespace controller_interface
             msg_base_control.is_move_autonomous = is_move_autonomous;
             msg_base_control.is_slow_speed = is_slow_speed;
             msg_base_control.initial_state = initial_state;
-            
-            // for(int i=0; i<msg_btn->candlc; i++){
-            //     msg_btn->candata[i] = _candata_btn[i];
-            // }
-
-            //どれか１つのボタンを押すとすべてのボタン情報がpublishされる
-            // if( a == true ||b == true ||y == true ||x == true ||right == true ||down == true ||left == true ||up == true )
-            // {
-            //     _pub_canusb->publish(*msg_btn);
-            // }
             
             if(msg->data=="g") _pub_canusb->publish(*msg_emergency);
             if(robotcontrol_flag == true) {
@@ -425,8 +403,8 @@ namespace controller_interface
                 //低速モード
                 if(is_slow_speed == true){
                     slow_velPlanner_linear_x.vel(static_cast<double>(values[1]));//unityとロボットにおける。xとyが違うので逆にしている。
-                    slow_velPlanner_linear_y.vel(static_cast<double>(values[0]));
-                    velPlanner_angular_z.vel(static_cast<double>(values[2]));
+                    slow_velPlanner_linear_y.vel(static_cast<double>(-values[0]));
+                    velPlanner_angular_z.vel(static_cast<double>(-values[2]));
 
                     slow_velPlanner_linear_x.cycle();
                     slow_velPlanner_linear_y.cycle();
@@ -434,10 +412,10 @@ namespace controller_interface
 
                     //floatからバイト(メモリ)に変換
                     float_to_bytes(_candata_joy, static_cast<float>(slow_velPlanner_linear_x.vel()) * slow_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(-slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(slow_velPlanner_linear_y.vel()) * slow_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
                     
                     msg_gazebo->linear.x = slow_velPlanner_linear_x.vel();
@@ -447,18 +425,18 @@ namespace controller_interface
                 //高速モードのとき
                 else {
                     high_velPlanner_linear_x.vel(static_cast<double>(values[1]));
-                    high_velPlanner_linear_y.vel(static_cast<double>(values[0]));
-                    velPlanner_angular_z.vel(static_cast<double>(values[2]));
+                    high_velPlanner_linear_y.vel(static_cast<double>(-values[0]));
+                    velPlanner_angular_z.vel(static_cast<double>(-values[2]));
 
                     high_velPlanner_linear_x.cycle();
                     high_velPlanner_linear_y.cycle();
                     velPlanner_angular_z.cycle();
 
                     float_to_bytes(_candata_joy, static_cast<float>(high_velPlanner_linear_x.vel()) * high_manual_linear_max_vel);
-                    float_to_bytes(_candata_joy+4, static_cast<float>(-high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
+                    float_to_bytes(_candata_joy+4, static_cast<float>(high_velPlanner_linear_y.vel()) * high_manual_linear_max_vel);
                     for(int i=0; i<msg_linear->candlc; i++) msg_linear->candata[i] = _candata_joy[i];
 
-                    float_to_bytes(_candata_joy, static_cast<float>(-velPlanner_angular_z.vel()) * manual_angular_max_vel);
+                    float_to_bytes(_candata_joy, static_cast<float>(velPlanner_angular_z.vel()) * manual_angular_max_vel);
                     for(int i=0; i<msg_angular->candlc; i++) msg_angular->candata[i] = _candata_joy[i];
 
                     msg_gazebo->linear.x = high_velPlanner_linear_x.vel();

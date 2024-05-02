@@ -27,6 +27,7 @@ def generate_launch_description():
         'slcan_add.sh'
     )
 
+    # 点群統合pkg起動ファイルのパス設定
     merger_launch_path = os.path.join(
         get_package_share_directory('ros2_laser_scan_merger'),
         'launch',
@@ -49,6 +50,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([urg_launch_path])
     )
 
+    # 点群統合pkg起動の作成
     merger_launch = launch.actions.IncludeLaunchDescription(
         PythonLaunchDescriptionSource([merger_launch_path])
     )
