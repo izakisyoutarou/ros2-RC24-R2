@@ -578,6 +578,7 @@ namespace detection_interface
             for(int i = 0; i < before_ball_place.size(); ++i){
                 bool stage_three = false;
                 bool stage_two = false;
+                bool stage_one = false;
                 int ball_height = 0;
                 int ball_width = 0;
                 int siro_num = 0;
@@ -590,12 +591,15 @@ namespace detection_interface
                         if(ball_height == j){//ballが他に存在しているか。
                             for(size_t k = 0; k < before_ball_place.size(); ++k){
                                 if(before_ball_place[k] == ball_width * 3 + 3) stage_three = true;
-                                if(before_ball_place[k] == ball_width * 3 + 2) stage_two = true;
+                                else if(before_ball_place[k] == ball_width * 3 + 2) stage_two = true;
+                                else if(before_ball_place[k] == ball_width * 3 + 1) stage_one = true;
                             }
-                            if(stage_three && stage_two) siro_num = ball_width * 3 + 1;
-                            else if(stage_three && !stage_two) siro_num = ball_width * 3 + 2;
-                            else if(!stage_three && stage_two) siro_num = ball_width * 3 + 3;
-                            else if(!stage_three && !stage_two) siro_num = ball_width * 3 + 3;
+                            if(stage_three && stage_two && stage_one) siro_num = ball_width * 3 + 1;
+                            else if(stage_three && stage_two && !stage_one) siro_num = ball_width * 3 + 2;
+                            else if(stage_three && !stage_two && stage_one) siro_num = ball_width * 3 + 2;
+                            else if(!stage_three && stage_two && !stage_one) siro_num = ball_width * 3 + 3;
+                            else if(!stage_three && !stage_two && stage_one) siro_num = ball_width * 3 + 3;
+                            // else if(!stage_three && stage_two && stage_one) siro_num = ball_width * 3 + 3; //考えられない
                         }
                     }
                 }
