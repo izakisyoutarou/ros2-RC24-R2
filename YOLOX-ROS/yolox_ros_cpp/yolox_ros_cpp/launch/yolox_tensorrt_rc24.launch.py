@@ -12,9 +12,13 @@ def generate_launch_description():
 
     launch_args = [
         DeclareLaunchArgument(#学習済みデータの指定
-            'model_path',
+            'model_path_c1camera',
             default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_0501.trt',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
+            description='yolox model path.'
+        ),
+        DeclareLaunchArgument(#学習済みデータの指定
+            'model_path_realsense',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(
@@ -24,7 +28,6 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#ラベル情報の指定
             'class_labels_path',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano_honban_0415.txt',
             default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/yolox_ros_cpp/yolox_ros_cpp/labels/ano_honban_0429.txt',
             description='if use custom model, set class name labels. '
         ),
@@ -156,7 +159,7 @@ def generate_launch_description():
                 plugin='yolox_ros_cpp::YoloXNode',
                 name='yolox_ros_cpp_c1',
                 parameters=[{
-                    'model_path': LaunchConfiguration('model_path'),
+                    'model_path': LaunchConfiguration('model_path_c1camera'),
                     'p6': LaunchConfiguration('p6'),
                     'class_labels_path': LaunchConfiguration('class_labels_path'),
                     'num_classes': LaunchConfiguration('num_classes'),
@@ -187,7 +190,7 @@ def generate_launch_description():
                 plugin='yolox_ros_cpp::YoloXNode',
                 name='yolox_ros_cpp_realsense',
                 parameters=[{
-                    'model_path': LaunchConfiguration('model_path'),
+                    'model_path': LaunchConfiguration('model_path_realsense'),
                     'p6': LaunchConfiguration('p6'),
                     'class_labels_path': LaunchConfiguration('class_labels_path'),
                     'num_classes': LaunchConfiguration('num_classes'),

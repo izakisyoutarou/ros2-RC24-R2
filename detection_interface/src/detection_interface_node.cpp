@@ -161,11 +161,6 @@ namespace detection_interface
                                                             center_x, center_y, bbounbox_size,
                                                             before_ball_place, ball_color, class_id);
                     }
-
-                    // if(before_ball_place.size() != 0){
-                    //     c1camera_pick_best_BoundingBox(before_ball_place, bbounbox_size, ball_color);
-                    //     c1camera_correct_silo_levels(before_ball_place, ball_color, after_ball_place);
-                    // }
                 }
 
                 // time_end = chrono::system_clock::now();
@@ -434,12 +429,15 @@ namespace detection_interface
                 ball_height = before_ball_place[i] % 3;
 
                 if(ball_height != 0){
-                    for(int j = 0; j < 3; ++j){//ball_heightの可能性として1%3と2%3と3%3なのでj < 3
+                    for(int j = 1; j < 3; ++j){//ball_heightの可能性として1%3と2%3と3%3なのでj < 3
                         if(ball_height == j){//その領域にballが他に存在しているか。
                             for(size_t k = 0; k < before_ball_place.size(); ++k){
                                 if(before_ball_place[k] == ball_width * 3 + 3) stage_three = true;
                                 if(before_ball_place[k] == ball_width * 3 + 2) stage_two = true;
                             }
+
+                            // RCLCPP_INFO(this->get_logger(), "まえ%d、あと%d", stage_three,stage_two);
+
                             if(stage_three && stage_two) silo_num = ball_width * 3 + 1;
                             else if(stage_three && !stage_two) silo_num = ball_width * 3 + 2;
                             else if(!stage_three && stage_two) silo_num = ball_width * 3 + 3;
@@ -452,6 +450,10 @@ namespace detection_interface
                 }
                 after_ball_place.push_back(silo_num);
             }
+
+            // for (int z = 0; z < after_ball_place.size(); ++z) {
+            //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, after_ball_place[z]);
+            // }
 
             for (int i = 0; i < after_ball_place.size(); ++i) {
                 msg_siro_param->ball_color[after_ball_place[i] - 1] = ball_color[i];
