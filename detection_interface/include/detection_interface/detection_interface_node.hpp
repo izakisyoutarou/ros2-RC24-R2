@@ -168,6 +168,10 @@ namespace detection_interface
             const std::vector<long int> front_suction_check;
             const std::vector<long int> back_suction_check;
 
+            //realsenseの最小、最大閾値
+            const int realsense_max_x;
+            const int realsense_min_x;
+
             //コートの色
             const std::string court_color;
             ////////////////////////
