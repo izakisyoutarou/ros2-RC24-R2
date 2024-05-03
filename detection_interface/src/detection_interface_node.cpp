@@ -24,6 +24,9 @@ namespace detection_interface
         front_suction_check(get_parameter("front_suction_check").as_integer_array()),
         back_suction_check(get_parameter("back_suction_check").as_integer_array()),
 
+        realsense_max_x(get_parameter("realsense_max_x").as_int()),
+        realsense_min_x(get_parameter("realsense_min_x").as_int()),
+
         court_color(get_parameter("court_color").as_string())
         {
             //yolox_ros_cppのrealsenseから
@@ -195,6 +198,18 @@ namespace detection_interface
                     min_x.push_back(box.xmin);
                     min_y.push_back(box.ymin);
                 }
+
+                // max_xで閾値以上の値を削除
+                auto new_end_max = std::remove_if(max_x.begin(), max_x.end(), [realsense_max_x](int value) {
+                    return value > max_threshold;
+                });
+                max_x.erase(new_end_max, max_x.end());
+
+                // min_xで閾値以下の値を削除
+                auto new_end_min = std::remove_if(min_x.begin(), min_x.end(), [realsense_min_x](int value) {
+                    return value < min_threshold;
+                });
+                min_x.erase(new_end_min, min_x.end());
 
                 // center_dist = cv_image_.at<uint32_t>(center_y, center_x);
                 // RCLCPP_INFO(this->get_logger(), "%d", center_dist);

@@ -186,6 +186,10 @@ detection_interface_node:
     front_suction_check: [300, 300] #/front_ballがtrueだった場合(y,x)
     back_suction_check: [300, 300] #/front_ballがfalseだった場合(y,x)
 
+    #realsenseの
+    realsense_max_x: 600
+    realsense_min_x: 300
+
 sequencer_node:
   ros__parameters:
     strage_dist: [0.38 , 0.20] #m
