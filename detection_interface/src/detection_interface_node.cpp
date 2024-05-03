@@ -82,7 +82,7 @@ namespace detection_interface
             //sequncerへ
             _pub_collection_point = this->create_publisher<std_msgs::msg::String>("collection_point", _qos);
             _pub_suction_check = this->create_publisher<std_msgs::msg::String>("suction_check", _qos);
-            _pub_siro_param = this->create_publisher<detection_interface_msg::msg::SiroParam>("siro_param", _qos);
+            _pub_silo_param = this->create_publisher<detection_interface_msg::msg::SiroParam>("siro_param", _qos);
             _pub_front_ball = this->create_publisher<std_msgs::msg::Bool>("front_ball", _qos);
             _pub_ball_coordinate = this->create_publisher<geometry_msgs::msg::Vector3>("ball_coordinate", _qos);
 
@@ -97,7 +97,7 @@ namespace detection_interface
             if(now_sequence == "storage" || now_sequence == "silo"){
                 // time_start = chrono::system_clock::now();
                 auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
-                auto msg_siro_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
+                auto msg_silo_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
 
                 int silo_num = 0;
                 int count = 0;
@@ -415,7 +415,7 @@ namespace detection_interface
         }
 
         void DetectionInterface::c1camera_correct_silo_levels(const std::vector<int> before_ball_place, const std::vector<std::string> ball_color){
-            auto msg_siro_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
+            auto msg_silo_param = std::make_shared<detection_interface_msg::msg::SiroParam>();
             std::vector<int> after_ball_place;//領域内に複数のボールが存在した場合の処理が終わった
 
             for(int i = 0; i < before_ball_place.size(); ++i){
@@ -437,11 +437,11 @@ namespace detection_interface
                                 else if(before_ball_place[k] == ball_width * 3 + 2) stage_two = true;
                                 else if(before_ball_place[k] == ball_width * 3 + 1) stage_one = true;
                             }
-                            if(stage_three && stage_two && stage_one) siro_num = ball_width * 3 + 1;
-                            else if(stage_three && stage_two && !stage_one) siro_num = ball_width * 3 + 2;
-                            else if(stage_three && !stage_two && stage_one) siro_num = ball_width * 3 + 2;
-                            else if(!stage_three && stage_two && !stage_one) siro_num = ball_width * 3 + 3;
-                            else if(!stage_three && !stage_two && stage_one) siro_num = ball_width * 3 + 3;
+                            if(stage_three && stage_two && stage_one) silo_num = ball_width * 3 + 1;
+                            else if(stage_three && stage_two && !stage_one) silo_num = ball_width * 3 + 2;
+                            else if(stage_three && !stage_two && stage_one) silo_num = ball_width * 3 + 2;
+                            else if(!stage_three && stage_two && !stage_one) silo_num = ball_width * 3 + 3;
+                            else if(!stage_three && !stage_two && stage_one) silo_num = ball_width * 3 + 3;
                             // else if(!stage_three && stage_two && stage_one) siro_num = ball_width * 3 + 3; //考えられない
                         }
                     }
@@ -457,10 +457,10 @@ namespace detection_interface
             // }
 
             for (int i = 0; i < after_ball_place.size(); ++i) {
-                msg_siro_param->ball_color[after_ball_place[i] - 1] = ball_color[i];
+                msg_silo_param->ball_color[after_ball_place[i] - 1] = ball_color[i];
             }
 
-            _pub_siro_param->publish(*msg_siro_param);
+            _pub_silo_param->publish(*msg_silo_param);
         }
 
         void DetectionInterface::realsense_c3_c4(int xmax, int xmin, int ymin, const std::vector<std::string> class_id, const std::vector<int> center_x, std::vector<int> center_y){

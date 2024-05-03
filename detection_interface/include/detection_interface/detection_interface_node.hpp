@@ -64,7 +64,7 @@ namespace detection_interface
             //sequncerへ
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_collection_point;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_suction_check;//ボールの吸引判定
-            rclcpp::Publisher<detection_interface_msg::msg::SiroParam>::SharedPtr _pub_siro_param;
+            rclcpp::Publisher<detection_interface_msg::msg::SiroParam>::SharedPtr _pub_silo_param;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_front_ball;
             rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _pub_ball_coordinate;
 
