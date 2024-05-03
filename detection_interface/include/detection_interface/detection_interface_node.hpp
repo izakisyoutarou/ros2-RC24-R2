@@ -17,6 +17,7 @@
 #include "detection_interface_msg/msg/siro_param.hpp"
 #include "detection_interface_msg/msg/threshold.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
+#include "realsense2_camera_msgs/msg/RGBD.hpp"
 
 #include "detection_interface/coordinate_transformation.hpp"
 
@@ -53,9 +54,9 @@ namespace detection_interface
             //splineから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_way_point;
 
-            //realsenseのimageをsub
-            image_transport::Subscriber _sub_realsense_d435i;
-            void d435iImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr&);
+            //realsenseのrgbdeをsub
+            rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr _sub_realsense_d435i;
+            void d435iImageCallback(const realsense2_camera_msgs::msg::RGBD::ConstSharedPtr&);
 
             //realsenseのdepthカメラ
             image_transport::Subscriber _sub_depth_;

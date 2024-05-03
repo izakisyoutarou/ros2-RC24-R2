@@ -250,31 +250,62 @@ namespace detection_interface
             cv_image_ = bridge_->image;
         }
 
-        void DetectionInterface::d435iImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &ptr){
-            auto img = cv_bridge::toCvCopy(ptr, "bgr8");
-            cv::Mat frame = img->image;
+        void DetectionInterface::d435iImageCallback(const realsense2_camera_msgs::msg::RGBD::ConstSharedPtr &ptr){
+            auto img_rgb = cv_bridge::toCvCopy(ptr->rgb, "bgr8");
+            auto img_depth = cv_bridge::toCvCopy(ptr->depth, sensor_msgs::image_encodings::TYPE_16UC1);
+
+            cv::Mat frame_rgb = img_rgb->image;
+            cv::Mat frame_depth = img_depth->image;
             cv::Mat frame_prev;
+
+            bool front_flag;
 
             //ST系に入ったときにボールの吸着判定
             if(way_point[0] == 'S' && way_point[1] == 'T'){
                 auto msg_suction_check = std::make_shared<std_msgs::msg::String>();
                 cv::Vec3b pixel_value;
+                uint16_t depth_value;
                 
-                if(msg_front_ball.data) pixel_value = frame.at<cv::Vec3b>(front_suction_check[0], front_suction_check[1]);
-                else pixel_value = frame.at<cv::Vec3b>(back_suction_check[0], back_suction_check[1]);
+                if(msg_front_ball.data){
+                    pixel_value = frame_rgb.at<cv::Vec3b>(front_suction_check[0], front_suction_check[1]);
+                    depth_value = frame_depth.at<uint16_t>(front_suction_check[0], front_suction_check[1]); 
+                    if(depth_value < 300) {
+                        uchar blue = pixel_value[0];
+                        uchar green = pixel_value[1];
+                        uchar red = pixel_value[2];
 
-                uchar blue = pixel_value[0];
-                uchar green = pixel_value[1];
-                uchar red = pixel_value[2];
+                        // std::cout << "blue" << (int)blue << std::endl;
+                        // std::cout << "green" << (int)green << std::endl;
+                        // std::cout << "red" << (int)red << std::endl;
 
-                // std::cout << "blue" << (int)blue << std::endl;
-                // std::cout << "green" << (int)green << std::endl;
-                // std::cout << "red" << (int)red << std::endl;
+                        if(red > green + 50 && red > blue + 50) msg_suction_check->data = "R"; //赤ボール
+                        else if(blue > green + 30 && blue > red + 30) msg_suction_check->data = "B"; //青ボール
+                        else if(red > green + 20 && blue > green + 20) msg_suction_check->data = "P"; //紫ボール
+                    }
+                    else {
+                        msg_suction_check->data = ""; //何も吸着できていない
+                    }
+                }
+                else{
+                    pixel_value = frame_rgb.at<cv::Vec3b>(back_suction_check[0], back_suction_check[1]);
+                    depth_value = frame_depth.at<uint16_t>(front_suction_check[0], front_suction_check[1]); 
+                    if(depth_value < 500) {
+                        uchar blue = pixel_value[0];
+                        uchar green = pixel_value[1];
+                        uchar red = pixel_value[2];
 
-                if(red > green + 50 && red > blue + 50) msg_suction_check->data = "R"; //赤ボール
-                else if(blue > green + 30 && blue > red + 30) msg_suction_check->data = "B"; //青ボール
-                else if(red > green + 20 && blue > green + 20) msg_suction_check->data = "P"; //紫ボール
-                else msg_suction_check->data = ""; //何も吸着できていない
+                        // std::cout << "blue" << (int)blue << std::endl;
+                        // std::cout << "green" << (int)green << std::endl;
+                        // std::cout << "red" << (int)red << std::endl;
+
+                        if(red > green + 50 && red > blue + 50) msg_suction_check->data = "R"; //赤ボール
+                        else if(blue > green + 30 && blue > red + 30) msg_suction_check->data = "B"; //青ボール
+                        else if(red > green + 20 && blue > green + 20) msg_suction_check->data = "P"; //紫ボール
+                    }
+                    else {
+                        msg_suction_check->data = ""; //何も吸着できていない
+                    }
+                }
 
                 _pub_suction_check->publish(*msg_suction_check);
             }
@@ -286,11 +317,11 @@ namespace detection_interface
 
             // 画像に緑色の点を描画（半径2の小さい円として）
             const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
-            cv::circle(frame, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
-            cv::circle(frame, back_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
+            cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
+            cv::circle(frame_rgb, back_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
 
             cv::Size target_size(1280, 720);
-            cv::resize(frame, frame_prev, target_size);
+            cv::resize(frame_rgb, frame_prev, target_size);
             cv::imshow("d435i", frame_prev);
             cv::waitKey(1);
             ///////////    
