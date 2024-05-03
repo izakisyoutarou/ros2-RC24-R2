@@ -14,6 +14,7 @@ set(msg_files
   "msg/SiroParam.msg"
   "msg/VisualizerC1.msg"
   "msg/VisualizerRealsense.msg"
+  "msg/Threshold.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
