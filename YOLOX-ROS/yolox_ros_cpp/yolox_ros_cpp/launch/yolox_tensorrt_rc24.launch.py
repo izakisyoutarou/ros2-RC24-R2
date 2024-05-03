@@ -126,6 +126,13 @@ def generate_launch_description():
     #公式から提供されているrealsenseのパッケージ
     realsense_file_path = get_package_share_directory('realsense2_camera')
 
+    realsense_d435i_launch = launch.actions.IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([realsense_file_path + "/launch/rs_launch.py"]),
+        launch_arguments={
+            'camera_name': 'd435i',
+            'serial_no': "'843112074106'",
+        }.items()
+    )
     realsense_d455_launch = launch.actions.IncludeLaunchDescription(
         PythonLaunchDescriptionSource([realsense_file_path + "/launch/rs_launch.py"]),
         launch_arguments={
@@ -136,15 +143,7 @@ def generate_launch_description():
             'align_depth.enable': 'true',
             'enable_color': 'true',
             'enable_depth': 'true',
-            'initial_reset': 'true',
-        }.items()
-    )
-    
-    realsense_d435i_launch = launch.actions.IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([realsense_file_path + "/launch/rs_launch.py"]),
-        launch_arguments={
-            'camera_name': 'd435i',
-            'serial_no': "'843112074106'",
+            # 'initial_reset': 'true',
         }.items()
     )
 
@@ -211,8 +210,8 @@ def generate_launch_description():
     )
     return launch.LaunchDescription(
         launch_args +   [
+                        realsense_d435i_launch,
                         container, c1_launch, 
-                        # container_realsense, realsense_d455_launch,
-                        # realsense_d435i_launch,
+                        container_realsense, realsense_d455_launch,
                         ]
     )

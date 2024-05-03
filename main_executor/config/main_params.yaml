@@ -1,8 +1,8 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: false
-    scan: false
-    trajectory_planner: false
+    slcan: true
+    scan: true
+    trajectory_planner: true
     yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
@@ -129,6 +129,7 @@ rasnac_localization:
     inlier_dist_threshold: 0.0123
     inlier_length_threshold: 0.5 #インライアのしきい値
     second_ransac: false           #2回ransacをするか
+    robot_type: "R1"
     #以下カルマンフィルタのノイズ->値を小さくするとセンサーが優先される
     cov_sys_px: 1.5    # システム雑音の位置x[m]の標準偏差
     cov_sys_py: 1.5    # システム雑音の位置x[m]の標準偏差
@@ -183,12 +184,13 @@ detection_interface_node:
     str_range_y_C3orC5_2: 160
 
     #ST系の行ったときの吸引判定
-    front_suction_check: [300, 300] #/front_ballがtrueだった場合(y,x)
-    back_suction_check: [300, 300] #/front_ballがfalseだった場合(y,x)
+    front_suction_check: [200, 650] #/front_ballがtrueだった場合(y,x)
+    back_suction_check: [500, 700] #/front_ballがfalseだった場合(y,x)
 
     #realsenseの
-    realsense_max_x: 600
-    realsense_min_x: 300
+    realsense_max_x: 1100
+    realsense_min_x: 200
+    realsense_min_y: 350
 
 sequencer_node:
   ros__parameters:

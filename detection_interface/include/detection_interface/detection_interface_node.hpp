@@ -171,6 +171,7 @@ namespace detection_interface
             //realsenseの最小、最大閾値
             const int realsense_max_x;
             const int realsense_min_x;
+            const int realsense_min_y;
 
             //コートの色
             const std::string court_color;

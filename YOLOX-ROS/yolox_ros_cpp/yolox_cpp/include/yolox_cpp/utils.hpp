@@ -72,14 +72,14 @@ namespace yolox_cpp{
                 int c1_kakoi = 0;
 
                 // //c3、c4
-                // cv::line(bgr, cv::Point(xmin, 0), cv::Point(xmin, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point((center_line+xmin)/2, 0), cv::Point((center_line+xmin)/2, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(center_line, 0), cv::Point(center_line, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point((center_line+xmax)/2, 0), cv::Point((center_line+xmax)/2, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(xmax, 0), cv::Point(xmax, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(0, ymin), cv::Point(bgr.cols, ymin), line_color, 2);
-                // cv::line(bgr, cv::Point(0, ymin+160), cv::Point(bgr.cols, ymin+160), line_color, 2);
-                // cv::line(bgr, cv::Point(0, ymin+320), cv::Point(bgr.cols, ymin+320), line_color, 2);//カメラの向きが上下逆
+                cv::line(bgr, cv::Point(xmin, 0), cv::Point(xmin, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point((center_line+xmin)/2, 0), cv::Point((center_line+xmin)/2, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(center_line, 0), cv::Point(center_line, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point((center_line+xmax)/2, 0), cv::Point((center_line+xmax)/2, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(xmax, 0), cv::Point(xmax, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(0, ymin), cv::Point(bgr.cols, ymin), line_color, 2);
+                cv::line(bgr, cv::Point(0, ymin+160), cv::Point(bgr.cols, ymin+160), line_color, 2);
+                cv::line(bgr, cv::Point(0, ymin+320), cv::Point(bgr.cols, ymin+320), line_color, 2);//カメラの向きが上下逆
 
                 //ST1~8
                 // cv::line(bgr, cv::Point(550, 0), cv::Point(550, bgr.rows), line_color, 2);
@@ -89,12 +89,12 @@ namespace yolox_cpp{
 
                 //坂上
                 // cv::line(bgr, cv::Point(1280, 540), cv::Point(0, 180), line_color, 2); //realsense
-                cv::line(bgr, cv::Point(0, 630 + c1_kakoi), cv::Point(1920, 1230 + c1_kakoi),  line_color, 2); //c1 坂上斜め赤
+                // cv::line(bgr, cv::Point(0, 630 + c1_kakoi), cv::Point(1920, 1230 + c1_kakoi),  line_color, 2); //c1 坂上斜め赤
                 // cv::line(bgr, cv::Point(0, 1170), cv::Point(1920, 630),  line_color, 2); //c1 坂上斜め青
-                cv::line(bgr, cv::Point(0, 1180 + c1_kakoi), cv::Point(1920, 560 + c1_kakoi),  line_color, 2); //c1 囲い hidariue 
-                cv::line(bgr, cv::Point(0, 1650 + c1_kakoi), cv::Point(1920, 590 + c1_kakoi),  line_color, 2); //c1 囲い migisita
-                cv::line(bgr, cv::Point(0, 650 + c1_kakoi), cv::Point(1920, 1550 + c1_kakoi),  line_color, 2); //c1 囲い hidarisita
-                cv::line(bgr, cv::Point(0, 620 + c1_kakoi), cv::Point(1920, 1100 + c1_kakoi),  line_color, 2); //c1 囲い migiue
+                // cv::line(bgr, cv::Point(0, 1180 + c1_kakoi), cv::Point(1920, 560 + c1_kakoi),  line_color, 2); //c1 囲い hidariue 
+                // cv::line(bgr, cv::Point(0, 1650 + c1_kakoi), cv::Point(1920, 590 + c1_kakoi),  line_color, 2); //c1 囲い migisita
+                // cv::line(bgr, cv::Point(0, 650 + c1_kakoi), cv::Point(1920, 1550 + c1_kakoi),  line_color, 2); //c1 囲い hidarisita
+                // cv::line(bgr, cv::Point(0, 620 + c1_kakoi), cv::Point(1920, 1100 + c1_kakoi),  line_color, 2); //c1 囲い migiue
 
                 // サイロ
                 // cv::line(bgr, cv::Point(350, 0), cv::Point(350, bgr.rows), line_color, 2);

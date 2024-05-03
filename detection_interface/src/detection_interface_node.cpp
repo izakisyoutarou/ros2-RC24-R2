@@ -26,6 +26,7 @@ namespace detection_interface
 
         realsense_max_x(get_parameter("realsense_max_x").as_int()),
         realsense_min_x(get_parameter("realsense_min_x").as_int()),
+        realsense_min_y(get_parameter("realsense_min_y").as_int()),
 
         court_color(get_parameter("court_color").as_string())
         {
@@ -199,17 +200,7 @@ namespace detection_interface
                     min_y.push_back(box.ymin);
                 }
 
-                // max_xで閾値以上の値を削除
-                auto new_end_max = std::remove_if(max_x.begin(), max_x.end(), [realsense_max_x](int value) {
-                    return value > max_threshold;
-                });
-                max_x.erase(new_end_max, max_x.end());
 
-                // min_xで閾値以下の値を削除
-                auto new_end_min = std::remove_if(min_x.begin(), min_x.end(), [realsense_min_x](int value) {
-                    return value < min_threshold;
-                });
-                min_x.erase(new_end_min, min_x.end());
 
                 // center_dist = cv_image_.at<uint32_t>(center_y, center_x);
                 // RCLCPP_INFO(this->get_logger(), "%d", center_dist);
@@ -222,6 +213,23 @@ namespace detection_interface
                 // msg_ball_coordinate->z = test[2];
 
                 if(class_id.size() != 0){//何も認識していないときに、下にいったらエラーを出す。そのためのif文
+                    // max_xで閾値以上の値を削除
+                    auto new_end_max = std::remove_if(max_x.begin(), max_x.end(), [this](int value) {
+                        return value > this->realsense_max_x;
+                    });
+                    max_x.erase(new_end_max, max_x.end());
+
+                    // min_xで閾値以下の値を削除
+                    auto new_end_min = std::remove_if(min_x.begin(), min_x.end(), [this](int value) {
+                        return value < this->realsense_min_x;
+                    });
+                    min_x.erase(new_end_min, min_x.end());
+                    
+                    auto new_end_ymin = std::remove_if(min_y.begin(), min_y.end(), [this](int value) {
+                        return value < this->realsense_min_y;
+                    });
+                    min_y.erase(new_end_ymin, min_y.end());
+                    
                     int xmax_in_max_x = *max_element(begin(max_x), end(max_x));
                     int xmin_in_min_x = *min_element(begin(min_x), end(min_x));
                     int ymin_in_min_y = *min_element(begin(min_y), end(min_y));

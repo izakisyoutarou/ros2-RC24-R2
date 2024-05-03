@@ -18,7 +18,7 @@ def generate_launch_description():
     urg_launch_path = os.path.join(
         get_package_share_directory('urg_node2'),
         'launch',
-        'urg_node2_2lidar.launch.py'
+        'urg_node2.launch.py'
     )
     # USB CAN起動ファイルのパス設定
     slcan_launch_path = os.path.join(
