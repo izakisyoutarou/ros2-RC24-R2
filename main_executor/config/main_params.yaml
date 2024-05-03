@@ -11,7 +11,7 @@ launch: #起動パラメータ
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
     tf_laser2robot: [0.0,0.0,0.0,  0.0,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
 
-    court_color: "blue" #コート情報
+    court_color: "red" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
     linear_max_vel: 1.5

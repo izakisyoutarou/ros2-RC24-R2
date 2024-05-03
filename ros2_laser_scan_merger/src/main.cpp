@@ -56,11 +56,14 @@ public:
 
 private:
   void scan_callback1(const sensor_msgs::msg::LaserScan::SharedPtr _msg){
+    time_start = chrono::system_clock::now();
     laser1_ = _msg;
     update_point_cloud_rgb();
     // cout<<"1: "<<laser1_->ranges.size()<<endl;
     // RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", _msg->ranges[0],
     //         _msg->ranges[100]);
+    time_end = chrono::system_clock::now();
+    RCLCPP_INFO(this->get_logger(), "scan time->%d[ms]", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
   }
 
   void scan_callback2(const sensor_msgs::msg::LaserScan::SharedPtr _msg){
@@ -85,7 +88,6 @@ private:
     tf1 = glob_rot * tf1;
     tf2 = glob_rot * tf2;
 
-    cout<<"hello "<<endl;
     // cout<<tf1[0]<<" "<<tf1[1]<<" "<<tf1[2]<<endl;
     // cout<<"---------------------------------------------------------------------------------"<<endl;
     // cout<<tf2[0]<<" "<<tf2[1]<<" "<<tf2[2]<<endl;
@@ -341,6 +343,7 @@ private:
 
   sensor_msgs::msg::LaserScan::SharedPtr laser1_;
   sensor_msgs::msg::LaserScan::SharedPtr laser2_;
+  chrono::system_clock::time_point time_start, time_end;
 };
 
 int main(int argc, char* argv[])
