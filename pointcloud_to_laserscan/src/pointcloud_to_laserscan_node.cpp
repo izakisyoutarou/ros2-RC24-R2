@@ -78,21 +78,21 @@ PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions &
   using std::placeholders::_1;
 
   // if pointcloud target frame specified, we need to filter by transform availability
-  if (!target_frame_.empty()) {
-    tf2_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
-    auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
-      this->get_node_base_interface(), this->get_node_timers_interface());
-    tf2_->setCreateTimerInterface(timer_interface);
-    tf2_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf2_);
-    message_filter_ = std::make_unique<MessageFilter>(
-      sub_, *tf2_, target_frame_, input_queue_size_,
-      this->get_node_logging_interface(),
-      this->get_node_clock_interface());
-    message_filter_->registerCallback(
-      std::bind(&PointCloudToLaserScanNode::cloudCallback, this, _1));
-  } else {  // otherwise setup direct subscription
-    sub_.registerCallback(std::bind(&PointCloudToLaserScanNode::cloudCallback, this, _1));
-  }
+  // if (!target_frame_.empty()) {
+  //   tf2_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  //   auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
+  //     this->get_node_base_interface(), this->get_node_timers_interface());
+  //   tf2_->setCreateTimerInterface(timer_interface);
+  //   tf2_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf2_);
+  //   message_filter_ = std::make_unique<MessageFilter>(
+  //     sub_, *tf2_, target_frame_, input_queue_size_,
+  //     this->get_node_logging_interface(),
+  //     this->get_node_clock_interface());
+  //   message_filter_->registerCallback(
+  //     std::bind(&PointCloudToLaserScanNode::cloudCallback, this, _1));
+  // } else {  // otherwise setup direct subscription
+  sub_.registerCallback(std::bind(&PointCloudToLaserScanNode::cloudCallback, this, _1));
+  // }
 
   // std::cout << "hello" << std::endl;
 
@@ -135,6 +135,7 @@ void PointCloudToLaserScanNode::subscriptionListenerThreadLoop(){
 }
 
 void PointCloudToLaserScanNode::cloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_msg){
+  time_start = chrono::system_clock::now();
   // RCLCPP_INFO(this->get_logger(),"/scan_cloudを受け取っています");
   // build laserscan output
   auto scan_msg = std::make_unique<sensor_msgs::msg::LaserScan>();
@@ -178,7 +179,7 @@ void PointCloudToLaserScanNode::cloudCallback(sensor_msgs::msg::PointCloud2::Con
   for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_msg, "x"),
     iter_y(*cloud_msg, "y"), iter_z(*cloud_msg, "z");
     iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
-  {
+    {
     if (std::isnan(*iter_x) || std::isnan(*iter_y) || std::isnan(*iter_z)) {
       RCLCPP_DEBUG(
         this->get_logger(),
@@ -228,6 +229,8 @@ void PointCloudToLaserScanNode::cloudCallback(sensor_msgs::msg::PointCloud2::Con
   }
   // std::cout<<scan_msg->ranges.size()<<std::endl;
   pub_->publish(std::move(scan_msg));
+  time_end = chrono::system_clock::now();
+  RCLCPP_INFO(this->get_logger(), "scan time->%d[μs]", chrono::duration_cast<chrono::microseconds>(time_end-time_start).count());
 }
 
 }  // namespace pointcloud_to_laserscan

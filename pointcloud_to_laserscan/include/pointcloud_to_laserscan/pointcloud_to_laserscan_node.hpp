@@ -56,6 +56,7 @@
 #include "sensor_msgs/msg/point_cloud2.hpp"
 
 #include "pointcloud_to_laserscan/visibility_control.h"
+using namespace std;
 
 namespace pointcloud_to_laserscan
 {
@@ -95,6 +96,7 @@ private:
     range_max_;
   bool use_inf_;
   double inf_epsilon_;
+   chrono::system_clock::time_point time_start, time_end, rotation_correction_time_start;
 };
 
 }  // namespace pointcloud_to_laserscan

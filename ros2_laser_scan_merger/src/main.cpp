@@ -56,11 +56,14 @@ public:
 
 private:
   void scan_callback1(const sensor_msgs::msg::LaserScan::SharedPtr _msg){
+    time_start = chrono::system_clock::now();
     laser1_ = _msg;
     update_point_cloud_rgb();
     // cout<<"1: "<<laser1_->ranges.size()<<endl;
     // RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", _msg->ranges[0],
     //         _msg->ranges[100]);
+    time_end = chrono::system_clock::now();
+    RCLCPP_INFO(this->get_logger(), "scan time->%d[μs]", chrono::duration_cast<chrono::microseconds>(time_end-time_start).count());
   }
 
   void scan_callback2(const sensor_msgs::msg::LaserScan::SharedPtr _msg){
@@ -82,10 +85,11 @@ private:
     glob_rot << cos(pose[2]), -sin(pose[2]), 0,
                 sin(pose[2]),  cos(pose[2]), 0,
                            0,             0, 1;
+
     tf1 = glob_rot * tf1;
     tf2 = glob_rot * tf2;
 
-    cout<<"hello "<<endl;
+    // cout<<"hello "<<endl;
     // cout<<tf1[0]<<" "<<tf1[1]<<" "<<tf1[2]<<endl;
     // cout<<"---------------------------------------------------------------------------------"<<endl;
     // cout<<tf2[0]<<" "<<tf2[1]<<" "<<tf2[2]<<endl;
@@ -111,13 +115,17 @@ private:
       for (float i = temp_min_; i <= temp_max_ && count < laser1_->ranges.size(); i += laser1_->angle_increment){
         pcl::PointXYZRGB pt;
         pt = pcl::PointXYZRGB(laser1R_, laser1G_, laser1B_);
+
         int used_count_ = count;
         if (flip1_) used_count_ = (int)laser1_->ranges.size() - 1 - count;
+
         float temp_x = -1.0*laser1_->ranges[used_count_] * std::cos(i);
         float temp_y = -1.0*laser1_->ranges[used_count_] * std::sin(i);
+
         pt.x = temp_x * std::cos(laser1Alpha_ * M_PI / 180) - temp_y * std::sin(laser1Alpha_ * M_PI / 180) + tf1[0];
         pt.y = temp_x * std::sin(laser1Alpha_ * M_PI / 180) + temp_y * std::cos(laser1Alpha_ * M_PI / 180) + tf1[1];
         pt.z = laser1ZOff_;
+
         if ((i < (laser1AngleMin_ * M_PI / 180)) || (i > (laser1AngleMax_ * M_PI / 180))){
           if (inverse1_){
             cloud_.points.push_back(pt);
@@ -127,12 +135,8 @@ private:
             res_[1] = r_;
             res_[0] = theta_;
             scan_data.push_back(res_);
-            if (theta_ < min_theta){
-              min_theta = theta_;
-            }
-            if (theta_ > max_theta){
-              max_theta = theta_;
-            }
+            if (theta_ < min_theta) min_theta = theta_;
+            if (theta_ > max_theta) max_theta = theta_;
           }
         }
         else{
@@ -171,10 +175,11 @@ private:
 
         float temp_x = -1.0*laser2_->ranges[used_count_] * std::cos(i);
         float temp_y = -1.0*laser2_->ranges[used_count_] * std::sin(i);
-        // std::cout<<laser2XOff_<<std::endl;
+
         pt.x = temp_x * std::cos(laser2Alpha_ * M_PI / 180) - temp_y * std::sin(laser2Alpha_ * M_PI / 180) + tf2[0];
         pt.y = temp_x * std::sin(laser2Alpha_ * M_PI / 180) + temp_y * std::cos(laser2Alpha_ * M_PI / 180) + tf2[1];
         pt.z = laser2ZOff_;
+
         if ((i < (laser2AngleMin_ * M_PI / 180)) || (i > (laser2AngleMax_ * M_PI / 180))){
           if (inverse2_){
             cloud_.points.push_back(pt);
@@ -184,12 +189,8 @@ private:
             res_[1] = r_;
             res_[0] = theta_;
             scan_data.push_back(res_);
-            if (theta_ < min_theta){
-              min_theta = theta_;
-            }
-            if (theta_ > max_theta){
-              max_theta = theta_;
-            }
+            if (theta_ < min_theta) min_theta = theta_;
+            if (theta_ > max_theta) max_theta = theta_;
           }
         }
         else{
@@ -201,12 +202,8 @@ private:
             res_[1] = r_;
             res_[0] = theta_;
             scan_data.push_back(res_);
-            if (theta_ < min_theta){
-              min_theta = theta_;
-            }
-            if (theta_ > max_theta){
-              max_theta = theta_;
-            }
+            if (theta_ < min_theta) min_theta = theta_;
+            if (theta_ > max_theta) max_theta = theta_;
           }
         }
         count++;
@@ -214,7 +211,8 @@ private:
     }
 
     auto pc2_msg_ = std::make_shared<sensor_msgs::msg::PointCloud2>();
-    pcl::toROSMsg(cloud_, *pc2_msg_);
+
+    pclToROSMsg(cloud_, pc2_msg_);
     pc2_msg_->header.frame_id = cloudFrameId_;
     pc2_msg_->header.stamp = now();
     pc2_msg_->is_dense = false;
@@ -251,6 +249,41 @@ private:
 
   float interpolate(float angle_1, float angle_2, float magnitude_1, float magnitude_2, float current_angle){
     return (magnitude_1 + current_angle * ((magnitude_2 - magnitude_1) / (angle_2 - angle_1)));
+  }
+
+  void pclToROSMsg(const pcl::PointCloud<pcl::PointXYZRGB>& cloud, sensor_msgs::msg::PointCloud2::SharedPtr& pc2_msg){
+    pc2_msg = std::make_shared<sensor_msgs::msg::PointCloud2>();
+    
+    pc2_msg->header.frame_id = cloudFrameId_;
+    pc2_msg->header.stamp = now();
+    pc2_msg->height = 1;
+    pc2_msg->width = cloud.points.size();
+    pc2_msg->is_bigendian = false;
+    pc2_msg->is_dense = false;
+    
+    sensor_msgs::PointCloud2Modifier modifier(*pc2_msg);
+    modifier.setPointCloud2Fields(4, "x",   1, sensor_msgs::msg::PointField::FLOAT32,
+                                     "y",   1, sensor_msgs::msg::PointField::FLOAT32,
+                                     "z",   1, sensor_msgs::msg::PointField::FLOAT32,
+                                     "rgb", 1, sensor_msgs::msg::PointField::FLOAT32);
+    
+    sensor_msgs::PointCloud2Iterator<float> iter_x(*pc2_msg, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(*pc2_msg, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(*pc2_msg, "z");
+    sensor_msgs::PointCloud2Iterator<uint8_t> iter_rgb(*pc2_msg, "rgb");
+
+    for (const auto& point : cloud.points) {
+        *iter_x = point.x;
+        *iter_y = point.y;
+        *iter_z = point.z;
+        // RGB値を32ビット浮動小数点数に変換
+        *reinterpret_cast<float*>(&(*iter_rgb)) = static_cast<float>(*reinterpret_cast<const int*>(&point.rgb));
+        
+        ++iter_x;
+        ++iter_y;
+        ++iter_z;
+        ++iter_rgb;
+    }
   }
 
   void initialize_params(){
@@ -341,6 +374,7 @@ private:
 
   sensor_msgs::msg::LaserScan::SharedPtr laser1_;
   sensor_msgs::msg::LaserScan::SharedPtr laser2_;
+  chrono::system_clock::time_point time_start, time_end, rotation_correction_time_start;
 };
 
 int main(int argc, char* argv[])
