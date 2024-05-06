@@ -63,7 +63,7 @@ private:
     // RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", _msg->ranges[0],
     //         _msg->ranges[100]);
     time_end = chrono::system_clock::now();
-    RCLCPP_INFO(this->get_logger(), "scan time->%d[μs]", chrono::duration_cast<chrono::microseconds>(time_end-time_start).count());
+    // RCLCPP_INFO(this->get_logger(), "scan time->%d[μs]", chrono::duration_cast<chrono::microseconds>(time_end-time_start).count());
   }
 
   void scan_callback2(const sensor_msgs::msg::LaserScan::SharedPtr _msg){
