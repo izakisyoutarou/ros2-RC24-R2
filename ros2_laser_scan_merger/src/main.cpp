@@ -45,9 +45,9 @@ public:
       std::bind(&scanMerger::scan_callback2, this, std::placeholders::_1));
 
     self_pose_ = this->create_subscription<geometry_msgs::msg::Vector3>(
-        "self_pose",
-        rclcpp::SensorDataQoS(),
-        std::bind(&scanMerger::subscriber_callback_self_pose, this, std::placeholders::_1)
+      "self_pose",
+      rclcpp::SensorDataQoS(),
+      std::bind(&scanMerger::subscriber_callback_self_pose, this, std::placeholders::_1)
     );
 
     point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(cloudTopic_, rclcpp::SensorDataQoS());
@@ -63,7 +63,7 @@ private:
     // RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", _msg->ranges[0],
     //         _msg->ranges[100]);
     time_end = chrono::system_clock::now();
-    // RCLCPP_INFO(this->get_logger(), "scan time->%d[μs]", chrono::duration_cast<chrono::microseconds>(time_end-time_start).count());
+    RCLCPP_INFO(this->get_logger(), "scan time->%d[μs]", chrono::duration_cast<chrono::microseconds>(time_end-time_start).count());
   }
 
   void scan_callback2(const sensor_msgs::msg::LaserScan::SharedPtr _msg){
@@ -114,7 +114,6 @@ private:
       }
       for (float i = temp_min_; i <= temp_max_ && count < laser1_->ranges.size(); i += laser1_->angle_increment){
         pcl::PointXYZRGB pt;
-        pt = pcl::PointXYZRGB(laser1R_, laser1G_, laser1B_);
 
         int used_count_ = count;
         if (flip1_) used_count_ = (int)laser1_->ranges.size() - 1 - count;
@@ -168,8 +167,6 @@ private:
       }
       for (float i = temp_min_; i <= temp_max_ && count < laser2_->ranges.size(); i += laser2_->angle_increment){
         pcl::PointXYZRGB pt;
-        pt = pcl::PointXYZRGB(laser2R_, laser2G_, laser2B_);
-
         int used_count_ = count;
         if (flip2_) used_count_ = (int)laser2_->ranges.size() - 1 - count;
 
@@ -262,27 +259,22 @@ private:
     pc2_msg->is_dense = false;
     
     sensor_msgs::PointCloud2Modifier modifier(*pc2_msg);
-    modifier.setPointCloud2Fields(4, "x",   1, sensor_msgs::msg::PointField::FLOAT32,
+    modifier.setPointCloud2Fields(3, "x",   1, sensor_msgs::msg::PointField::FLOAT32,
                                      "y",   1, sensor_msgs::msg::PointField::FLOAT32,
-                                     "z",   1, sensor_msgs::msg::PointField::FLOAT32,
-                                     "rgb", 1, sensor_msgs::msg::PointField::FLOAT32);
+                                     "z",   1, sensor_msgs::msg::PointField::FLOAT32);
     
     sensor_msgs::PointCloud2Iterator<float> iter_x(*pc2_msg, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(*pc2_msg, "y");
     sensor_msgs::PointCloud2Iterator<float> iter_z(*pc2_msg, "z");
-    sensor_msgs::PointCloud2Iterator<uint8_t> iter_rgb(*pc2_msg, "rgb");
 
     for (const auto& point : cloud.points) {
         *iter_x = point.x;
         *iter_y = point.y;
         *iter_z = point.z;
-        // RGB値を32ビット浮動小数点数に変換
-        *reinterpret_cast<float*>(&(*iter_rgb)) = static_cast<float>(*reinterpret_cast<const int*>(&point.rgb));
         
         ++iter_x;
         ++iter_y;
         ++iter_z;
-        ++iter_rgb;
     }
   }
 
@@ -297,9 +289,6 @@ private:
     this->declare_parameter("laser1Alpha", 0.0);
     this->declare_parameter("laser1AngleMin", -180.0);
     this->declare_parameter("laser1AngleMax", 180.0);
-    this->declare_parameter("laser1R", 255);
-    this->declare_parameter("laser1G", 0);
-    this->declare_parameter("laser1B", 0);
     this->declare_parameter("show1", true);
     this->declare_parameter("flip1", true);
     this->declare_parameter("inverse1", false);
@@ -311,9 +300,6 @@ private:
     this->declare_parameter("laser2Alpha", 225.0);
     this->declare_parameter("laser2AngleMin", -180.0);
     this->declare_parameter("laser2AngleMax", 180.0);
-    this->declare_parameter("laser2R", 0);
-    this->declare_parameter("laser2G", 0);
-    this->declare_parameter("laser2B", 255);
     this->declare_parameter("show2", true);
     this->declare_parameter("flip2", true);
     this->declare_parameter("inverse2", false);
@@ -329,9 +315,6 @@ private:
     this->get_parameter_or<float>("laser1Alpha", laser1Alpha_, 0.0);
     this->get_parameter_or<float>("laser1AngleMin", laser1AngleMin_, -180.0);
     this->get_parameter_or<float>("laser1AngleMax", laser1AngleMax_, 180.0);
-    this->get_parameter_or<uint8_t>("laser1R", laser1R_, 0);
-    this->get_parameter_or<uint8_t>("laser1G", laser1G_, 0);
-    this->get_parameter_or<uint8_t>("laser1B", laser1B_, 0);
     this->get_parameter_or<bool>("show1", show1_, true);
     this->get_parameter_or<bool>("flip1", flip1_, true);
     this->get_parameter_or<bool>("inverse1", inverse1_, false);
@@ -342,9 +325,6 @@ private:
     this->get_parameter_or<float>("laser2Alpha", laser2Alpha_, 0.0);
     this->get_parameter_or<float>("laser2AngleMin", laser2AngleMin_, -180.0);
     this->get_parameter_or<float>("laser2AngleMax", laser2AngleMax_, 180.0);
-    this->get_parameter_or<uint8_t>("laser2R", laser2R_, 0);
-    this->get_parameter_or<uint8_t>("laser2G", laser2G_, 0);
-    this->get_parameter_or<uint8_t>("laser2B", laser2B_, 0);
     this->get_parameter_or<bool>("show2", show2_, true);
     this->get_parameter_or<bool>("flip2", flip2_, true);
     this->get_parameter_or<bool>("inverse2", inverse2_, false);
@@ -365,8 +345,6 @@ private:
   Vector3d pose, tf1, tf2;
 
   float laser2XOff_, laser2YOff_, laser2ZOff_, laser2Alpha_, laser2AngleMin_, laser2AngleMax_;
-  uint8_t laser2R_, laser2G_, laser2B_;
-
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub1_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub2_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_;
