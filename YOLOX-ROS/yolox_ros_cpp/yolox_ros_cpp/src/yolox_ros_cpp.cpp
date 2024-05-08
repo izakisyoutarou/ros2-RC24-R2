@@ -161,45 +161,14 @@ namespace yolox_ros_cpp
         pub_img = cv_bridge::CvImage(img->header, "bgr8", frame).toImageMsg();
         this->pub_image_.publish(pub_img);
     }
-    bboxes_ex_msgs::msg::BoundingBoxes YoloXNode::objects_to_bboxes(cv::Mat frame, cv::Mat depth_image, std::vector<yolox_cpp::Object> objects, std_msgs::msg::Header header)
-    {
-        bboxes_ex_msgs::msg::BoundingBoxes boxes;
-        boxes.header = header;
-        for (auto obj : objects)
-        {
-            bboxes_ex_msgs::msg::BoundingBox box;
-            box.probability = obj.prob;
-            box.class_id = yolox_cpp::COCO_CLASSES[obj.label];
-            box.xmin = obj.rect.x;
-            box.ymin = obj.rect.y;
-            box.xmax = (obj.rect.x + obj.rect.width);
-            box.ymax = (obj.rect.y + obj.rect.height);
-            box.img_width = frame.cols;
-            box.img_height = frame.rows;
-            boxes.bounding_boxes.emplace_back(box);
-
-            if(this->params_.depth_flag){
-                int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
-                int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
-                box.center_dist = depth_image.at<int32_t>(center_y_value, center_x_value);
-            }
-        }
-        return boxes;
-    }
-
-    void YoloXNode::ThresholdCallback(const detection_interface_msg::msg::Threshold::ConstSharedPtr &ptr){
-        xmax = ptr->xmax;
-        xmin = ptr->xmin;
-        ymin = ptr->ymin;
-    }
 
     void YoloXNode::RgbdCallback(const realsense2_camera_msgs::msg::RGBD::ConstSharedPtr &ptr){
-        
-        auto img = cv_bridge::toCvCopy(ptr->rgb, "bgr8");
-        cv::Mat frame = img->image;
+        auto rgb_img = cv_bridge::toCvCopy(ptr->rgb, "bgr8");
+        cv::Mat frame = rgb_img->image;
         cv::Mat frame_prev;
 
-        cv::Mat depth_image = cv_bridge::toCvCopy(ptr->depth, ptr->depth.encoding)->image;
+        auto depth_img = cv_bridge::toCvCopy(ptr->depth, sensor_msgs::image_encodings::TYPE_16UC1);
+        cv::Mat depth_frame = depth_img->image;
 
         auto now = std::chrono::system_clock::now();
         auto objects = this->yolox_->inference(frame);
@@ -221,13 +190,46 @@ namespace yolox_ros_cpp
             }
         }
 
-        auto boxes = objects_to_bboxes(frame, depth_image, objects, img->header);
+        auto boxes = objects_to_bboxes(frame, depth_frame, objects, rgb_img->header);
 
         this->pub_bboxes_->publish(boxes);
         
         sensor_msgs::msg::Image::SharedPtr pub_img;
-        pub_img = cv_bridge::CvImage(img->header, "bgr8", frame).toImageMsg();
+        pub_img = cv_bridge::CvImage(rgb_img->header, "bgr8", frame).toImageMsg();
         this->pub_image_.publish(pub_img);
+    }
+
+    bboxes_ex_msgs::msg::BoundingBoxes YoloXNode::objects_to_bboxes(cv::Mat frame, cv::Mat depth_image, std::vector<yolox_cpp::Object> objects, std_msgs::msg::Header header)
+    {
+        bboxes_ex_msgs::msg::BoundingBoxes boxes;
+        boxes.header = header;
+        for (auto obj : objects)
+        {
+            bboxes_ex_msgs::msg::BoundingBox box;
+            box.probability = obj.prob;
+            box.class_id = yolox_cpp::COCO_CLASSES[obj.label];
+            box.xmin = obj.rect.x;
+            box.ymin = obj.rect.y;
+            box.xmax = (obj.rect.x + obj.rect.width);
+            box.ymax = (obj.rect.y + obj.rect.height);
+            box.img_width = frame.cols;
+            box.img_height = frame.rows;
+
+            if(this->params_.depth_flag){
+                int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
+                int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
+                box.center_dist = depth_image.at<uint16_t>(center_y_value, center_x_value);
+            }
+
+            boxes.bounding_boxes.emplace_back(box);
+        }
+        return boxes;
+    }
+
+    void YoloXNode::ThresholdCallback(const detection_interface_msg::msg::Threshold::ConstSharedPtr &ptr){
+        xmax = ptr->xmax;
+        xmin = ptr->xmin;
+        ymin = ptr->ymin;
     }
 }
 

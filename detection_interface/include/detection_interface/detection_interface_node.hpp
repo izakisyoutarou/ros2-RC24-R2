@@ -17,7 +17,7 @@
 #include "detection_interface_msg/msg/siro_param.hpp"
 #include "detection_interface_msg/msg/threshold.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
-#include "realsense2_camera_msgs/msg/RGBD.hpp"
+#include "realsense2_camera_msgs/msg/rgbd.hpp"
 
 #include "detection_interface/coordinate_transformation.hpp"
 
@@ -54,7 +54,7 @@ namespace detection_interface
             //splineから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_way_point;
 
-            //realsenseのrgbdeをsub
+            // realsenseのrgbdeをsub
             rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr _sub_realsense_d435i;
             void d435iImageCallback(const realsense2_camera_msgs::msg::RGBD::ConstSharedPtr&);
 
@@ -118,7 +118,7 @@ namespace detection_interface
             bool realsense_front_ball(int center_y, int threshold_y);
 
             //坂上から見たときにC3かC5かをみる境界線の計算
-            bool bounday_line(int x, int y, const std::vector<double> point1, const std::vector<double> point2);
+            bool bounday_line(int x, int y, const std::vector<long int> point1, const std::vector<long int> point2);
 
             //坂上から見たときに(C2付近)ひし形の内側かどうかの計算をまとめる関数
             bool rhombus_inside(int x, int y);
@@ -147,27 +147,29 @@ namespace detection_interface
             ////////////////////////定数
 
             //坂上の画像認識の範囲
-            const std::vector<double> str_range_point1_blue;
-            const std::vector<double> str_range_point2_blue;
-            const std::vector<double> str_range_point1_red;
-            const std::vector<double> str_range_point2_red;
+            const std::vector<long int> str_range_point1_blue;
+            const std::vector<long int> str_range_point2_blue;
+            const std::vector<long int> str_range_point1_red;
+            const std::vector<long int> str_range_point2_red;
 
             //C2から見たひし形の枠の範囲
-            const std::vector<double> str_range_point1_1_C2;
-            const std::vector<double> str_range_point1_2_C2;
-            const std::vector<double> str_range_point2_1_C2;
-            const std::vector<double> str_range_point2_2_C2;
-            const std::vector<double> str_range_point3_1_C2;
-            const std::vector<double> str_range_point3_2_C2;
-            const std::vector<double> str_range_point4_1_C2;
-            const std::vector<double> str_range_point4_2_C2;
+            const std::vector<long int> str_range_point1_1_C2;
+            const std::vector<long int> str_range_point1_2_C2;
+            const std::vector<long int> str_range_point2_1_C2;
+            const std::vector<long int> str_range_point2_2_C2;
+            const std::vector<long int> str_range_point3_1_C2;
+            const std::vector<long int> str_range_point3_2_C2;
+            const std::vector<long int> str_range_point4_1_C2;
+            const std::vector<long int> str_range_point4_2_C2;
 
             //C3かC5についたときのST1~8につながる画像認識の範囲
             const int str_range_y_C3orC5_2;
 
             //ST系に行ったときの吸引判定
-            const std::vector<long int> front_suction_check;
-            const std::vector<long int> back_suction_check;
+            const std::vector<long int> front_suction_check_point;
+            const std::vector<long int> back_suction_check_point;
+            const int depth_front_suction_check_value;
+            const int depth_back_suction_check_value;
 
             //realsenseの最小、最大閾値
             const int realsense_max_x;

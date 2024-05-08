@@ -5,24 +5,27 @@ namespace detection_interface
     DetectionInterface::DetectionInterface(const rclcpp::NodeOptions &options) : DetectionInterface("", options) {}
     DetectionInterface::DetectionInterface(const std::string &name_space, const rclcpp::NodeOptions &options)
         : rclcpp::Node("detection_interface_node", name_space, options),
-        str_range_point1_blue(get_parameter("str_range_point1_blue").as_double_array()),
-        str_range_point2_blue(get_parameter("str_range_point2_blue").as_double_array()),
-        str_range_point1_red(get_parameter("str_range_point1_red").as_double_array()),
-        str_range_point2_red(get_parameter("str_range_point2_red").as_double_array()),
+        str_range_point1_blue(get_parameter("str_range_point1_blue").as_integer_array()),
+        str_range_point2_blue(get_parameter("str_range_point2_blue").as_integer_array()),
+        str_range_point1_red(get_parameter("str_range_point1_red").as_integer_array()),
+        str_range_point2_red(get_parameter("str_range_point2_red").as_integer_array()),
 
-        str_range_point1_1_C2(get_parameter("str_range_point1_1_C2").as_double_array()),
-        str_range_point1_2_C2(get_parameter("str_range_point1_2_C2").as_double_array()),
-        str_range_point2_1_C2(get_parameter("str_range_point2_1_C2").as_double_array()),
-        str_range_point2_2_C2(get_parameter("str_range_point2_2_C2").as_double_array()),
-        str_range_point3_1_C2(get_parameter("str_range_point3_1_C2").as_double_array()),
-        str_range_point3_2_C2(get_parameter("str_range_point3_2_C2").as_double_array()),
-        str_range_point4_1_C2(get_parameter("str_range_point4_1_C2").as_double_array()),
-        str_range_point4_2_C2(get_parameter("str_range_point4_2_C2").as_double_array()),
+        str_range_point1_1_C2(get_parameter("str_range_point1_1_C2").as_integer_array()),
+        str_range_point1_2_C2(get_parameter("str_range_point1_2_C2").as_integer_array()),
+        str_range_point2_1_C2(get_parameter("str_range_point2_1_C2").as_integer_array()),
+        str_range_point2_2_C2(get_parameter("str_range_point2_2_C2").as_integer_array()),
+        str_range_point3_1_C2(get_parameter("str_range_point3_1_C2").as_integer_array()),
+        str_range_point3_2_C2(get_parameter("str_range_point3_2_C2").as_integer_array()),
+        str_range_point4_1_C2(get_parameter("str_range_point4_1_C2").as_integer_array()),
+        str_range_point4_2_C2(get_parameter("str_range_point4_2_C2").as_integer_array()),
 
         str_range_y_C3orC5_2(get_parameter("str_range_y_C3orC5_2").as_int()),
 
-        front_suction_check(get_parameter("front_suction_check").as_integer_array()),
-        back_suction_check(get_parameter("back_suction_check").as_integer_array()),
+        front_suction_check_point(get_parameter("front_suction_check_point").as_integer_array()),
+        back_suction_check_point(get_parameter("back_suction_check_point").as_integer_array()),
+        depth_front_suction_check_value(get_parameter("depth_front_suction_check_value").as_int()),
+        depth_back_suction_check_value(get_parameter("depth_back_suction_check_value").as_int()),
+
 
         realsense_max_x(get_parameter("realsense_max_x").as_int()),
         realsense_min_x(get_parameter("realsense_min_x").as_int()),
@@ -71,11 +74,17 @@ namespace detection_interface
                 std::bind(&DetectionInterface::callback_way_point, this, std::placeholders::_1)
             );
 
-            _sub_realsense_d435i = image_transport::create_subscription(
-                this, "/camera/d435i/color/image_raw",
-                std::bind(&DetectionInterface::d435iImageCallback, this, std::placeholders::_1),
-                "raw"
+            _sub_realsense_d435i = this->create_subscription<realsense2_camera_msgs::msg::RGBD>(
+                "/camera/d435i/rgbd",
+                _qos,
+                std::bind(&DetectionInterface::d435iImageCallback, this, std::placeholders::_1)
             );
+
+            // _sub_realsense_d435i = image_transport::create_subscription(
+            //     this, "/camera/d435i/color/image_raw",
+            //     std::bind(&DetectionInterface::d435iImageCallback, this, std::placeholders::_1),
+            //     "raw"
+            // );
 
             _sub_depth_ = image_transport::create_subscription(
                 this, "/camera/camera/depth/image_rect_raw",
@@ -127,8 +136,8 @@ namespace detection_interface
                         min_max_xy[count][0] = box.xmin;
                         min_max_xy[count][1] = box.xmax;
                         min_max_xy[count][2] = box.ymin;
-                        min_max_xy[count][3] = box.ymax;      
-                        count++;  // 使用された要素数をインクリメント
+                        min_max_xy[count][3] = box.ymax;
+                        count++;// 使用された要素数をインクリメント
                     }
 
                     if(box.class_id == "redball" || box.class_id == "blueball"){
@@ -138,7 +147,7 @@ namespace detection_interface
                         int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
                         int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
                         center_x.push_back(center_x_value);
-                        center_y.push_back(box.ymax);
+                        center_y.push_back(center_y_value);
 
                         ymax.push_back(box.ymax);
 
@@ -199,8 +208,6 @@ namespace detection_interface
                     min_x.push_back(box.xmin);
                     min_y.push_back(box.ymin);
                 }
-
-
 
                 // center_dist = cv_image_.at<uint32_t>(center_y, center_x);
                 // RCLCPP_INFO(this->get_logger(), "%d", center_dist);
@@ -267,16 +274,13 @@ namespace detection_interface
                 uint16_t depth_value;
                 
                 if(msg_front_ball.data){
-                    pixel_value = frame_rgb.at<cv::Vec3b>(front_suction_check[0], front_suction_check[1]);
-                    depth_value = frame_depth.at<uint16_t>(front_suction_check[0], front_suction_check[1]); 
-                    if(depth_value < 300) {
+                    pixel_value = frame_rgb.at<cv::Vec3b>(front_suction_check_point[0], front_suction_check_point[1]);
+                    depth_value = frame_depth.at<uint16_t>(front_suction_check_point[0], front_suction_check_point[1]); 
+
+                    if(depth_value < depth_front_suction_check_value) {
                         uchar blue = pixel_value[0];
                         uchar green = pixel_value[1];
                         uchar red = pixel_value[2];
-
-                        // std::cout << "blue" << (int)blue << std::endl;
-                        // std::cout << "green" << (int)green << std::endl;
-                        // std::cout << "red" << (int)red << std::endl;
 
                         if(red > green + 50 && red > blue + 50) msg_suction_check->data = "R"; //赤ボール
                         else if(blue > green + 30 && blue > red + 30) msg_suction_check->data = "B"; //青ボール
@@ -287,16 +291,15 @@ namespace detection_interface
                     }
                 }
                 else{
-                    pixel_value = frame_rgb.at<cv::Vec3b>(back_suction_check[0], back_suction_check[1]);
-                    depth_value = frame_depth.at<uint16_t>(front_suction_check[0], front_suction_check[1]); 
-                    if(depth_value < 500) {
+                    pixel_value = frame_rgb.at<cv::Vec3b>(back_suction_check_point[0], back_suction_check_point[1]);
+                    depth_value = frame_depth.at<uint16_t>(back_suction_check_point[0], back_suction_check_point[1]);
+
+                    std::cout << depth_value << std::endl;
+
+                    if(depth_value < depth_back_suction_check_value) {
                         uchar blue = pixel_value[0];
                         uchar green = pixel_value[1];
                         uchar red = pixel_value[2];
-
-                        // std::cout << "blue" << (int)blue << std::endl;
-                        // std::cout << "green" << (int)green << std::endl;
-                        // std::cout << "red" << (int)red << std::endl;
 
                         if(red > green + 50 && red > blue + 50) msg_suction_check->data = "R"; //赤ボール
                         else if(blue > green + 30 && blue > red + 30) msg_suction_check->data = "B"; //青ボール
@@ -312,8 +315,8 @@ namespace detection_interface
 
             ////////////d435iを見る(これは常に見てる)
             // 点の座標を設定
-            cv::Point front_point(front_suction_check[1], front_suction_check[0]);
-            cv::Point back_point(back_suction_check[1], back_suction_check[0]);
+            cv::Point front_point(front_suction_check_point[1], front_suction_check_point[0]);
+            cv::Point back_point(back_suction_check_point[1], back_suction_check_point[0]);
 
             // 画像に緑色の点を描画（半径2の小さい円として）
             const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
@@ -324,7 +327,7 @@ namespace detection_interface
             cv::resize(frame_rgb, frame_prev, target_size);
             cv::imshow("d435i", frame_prev);
             cv::waitKey(1);
-            ///////////    
+            ///////////
         }
 
         void DetectionInterface::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg){
@@ -352,19 +355,32 @@ namespace detection_interface
 
         void DetectionInterface::c1camera_c2(const std::vector<int> center_x, const std::vector<int> center_y){
             auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
+            // std::vector<std::string> c3_or_c4;
+            bool is_collection_C4 = true;
 
             if(storage_flag){//認識区間内で一回だけc3 or c4 or ""を送るようにする。サイロに向かうところで再度tureになる
-                bool is_collection_C4 = true;
                 for (size_t i = 0; i < center_x.size(); ++i) {
                     if(rhombus_inside(center_x[i], center_y[i])){//坂上からc1で見たときにひし形の中にある
+
                         if(court_color == "blue") is_collection_C4 = bounday_line(center_x[i], center_y[i], str_range_point1_blue, str_range_point2_blue);
                         else is_collection_C4 = bounday_line(center_x[i], center_y[i], str_range_point1_red, str_range_point2_red);
+
+                        // if(is_collection_C4) c3_or_c4.push_back("c4");
+                        // else c3_or_c4.push_back("c3");
                     }
                     if(!is_collection_C4)break;//c3を見つけた瞬間、for文を抜け出す
                 }
 
+                // auto c3 = std::find(c3_or_c4.begin(), c3_or_c4.end(), "c3");
+                // auto c4 = std::find(c3_or_c4.begin(), c3_or_c4.end(), "c4");
+
+                // if(c3 != c3_or_c4.end())msg_collection_point->data = "c3";
+                // else if(c4 != c3_or_c4.end())msg_collection_point->data = "c4";
+
                 if(!is_collection_C4) msg_collection_point->data = "c3";
                 else msg_collection_point->data = "c4";
+
+                msg_collection_point->data = "";
 
                 _pub_collection_point->publish(*msg_collection_point);
 
@@ -420,9 +436,9 @@ namespace detection_interface
                     int silo_num_count = silo_num;
                     int silo_beside = silo_num / 3;
 
-                    if(center_y[i] > silo_y[silo_beside][0] && center_y[i] < silo_y[silo_beside][1]) silo_num += 1;
-                    else if(center_y[i] > silo_y[silo_beside][1] && center_y[i] < silo_y[silo_beside][2]) silo_num += 2;
-                    else if(center_y[i] > silo_y[silo_beside][2] && center_y[i] < silo_y[silo_beside][3]) silo_num += 3;
+                    if(ymax[i] > silo_y[silo_beside][0] && ymax[i] < silo_y[silo_beside][1]) silo_num += 1;
+                    else if(ymax[i] > silo_y[silo_beside][1] && ymax[i] < silo_y[silo_beside][2]) silo_num += 2;
+                    else if(ymax[i] > silo_y[silo_beside][2] && ymax[i] < silo_y[silo_beside][3]) silo_num += 3;
 
                     // for (int z = 0; z < 5; ++z) {
                     //     RCLCPP_INFO(this->get_logger(), "Index: %d, center_y: %d, min_y: %d, min_y-cen: %d, max_y-cen: %d, max_y: %d",
@@ -600,7 +616,7 @@ namespace detection_interface
         }
 
         //坂上からひし形を見たときの斜めの線
-        bool DetectionInterface::bounday_line(int x, int y, const std::vector<double> point1, const std::vector<double> point2){
+        bool DetectionInterface::bounday_line(int x, int y, const std::vector<long int> point1, const std::vector<long int> point2){
             float a = 0;
             float b = 0;
             float Y = 0;

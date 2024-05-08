@@ -1,8 +1,8 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: true
-    scan: true
-    trajectory_planner: true
+    slcan: false
+    scan: false
+    trajectory_planner: false
     yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
@@ -165,27 +165,29 @@ spline_trajectories_node:
 
 detection_interface_node:
   ros__parameters:
-    str_range_point1_blue: [0.0, 1170.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
-    str_range_point2_blue: [1920.0, 630.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
-    str_range_point1_red: [0.0, 580.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
-    str_range_point2_red: [1920.0, 1230.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+    str_range_point1_blue: [0, 1170] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_blue: [1920, 630] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+    str_range_point1_red: [0, 580] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_red: [1920, 1230] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
 
     #C2からひし形を見たときの囲い
-    str_range_point1_1_C2: [0.0, 1180.0] #左上の線
-    str_range_point1_2_C2: [1920.0, 560.0]
-    str_range_point2_1_C2: [0.0, 1650.0] #右下の線
-    str_range_point2_2_C2: [1920.0, 590.0]
-    str_range_point3_1_C2: [0.0, 650.0] #左下の線
-    str_range_point3_2_C2: [1920.0, 1550.0]
-    str_range_point4_1_C2: [0.0, 620.0] #右上の線
-    str_range_point4_2_C2: [1920.0, 1100.0]
+    str_range_point1_1_C2: [0, 1180] #左上の線
+    str_range_point1_2_C2: [1920, 560]
+    str_range_point2_1_C2: [0, 1650] #右下の線
+    str_range_point2_2_C2: [1920, 590]
+    str_range_point3_1_C2: [0, 650] #左下の線
+    str_range_point3_2_C2: [1920, 1550]
+    str_range_point4_1_C2: [0, 620] #右上の線
+    str_range_point4_2_C2: [1920, 1100]
 
     #C3とC5から、ST1~8の中のどの回収ポイントかを判断するときに一番手前のバウンディングボックスから一定量引く
     str_range_y_C3orC5_2: 160
 
     #ST系の行ったときの吸引判定
-    front_suction_check: [200, 650] #/front_ballがtrueだった場合(y,x)
-    back_suction_check: [500, 700] #/front_ballがfalseだった場合(y,x)
+    front_suction_check_point: [200, 650] #/front_ballがtrueだった場合(y,x)
+    back_suction_check_point: [500, 700] #/front_ballがfalseだった場合(y,x)
+    depth_front_suction_check_value: 200 
+    depth_back_suction_check_value: 330
 
     #realsenseの
     realsense_max_x: 1100
