@@ -294,7 +294,7 @@ namespace detection_interface
                     pixel_value = frame_rgb.at<cv::Vec3b>(back_suction_check_point[0], back_suction_check_point[1]);
                     depth_value = frame_depth.at<uint16_t>(back_suction_check_point[0], back_suction_check_point[1]);
 
-                    std::cout << depth_value << std::endl;
+                    // std::cout << "depth" << depth_value << std::endl;
 
                     if(depth_value < depth_back_suction_check_value) {
                         uchar blue = pixel_value[0];

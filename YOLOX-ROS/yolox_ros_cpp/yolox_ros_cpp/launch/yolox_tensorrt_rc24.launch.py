@@ -215,8 +215,8 @@ def generate_launch_description():
     )
     return launch.LaunchDescription(
         launch_args +   [
-                        # realsecnse_d435i_launch,
+                        realsense_d435i_launch,
                         # container, c1_launch, 
-                        container_realsense, realsense_d455_launch,
+                        # container_realsense, realsense_d455_launch,
                         ]
     )
