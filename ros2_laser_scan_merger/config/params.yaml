@@ -45,7 +45,7 @@
           reliability: best_effort
     queue_size: 16
     range_max: 8.0
-    range_min: 0.02
+    range_min: 0.2
     scan_time: 0.025
     target_frame: laser
     transform_tolerance: 0.0
