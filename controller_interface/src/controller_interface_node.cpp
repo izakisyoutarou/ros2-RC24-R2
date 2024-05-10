@@ -199,7 +199,9 @@ namespace controller_interface
             //stick
             _socket_timer = this->create_wall_timer(
                 std::chrono::milliseconds(this->get_parameter("interval_ms").as_int()),
-                [this] { _recv_callback(); }
+                [this] { _recv_callback(); 
+                
+                }
             );
 
             //sequenser
@@ -405,6 +407,7 @@ namespace controller_interface
             if(joy_main.is_recved()){
                 unsigned char data[16];
                 _recv_joy_main(joy_main.data(data, sizeof(data)));
+                
             }
         }
 
@@ -423,6 +426,8 @@ namespace controller_interface
                 msg_angular->candlc = 4;
                 auto msg_gazebo = std::make_shared<geometry_msgs::msg::Twist>();
                 uint8_t _candata_joy[8];
+                // RCLCPP_INFO(this->get_logger(),"False");
+                
                 //低速モード
                 if(is_slow_speed == true){
                     slow_velPlanner_linear_x.vel(static_cast<double>(values[1]));//unityとロボットにおける。xとyが違うので逆にしている。
@@ -444,6 +449,10 @@ namespace controller_interface
                     msg_gazebo->linear.x = slow_velPlanner_linear_x.vel();
                     msg_gazebo->linear.y = slow_velPlanner_linear_y.vel();
                     msg_gazebo->angular.z = velPlanner_angular_z.vel();
+
+                    cout<<slow_velPlanner_linear_x.vel()<<endl;
+
+                    
                 }
                 //高速モードのとき
                 else {
