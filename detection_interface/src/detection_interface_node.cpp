@@ -191,6 +191,7 @@ namespace detection_interface
                 std::vector<std::string> class_id;
                 std::vector<int> center_x;
                 std::vector<int> center_y;
+                std::vector<uint16_t> center_depth;
 
                 std::vector<int> max_x;
                 std::vector<int> min_x;
@@ -203,23 +204,28 @@ namespace detection_interface
                     int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
                     center_x.push_back(center_x_value);
                     center_y.push_back(center_y_value);
+                    center_depth.push_back(box.center_dist);
 
                     max_x.push_back(box.xmax);
                     min_x.push_back(box.xmin);
                     min_y.push_back(box.ymin);
                 }
 
-                // center_dist = cv_image_.at<uint32_t>(center_y, center_x);
-                // RCLCPP_INFO(this->get_logger(), "%d", center_dist);
+                // for (int z = 0; z < center_depth.size(); ++z) {
+                //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, center_depth[z]);
+                // }
 
-                // Vector3d test111 = ct.Rx_Ry_Rz(static_cast<double>(center_x[0]), static_cast<double>(center_y[0]), /*(double)center_dist*/200, pose);
-                // Vector3d test111 = ct.Rx_Ry_Rz(center_x, center_y, /*(double)center_dist*/200, pose);
-
-                // msg_ball_coordinate->x = test[0];
-                // msg_ball_coordinate->y = test[1];
-                // msg_ball_coordinate->z = test[2];
+                
 
                 if(class_id.size() != 0){//何も認識していないときに、下にいったらエラーを出す。そのためのif文
+
+                    Vector3d test111 = ct.Rx_Ry_Rz(static_cast<double>(center_x[0]), static_cast<double>(center_y[0]), (double)center_depth[0], pose);
+                    // Vector3d test111 = ct.Rx_Ry_Rz(center_x, center_y, /*(double)center_dist*/200, pose);
+
+                    msg_ball_coordinate->x = test111[0];
+                    msg_ball_coordinate->y = test111[1];
+                    msg_ball_coordinate->z = test111[2];
+                    
                     // max_xで閾値以上の値を削除
                     auto new_end_max = std::remove_if(max_x.begin(), max_x.end(), [this](int value) {
                         return value > this->realsense_max_x;

@@ -54,7 +54,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#しきい値
             'conf_d455',
-            default_value='0.85',
+            default_value='0.9',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(
@@ -215,8 +215,8 @@ def generate_launch_description():
     )
     return launch.LaunchDescription(
         launch_args +   [
-                        realsense_d435i_launch,
+                        # realsense_d435i_launch,
                         # container, c1_launch, 
-                        # container_realsense, realsense_d455_launch,
+                        container_realsense, realsense_d455_launch,
                         ]
     )
