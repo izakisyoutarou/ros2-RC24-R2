@@ -111,10 +111,10 @@ rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
     laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
-    odom_weight_angler: 4.0e-5
-    voxel_size: 0.08
-    trial_num: 50
+    odom_weight_liner: 3.0e-4 #値が大きくなると共分散が小さくなる 
+    odom_weight_angler: 3.0e-5
+    voxel_size: 0.07
+    trial_num: 40
     inlier_dist_threshold: 0.012
     inlier_length_threshold: 0.5 #インライアのしきい値
     second_ransac: false           #2回ransacをするか
