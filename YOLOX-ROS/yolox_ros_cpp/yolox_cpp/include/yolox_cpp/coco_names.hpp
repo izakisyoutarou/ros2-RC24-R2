@@ -12,7 +12,7 @@ namespace yolox_cpp{
         // "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
         // "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
         // "hair drier", "toothbrush"
-        "redball", "blueball", "yelloball" //新規追加、これは、学習させたときのクラスと一緒にしている。
+        "redball", "blueball", "silo", "purpleball" //新規追加、これは、学習させたときのクラスと一緒にしている。
     };
     const float color_list[80][3] ={
         {0.000, 0.447, 0.741},

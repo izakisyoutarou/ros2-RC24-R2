@@ -93,15 +93,36 @@ namespace yolox_ros_cpp
 #endif
         }
         RCLCPP_INFO(this->get_logger(), "model loaded");
-
-        this->sub_image_ = image_transport::create_subscription(
-            this, this->params_.src_image_topic_name,
-            std::bind(&YoloXNode::colorImageCallback, this, std::placeholders::_1),
-            "raw");
+        
+        if(this->params_.depth_flag){
+            _sub_rgbd = this->create_subscription<realsense2_camera_msgs::msg::RGBD>(
+                "/camera/d455/rgbd",
+                10,
+                std::bind(&YoloXNode::RgbdCallback, this, std::placeholders::_1)
+            );
+        }
+        else{
+            this->sub_image_ = image_transport::create_subscription(
+                this, this->params_.src_image_topic_name,
+                std::bind(&YoloXNode::colorImageCallback, this, std::placeholders::_1),
+                "raw");
+        }
         this->pub_bboxes_ = this->create_publisher<bboxes_ex_msgs::msg::BoundingBoxes>(
             this->params_.publish_boundingbox_topic_name,
             10);
         this->pub_image_ = image_transport::create_publisher(this, this->params_.publish_image_topic_name);
+
+        _sub_threshold = this->create_subscription<detection_interface_msg::msg::Threshold>(
+            "threshold",
+            10,
+            std::bind(&YoloXNode::ThresholdCallback, this, std::placeholders::_1)
+        );
+
+        // _sub_rgbd = this->create_subscription<realsense2_camera_msgs::msg::RGBD>(
+        //     "/camera/d455/rgbd",
+        //     10,
+        //     std::bind(&YoloXNode::RgbdCallback, this, std::placeholders::_1)
+        // );
     }
 
     void YoloXNode::colorImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &ptr)
@@ -110,14 +131,16 @@ namespace yolox_ros_cpp
         cv::Mat frame = img->image;
         cv::Mat frame_prev;
 
+        cv::Mat depth_image;
+
         auto now = std::chrono::system_clock::now();
         auto objects = this->yolox_->inference(frame);
 
         auto end = std::chrono::system_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
-        // RCLCPP_INFO(this->get_logger(), "Inference: %f FPS", 1000.0f / elapsed.count()); //FPSを確認できる
+        //RCLCPP_INFO(this->get_logger(), "Inference: %f FPS", 1000.0f / elapsed.count()); //FPSを確認できる
 
-        yolox_cpp::utils::draw_objects(frame, objects, this->class_names_);
+        yolox_cpp::utils::draw_objects(xmin, ymin, xmax, frame, objects, this->class_names_);
         if (this->params_.imshow_isshow)
         {
             cv::Size target_size(1280, 720); // Set your desired size here
@@ -130,7 +153,7 @@ namespace yolox_ros_cpp
             }
         }
 
-        auto boxes = objects_to_bboxes(frame, objects, img->header);
+        auto boxes = objects_to_bboxes(frame, depth_image, objects, img->header);
 
         this->pub_bboxes_->publish(boxes);
         
@@ -138,7 +161,45 @@ namespace yolox_ros_cpp
         pub_img = cv_bridge::CvImage(img->header, "bgr8", frame).toImageMsg();
         this->pub_image_.publish(pub_img);
     }
-    bboxes_ex_msgs::msg::BoundingBoxes YoloXNode::objects_to_bboxes(cv::Mat frame, std::vector<yolox_cpp::Object> objects, std_msgs::msg::Header header)
+
+    void YoloXNode::RgbdCallback(const realsense2_camera_msgs::msg::RGBD::ConstSharedPtr &ptr){
+        auto rgb_img = cv_bridge::toCvCopy(ptr->rgb, "bgr8");
+        cv::Mat frame = rgb_img->image;
+        cv::Mat frame_prev;
+
+        auto depth_img = cv_bridge::toCvCopy(ptr->depth, sensor_msgs::image_encodings::TYPE_16UC1);
+        cv::Mat depth_frame = depth_img->image;
+
+        auto now = std::chrono::system_clock::now();
+        auto objects = this->yolox_->inference(frame);
+
+        auto end = std::chrono::system_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
+        //RCLCPP_INFO(this->get_logger(), "Inference: %f FPS", 1000.0f / elapsed.count()); //FPSを確認できる
+
+        yolox_cpp::utils::draw_objects(xmin, ymin, xmax, frame, objects, this->class_names_);
+        if (this->params_.imshow_isshow)
+        {
+            cv::Size target_size(1280, 720); // Set your desired size here
+            cv::resize(frame, frame_prev, target_size);
+            cv::imshow("yolox", frame_prev);
+            auto key = cv::waitKey(1);
+            if (key == 27)
+            {
+                rclcpp::shutdown();
+            }
+        }
+
+        auto boxes = objects_to_bboxes(frame, depth_frame, objects, rgb_img->header);
+
+        this->pub_bboxes_->publish(boxes);
+        
+        sensor_msgs::msg::Image::SharedPtr pub_img;
+        pub_img = cv_bridge::CvImage(rgb_img->header, "bgr8", frame).toImageMsg();
+        this->pub_image_.publish(pub_img);
+    }
+
+    bboxes_ex_msgs::msg::BoundingBoxes YoloXNode::objects_to_bboxes(cv::Mat frame, cv::Mat depth_image, std::vector<yolox_cpp::Object> objects, std_msgs::msg::Header header)
     {
         bboxes_ex_msgs::msg::BoundingBoxes boxes;
         boxes.header = header;
@@ -153,9 +214,22 @@ namespace yolox_ros_cpp
             box.ymax = (obj.rect.y + obj.rect.height);
             box.img_width = frame.cols;
             box.img_height = frame.rows;
+
+            if(this->params_.depth_flag){
+                int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
+                int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
+                box.center_dist = depth_image.at<uint16_t>(center_y_value, center_x_value);
+            }
+
             boxes.bounding_boxes.emplace_back(box);
         }
         return boxes;
+    }
+
+    void YoloXNode::ThresholdCallback(const detection_interface_msg::msg::Threshold::ConstSharedPtr &ptr){
+        xmax = ptr->xmax;
+        xmin = ptr->xmin;
+        ymin = ptr->ymin;
     }
 }
 

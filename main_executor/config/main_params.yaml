@@ -1,28 +1,27 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: true
-    scan: true
-    trajectory_planner: true
+    slcan: false
+    scan: false
+    trajectory_planner: false
     yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:
     initial_pose: [0.35, 0.55, 0.0]  #初期位置[x,y,yaw]
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
-    # tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
-    tf_laser2robot: [0.2785,0.0,0.0,  3.14159,0.0,1.5708]  #ロボット->lidarのTF[x,y,z,r,p,y]
+    tf_laser2robot: [0.0,0.0,0.0,  0.0,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
 
     court_color: "red" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
-    linear_max_vel: 1.5
-    linear_max_acc: 2.5
-    linear_max_dec: 1.0
+    linear_max_vel: 2.0
+    linear_max_acc: 3.0
+    linear_max_dec: 3.0
     linear_max_jer: 0.0
     # 回転  速度[deg/sint x, int y, const std::vector<double> point1, const std::vector<double> point2],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
     angular_max_vel: 100.0
-    angular_max_acc: 360.0
-    angular_max_dec: 360.0
+    angular_max_acc: 50.0
+    angular_max_dec: 50.0
     angular_max_jer: 0.0
     
     canid:
@@ -46,7 +45,6 @@ launch: #起動パラメータ
       paddy_collect: 0x200
       paddy_install: 0x201
       paddy_convergence: 0x202
-
       #網
       net: 0x210
       net_convergence: 0x211
@@ -56,9 +54,17 @@ launch: #起動パラメータ
       hand_fb: 0x222
       hand_wrist: 0x223
       suction: 0x224
+      #
+      base_state: 0x230
+      strage_state: 0x231
+      strage_state2: 0x232
+      transfer_state: 0x233
+      silo_state: 0x234
+      silo_state2: 0x235
+
       
       #デジタルボタン
-      main_button: 0x230
+      main_button: 0x410
 
       vel: 0x400 #適当
       ang: 0x401 #適当
@@ -109,27 +115,20 @@ controller_interface_node:
     initial_pickup_state: "A"
     initial_inject_state: "B"
 
+    connection_check: false
+
 rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
     laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 4.0e-4 #値が大きくなると共分散が小さくなる 
-    odom_weight_angler: 3.0e-4
-    voxel_size: 0.05
-    trial_num: 50
-    inlier_dist_threshold: 0.0126
+    odom_weight_liner: 3.0e-4 #値が大きくなると共分散が小さくなる 
+    odom_weight_angler: 3.0e-5
+    voxel_size: 0.07
+    trial_num: 40
+    inlier_dist_threshold: 0.012
     inlier_length_threshold: 0.5 #インライアのしきい値
     second_ransac: false           #2回ransacをするか
-    #以下カルマンフィルタのノイズ->値を小さくするとセンサーが優先される
-    cov_sys_px: 1.5    # システム雑音の位置x[m]の標準偏差
-    cov_sys_py: 1.5    # システム雑音の位置x[m]の標準偏差
-    cov_sys_yaw: 0.5   # システム雑音の角度yaw[deg]の標準偏差 
-    cov_obs_px1: 0.6   # 観測雑音の位置x[m]の標準偏差
-    cov_obs_py1: 0.6   # 観測雑音の位置y[m]の標準偏差
-    cov_obs_px2: 0.9   # 観測雑音の位置x[m]の標準偏差
-    cov_obs_py2: 0.9   # 観測雑音の位置y[m]の標準偏差
-    cov_px: 15.0        # x誤差共分散行列
-    cov_py: 15.0        # y誤差共分散行列
+    robot_type: "R2"
 
 spline_pid_node:
   ros__parameters:
@@ -137,13 +136,13 @@ spline_pid_node:
     curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
     linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
 
-    linear_planner_gain: 2.0 #並進速度計画機ゲイン
-    linear_pos_gain: 3.0  #並進位置ズレのゲイン
+    linear_planner_gain: 1.3 #並進速度計画機ゲイン
+    linear_pos_gain: 2.0  #並進位置ズレのゲイン
     linear_pos_diff_gain: 1.0
-    linear_pos_integral_gain: 0.01  #並進位置ズレの積分ゲイン
+    linear_pos_integral_gain: 0.05  #並進位置ズレの積分ゲイン
 
     angular_planner_gain: 1.0 #回転速度計画機ゲイン
-    angular_pos_gain: 1.0 #回転位置ズレのゲイン
+    angular_pos_gain: 2.0 #回転位置ズレのゲイン
     angular_pos_integral_gain: 0.01 #回転位置ズレの積分ゲイン
 
     linear_pos_tolerance: 0.02  #並進到達位置の許容誤差[m]
@@ -155,33 +154,37 @@ spline_trajectories_node:
 
 detection_interface_node:
   ros__parameters:
-    #ひし形モードのひし形に向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
-    str_self_pose_range: [9.7, 10.3, -3.58, -3.52, -0.05, 0.05]
-    #ひし形モードのサイロに向かっている、坂上の自己位置の範囲[x_min,x_max,y_min,y_max,z_min,z_max]
-    siro_self_pose_range: [9.8, 10.2, -3.8, -3.0, -2.5, -2.3]
-
-    str_range_point1_blue: [0.0, 1170.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
-    str_range_point2_blue: [1920.0, 630.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
-    str_range_point1_red: [0.0, 580.0] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
-    str_range_point2_red: [1920.0, 1230.0] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+    str_range_point1_blue: [0, 1170] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_blue: [1920, 630] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+    str_range_point1_red: [0, 580] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_red: [1920, 1230] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
 
     #C2からひし形を見たときの囲い
-    str_range_point1_1_C2: [0.0, 1180.0] #左上の線
-    str_range_point1_2_C2: [1920.0, 560.0]
-    str_range_point2_1_C2: [0.0, 1650.0] #右下の線
-    str_range_point2_2_C2: [1920.0, 590.0]
-    str_range_point3_1_C2: [0.0, 650.0] #左下の線
-    str_range_point3_2_C2: [1920.0, 1550.0]
-    str_range_point4_1_C2: [0.0, 620.0] #右上の線
-    str_range_point4_2_C2: [1920.0, 1100.0]
+    str_range_point1_1_C2: [0, 1180] #左上の線
+    str_range_point1_2_C2: [1920, 560]
+    str_range_point2_1_C2: [0, 1650] #右下の線
+    str_range_point2_2_C2: [1920, 590]
+    str_range_point3_1_C2: [0, 650] #左下の線
+    str_range_point3_2_C2: [1920, 1550]
+    str_range_point4_1_C2: [0, 620] #右上の線
+    str_range_point4_2_C2: [1920, 1100]
 
-    #C3とC5から、ST1~8の中のどの回収ポイントかを判断するポイント_C3orC5[x1,x2,x3]
-    str_range_x_C3orC5: [450.0, 620.0, 770.0] 
-    str_range_y_C3orC5: 650.0 
+    #C3とC5から、ST1~8の中のどの回収ポイントかを判断するときに一番手前のバウンディングボックスから一定量引く
+    str_range_y_C3orC5_2: 160
 
-    #ST1~8から手前か奥か判断するポイント
-    str_range_x_ST: [550.0, 800.0] 
-    str_range_y_ST: [340.0, 500.0] 
+    #ST系の行ったときの吸引判定
+    front_suction_check_point: [200, 650] #/front_ballがtrueだった場合(y,x)
+    back_suction_check_point: [500, 700] #/front_ballがfalseだった場合(y,x)
+    depth_front_suction_check_value: 200 
+    depth_back_suction_check_value: 330
 
-    siro_ball_range_y: [780.0, 900.0, 1030.0] #ボールが何段目か[y1, y2]
-    siro_ball_range_x: [350.0, 768.0, 1220.0, 1600.0] #ボールがどのサイロか[x1, x2, x3, x4]
+    #realsenseの
+    realsense_max_x: 1100
+    realsense_min_x: 200
+    realsense_min_y: 350
+
+sequencer_node:
+  ros__parameters:
+    strage_dist: [0.38 , 0.20] #m
+    suction_wait: 2.0 #ms 
+    silo_wait: 3.0 #ms 
