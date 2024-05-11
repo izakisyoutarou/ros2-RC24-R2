@@ -16,6 +16,10 @@ find_package(controller_interface REQUIRED)
 find_package(detection_interface REQUIRED)
 find_package(detection_interface_msg REQUIRED)
 find_package(bboxes_ex_msgs REQUIRED)
+find_package(sequencer REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(realsense2_camera_msgs REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -31,6 +35,10 @@ ament_target_dependencies(main_exec
         detection_interface
         detection_interface_msg
         bboxes_ex_msgs
+        sequencer
+        image_transport
+        cv_bridge
+        realsense2_camera_msgs
         )
 
 target_include_directories(main_exec

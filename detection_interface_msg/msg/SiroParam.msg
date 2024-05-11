@@ -1,1 +1,1 @@
-char[15] siro_param
+string[15] ball_color

@@ -10,9 +10,15 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(bboxes_ex_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(detection_interface_msg REQUIRED)
 find_package(controller_interface_msg REQUIRED)
+find_package(realsense2_camera_msgs REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
+
 
 add_library(detection_interface_node
     src/detection_interface_node.cpp
@@ -29,9 +35,14 @@ ament_target_dependencies(detection_interface_node
   rclcpp
   bboxes_ex_msgs
   std_msgs
+  sensor_msgs
   geometry_msgs
   detection_interface_msg
   controller_interface_msg
+  realsense2_camera_msgs
+  image_transport
+  cv_bridge
+  OpenCV
 )
 
 target_include_directories(detection_interface_node
