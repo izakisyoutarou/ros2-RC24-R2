@@ -20,8 +20,8 @@ launch: #起動パラメータ
     linear_max_jer: 0.0
     # 回転  速度[deg/sint x, int y, const std::vector<double> point1, const std::vector<double> point2],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
     angular_max_vel: 100.0
-    angular_max_acc: 50.0
-    angular_max_dec: 50.0
+    angular_max_acc: 360.0
+    angular_max_dec: 360.0
     angular_max_jer: 0.0
     
     canid:
@@ -136,7 +136,7 @@ spline_pid_node:
     curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
     linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
 
-    linear_planner_gain: 1.5 #並進速度計画機ゲイン
+    linear_planner_gain: 1.3 #並進速度計画機ゲイン
     linear_pos_gain: 2.0  #並進位置ズレのゲイン
     linear_pos_diff_gain: 1.0
     linear_pos_integral_gain: 0.05  #並進位置ズレの積分ゲイン
