@@ -1,8 +1,8 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: false
-    scan: false
-    trajectory_planner: false
+    slcan: true
+    scan: true
+    trajectory_planner: true
     yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
@@ -11,7 +11,7 @@ launch: #起動パラメータ
     2nd_initial_pose: [5.5, 0.35, 0.0]  #2つ目の初期位置[x,y,yaw]
     tf_laser2robot: [0.0,0.0,0.0,  0.0,0.0,0.0]  #ロボット->lidarのTF[x,y,z,r,p,y]
 
-    court_color: "red" #コート情報
+    court_color: "blue" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
     linear_max_vel: 2.0
@@ -123,7 +123,7 @@ rasnac_localization:
     laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
     odom_weight_liner: 3.0e-4 #値が大きくなると共分散が小さくなる 
     odom_weight_angler: 3.0e-5
-    voxel_size: 0.07
+    voxel_size: 0.08
     trial_num: 40
     inlier_dist_threshold: 0.012
     inlier_length_threshold: 0.5 #インライアのしきい値
@@ -136,7 +136,7 @@ spline_pid_node:
     curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
     linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
 
-    linear_planner_gain: 1.3 #並進速度計画機ゲイン
+    linear_planner_gain: 1.5 #並進速度計画機ゲイン
     linear_pos_gain: 2.0  #並進位置ズレのゲイン
     linear_pos_diff_gain: 1.0
     linear_pos_integral_gain: 0.05  #並進位置ズレの積分ゲイン
@@ -154,19 +154,19 @@ spline_trajectories_node:
 
 detection_interface_node:
   ros__parameters:
-    str_range_point1_blue: [0, 1170] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
-    str_range_point2_blue: [1920, 630] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
+    str_range_point1_blue: [0, 1270] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
+    str_range_point2_blue: [1920, 570] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
     str_range_point1_red: [0, 580] #ボール識別から、どの回収ポイントかを判断するポイント1[x,y]
     str_range_point2_red: [1920, 1230] #ボール識別から、どの回収ポイントかを判断するポイント2[x,y]
 
     #C2からひし形を見たときの囲い
     str_range_point1_1_C2: [0, 1180] #左上の線
-    str_range_point1_2_C2: [1920, 560]
+    str_range_point1_2_C2: [1920, 520]
     str_range_point2_1_C2: [0, 1650] #右下の線
     str_range_point2_2_C2: [1920, 590]
-    str_range_point3_1_C2: [0, 650] #左下の線
+    str_range_point3_1_C2: [0, 600] #左下の線
     str_range_point3_2_C2: [1920, 1550]
-    str_range_point4_1_C2: [0, 620] #右上の線
+    str_range_point4_1_C2: [0, 570] #右上の線
     str_range_point4_2_C2: [1920, 1100]
 
     #C3とC5から、ST1~8の中のどの回収ポイントかを判断するときに一番手前のバウンディングボックスから一定量引く
