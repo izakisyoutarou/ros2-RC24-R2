@@ -224,7 +224,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             timer(2000);
             progress++;
         }
-        else if(progress == n++  && (msg->net_convergence /*|| tof[0]*/) && timer()){
+        else if(progress == n++  && (msg->net_convergence || tof[0]) && timer()){
             RCLCPP_INFO(get_logger(),"_____transfer2_____");
             command_hand_suction_on();
             command_transfer_state();
@@ -243,49 +243,29 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             c1_flag = false;
             progress++;
         }
-        // else if(progress == n++ && msg->arm_convergence && silo_flag){
-        //     RCLCPP_INFO(get_logger(),"_____silo2_____");
-        //     std::string silo_node = "si" + std::to_string(silo_priority[priority_num]);
-        //     command_move_interrupt_node(silo_node);
-        //     silo_flag = false;
-        //     progress++; 
-        // } 
-        // else if(progress == n++ && check_way_si()){
-        //     RCLCPP_INFO(get_logger(),"_____silo3_____");
-        //     if(priority_num == 4){
-        //         std::string silo_node = "SI" + std::to_string(silo_priority[priority_num]);
-        //         command_move_interrupt_node(silo_node);
-        //         progress++; 
-        //     } 
-        //     else if(tof[2]){
-        //         priority_num++;
-        //         progress--; 
-        //     } 
-        //     else {
-        //         std::string silo_node = "SI" + std::to_string(silo_priority[priority_num]);
-        //         command_move_interrupt_node(silo_node);
-        //         progress++;
-        //     }
-        // }
         else if(progress == n++ && msg->arm_convergence && silo_flag){
             RCLCPP_INFO(get_logger(),"_____silo2_____");
-            std::string silo_node = "SI" + std::to_string(silo_priority[0]);
+            std::string silo_node = "si" + std::to_string(silo_priority[priority_num]);
             command_move_interrupt_node(silo_node);
-            progress++;
             silo_flag = false;
             progress++; 
         } 
-        else if(progress == n++ && check_way_SI()){
-            RCLCPP_INFO(get_logger(),"_____silo4_____");
-            command_hand_suction_off();
-            timer(2000);
-            progress++;
-        } 
-        else if(progress == n++ && msg->arm_convergence && timer()) {
-            RCLCPP_INFO(get_logger(),"_____silo5_____");
-            command_silo_state2();
-            if(pre_sequence == SEQUENCE_MODE::storage) command_sequence(SEQUENCE_MODE::storage);
-            else if(pre_sequence == SEQUENCE_MODE::transfer) command_sequence(SEQUENCE_MODE::transfer);
+        else if(progress == n++ && check_way_si()){
+            RCLCPP_INFO(get_logger(),"_____silo3_____");
+            if(priority_num == 4){
+                std::string silo_node = "SI" + std::to_string(silo_priority[priority_num]);
+                command_move_interrupt_node(silo_node);
+                progress++; 
+            } 
+            else if(tof[2]){
+                priority_num++;
+                progress--; 
+            } 
+            else {
+                std::string silo_node = "SI" + std::to_string(silo_priority[priority_num]);
+                command_move_interrupt_node(silo_node);
+                progress++;
+            }
         }
     }
 } 
@@ -347,6 +327,7 @@ void Sequencer::callback_tof(const socketcan_interface_msg::msg::SocketcanIF::Sh
     tof[0] = msg->candata[0];
     tof[1] = msg->candata[1];
     tof[2] = msg->candata[2];
+    RCLCPP_INFO(get_logger(),"%d %d %d",tof[0],tof[1],tof[2]);
 };
 
 void Sequencer::callback_siro_param(const detection_interface_msg::msg::SiroParam::SharedPtr msg){
@@ -383,6 +364,10 @@ void Sequencer::command_sequence(const SEQUENCE_MODE sequence){
     _publisher_now_sequence->publish(*msg_now_sequence);
     progress = 0;
     silo_flag = false;
+    progress = 0;
+    special_progress = 0;
+    special0 = false;
+    special1 = false;
 }
 
 void Sequencer::command_canusb_uint8(const int16_t id, const uint8_t data){
@@ -438,12 +423,12 @@ void Sequencer::command_silo_state2(){ command_canusb_empty(can_silo_state2_id);
 
 void Sequencer::silo_evaluate(std::string camera[15]){
     //コート色による情報反転
-    if(court_color == "blue"){
-        std::string data[15]; 
-        int num[15] = {12,13,14,9,10,11,6,7,8,3,4,5,0,1,2};
-        for(int i = 0; i < 15; i++) data[i] = camera[i];
-        for(int i = 0; i < 15; i++) camera[i] = data[num[i]];
-    }    
+    // if(court_color == "blue"){
+    //     std::string data[15]; 
+    //     int num[15] = {12,13,14,9,10,11,6,7,8,3,4,5,0,1,2};
+    //     for(int i = 0; i < 15; i++) data[i] = camera[i];
+    //     for(int i = 0; i < 15; i++) camera[i] = data[num[i]];
+    // }    
     //データの格納
     for(int i = 0; i < 15; i++) {
         if(court_color == "blue"){
