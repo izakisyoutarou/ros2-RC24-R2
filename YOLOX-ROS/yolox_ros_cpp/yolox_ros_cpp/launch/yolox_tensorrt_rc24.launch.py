@@ -14,7 +14,8 @@ def generate_launch_description():
         DeclareLaunchArgument(#学習済みデータの指定
             'model_path_c1camera',
             # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_0501.trt',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0504.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0504.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0508.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(#学習済みデータの指定
@@ -49,7 +50,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#しきい値
             'conf',
-            default_value='0.90',
+            default_value='0.8',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(#しきい値
@@ -69,7 +70,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#プレビューの表示
             'imshow_isshow_realsense',
-            default_value='true',
+            default_value='false',
             description=''
         ),
         DeclareLaunchArgument(#YOLOX-ROSがサブしてる画像トピックのトピック名
@@ -215,8 +216,8 @@ def generate_launch_description():
     )
     return launch.LaunchDescription(
         launch_args +   [
-                        # realsense_d435i_launch,
-                        # container, c1_launch, 
+                        realsense_d435i_launch,
+                        container, c1_launch, 
                         container_realsense, realsense_d455_launch,
                         ]
     )
