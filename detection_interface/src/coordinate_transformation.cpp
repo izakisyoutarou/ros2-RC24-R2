@@ -1,4 +1,4 @@
-#include "detection_interface/coordinate_transformation.hpp"
+#include "detection_interface/coordinate_transformation.hpp" 
 
     Matrix3d coordinate_transformation::conversion(double px, double py, double depth){
         // cout << "px" << px << "py" << py << "depth" << depth << endl;
@@ -6,13 +6,11 @@
         double v_angle = 0.0;
         h_angle = (px - WIDTH / 2) * (HFOV / WIDTH);
         v_angle = -(py - HEIGHT / 2) * (VFOV / HEIGHT);
-
         // cout << "h " << h_angle << "  v " << v_angle << endl;
         
         x = depth* tan( h_angle * M_PI/180)*0.001;
         y = depth* tan( v_angle * M_PI/180)*0.001;
-        z = (depth-95)*0.001;
-        
+        z = (depth-ball_r)*0.001;
         // cout << "x " << x << "  y " << y << "  z " << z << endl;
         
         Matrix3d camera_xyz;
@@ -23,7 +21,8 @@
         return camera_xyz;
     }
 
-    Matrix3d coordinate_transformation::euler_angle(){ //Euler angle 
+    Matrix3d coordinate_transformation::euler_angle(Vector3d pose){ //Euler angle 
+        z_angle = pose[3]; 
         Matrix3d Rx;
         Rx << 1.0,                     0.0,                      0.0,
               0.0, cos(theta_x * M_PI/180), -sin(theta_x * M_PI/180),
@@ -39,9 +38,9 @@
         // cout << Ry << endl;
 
         Matrix3d Rz;
-        Rz << cos(theta_z * M_PI/180), -sin(theta_z * M_PI/180), 0.0,
-              sin(theta_z * M_PI/180),  cos(theta_z * M_PI/180), 0.0,
-                                  0.0,                      0.0, 1.0;
+        Rz << cos(theta_z * M_PI/180 + z_angle), -sin(theta_z * M_PI/180 + z_angle), 0.0,
+              sin(theta_z * M_PI/180 + z_angle),  cos(theta_z * M_PI/180 + z_angle), 0.0,
+                                            0.0,                                0.0, 1.0;
         // cout << "Rz" << endl;
         // cout << Rz << endl;
 
@@ -55,7 +54,7 @@
     Vector3d coordinate_transformation::Rx_Ry_Rz(double px, double py, double depth, Vector3d pose){ //variation
         cout << "x" << px << "y" << py << "depth" << depth << endl;
         Matrix3d before_xyz = conversion(px, py, depth);
-        Matrix3d R = euler_angle();
+        Matrix3d R = euler_angle(pose);
         // cout << "before_xyz" << endl;
         // cout << before_xyz << endl;
         // cout << "R" << endl;
