@@ -159,6 +159,7 @@ namespace detection_interface
                 // }
 
                 if(c1camera_count > 5){
+                    c1camera_count = 0;
                     for (int z = 0; z < 5; ++z) {
                         RCLCPP_INFO(this->get_logger(), "まえ%d@%d,サイズ@%d", z, ymax_c1camera[z].size());
                     }
