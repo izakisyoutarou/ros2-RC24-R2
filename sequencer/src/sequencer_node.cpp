@@ -109,7 +109,7 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
     _publisher_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
     _publisher_now_sequence = this->create_publisher<std_msgs::msg::String>("now_sequence", _qos);
     _publisher_move_interrupt_node = this->create_publisher<std_msgs::msg::String>("move_interrupt_node", _qos);
-    _publisher_ball_tracking = this->create_publisher<geometry_msgs::msg::Vector3>("ball_tracking", _qos);
+    _publisher_coord_tracking = this->create_publisher<geometry_msgs::msg::Vector3>("coord_tracking", _qos);
 
     std::ifstream ifs1(ament_index_cpp::get_package_share_directory("main_executor") + "/config/sequencer/silo_priority.cfg");
     std::string str1;
