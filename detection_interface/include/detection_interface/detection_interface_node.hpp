@@ -136,6 +136,7 @@ namespace detection_interface
             /////////////////////////flag系
             bool storage_flag = true;
             bool c3_c4_flag = true;
+            bool silo_flag = false;
             /////////////////////////
 
             /////////////////////////座標変換

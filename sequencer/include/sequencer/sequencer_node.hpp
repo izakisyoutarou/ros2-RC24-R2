@@ -135,14 +135,12 @@ private:
 
     int progress = 0;
     int select_silo = 0;
-        int camera_check[5][3] = {};
-        int silo_priority[5] = {}; 
-            int check_time = 0;
-    
+    int camera_check[5][3] = {};
+    int silo_priority[5] = {}; 
+    int check_time = 0;
     int target_silo = 0;
-
-        int priority_num = 0;
-            int special_progress = 0;
+    int priority_num = 0;
+    int special_progress = 0;
 
     bool is_start = false;
     bool get_front_ball = false;
@@ -177,13 +175,12 @@ private:
     const double suction_wait; 
     const double silo_wait; 
 
-
-
     std::string suction_check = "";
     
-
     bool special0 = false;
     bool special1 = false;
+
+    int tof_buffer[5] = {}; 
 };
 
 }  // namespace sequencer
