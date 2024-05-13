@@ -11,14 +11,16 @@ class coordinate_transformation {
         Vector3d Rx_Ry_Rz(double px, double py, double depth, Vector3d pose);
     private:
         Matrix3d conversion(double px, double py, double depth);
-        Matrix3d euler_angle();
+        Matrix3d euler_angle(Vector3d pose);
         double WIDTH = 1280.0;
         double HEIGHT = 720.0;
         double HFOV = 86.0;
         double VFOV = 57.0;
+        int ball_r = 95;
         double x = 0.0 ;
         double y = 0.0 ;
         double z = 0.0 ;
+        double z_angle = 0.0;
         double theta_x = -180; //Camera mounting position
         // double theta_y = 180.0;
         double theta_y = 115.8;
