@@ -181,6 +181,9 @@ private:
     bool special1 = false;
 
     int tof_buffer[5] = {}; 
+    bool c4_flag = false;
+
+    bool retry_flag = false;
 };
 
 }  // namespace sequencer
