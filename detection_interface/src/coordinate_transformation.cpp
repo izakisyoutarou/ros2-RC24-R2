@@ -4,14 +4,14 @@
         // cout << "px" << px << "py" << py << "depth" << depth << endl;
         double h_angle = 0.0;
         double v_angle = 0.0;
-        h_angle = -(px - WIDTH / 2) * (HFOV / WIDTH);
+        h_angle = (px - WIDTH / 2) * (HFOV / WIDTH);
         v_angle = -(py - HEIGHT / 2) * (VFOV / HEIGHT);
 
         // cout << "h " << h_angle << "  v " << v_angle << endl;
         
-        x = depth* tan( h_angle * M_PI/180);
-        y = depth* tan( v_angle * M_PI/180);
-        z = depth;
+        x = depth* tan( h_angle * M_PI/180)*0.001;
+        y = depth* tan( v_angle * M_PI/180)*0.001;
+        z = (depth-95)*0.001;
         
         // cout << "x " << x << "  y " << y << "  z " << z << endl;
         

@@ -40,7 +40,6 @@ private:
     rclcpp::Subscription<controller_interface_msg::msg::Convergence>::SharedPtr _subscription_convergence;
     rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _subscription_base_control;
     rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr _subscription_is_start;
-    rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr _subscription_process_skip;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_collection_point;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_way_point;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_self_pose;
@@ -48,11 +47,11 @@ private:
     rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _subscription_tof;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_ball_coordinate;
     rclcpp::Subscription<detection_interface_msg::msg::SiroParam>::SharedPtr _subscription_siro_param;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_suction_check;
 
     void callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg);
     void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
     void callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg);
-    void callback_process_skip(const std_msgs::msg::Empty::SharedPtr msg);
     void callback_collection_point(const std_msgs::msg::String::SharedPtr msg);
     void callback_way_point(const std_msgs::msg::String::SharedPtr msg);
     void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
@@ -60,6 +59,7 @@ private:
     void callback_tof(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
     void callback_ball_coordinate(const geometry_msgs::msg::Vector3::SharedPtr msg);
     void callback_siro_param(const detection_interface_msg::msg::SiroParam::SharedPtr msg);
+    void callback_suction_check(const std_msgs::msg::String::SharedPtr msg);
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_node;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _publisher_canusb;
@@ -104,7 +104,12 @@ private:
     void command_silo_state2();
 
     //サイロ選択
-    int silo_evaluate(std::string camera[15]);
+    void silo_evaluate(std::string camera[15]);
+    void timer(int ms);
+    bool timer();
+    bool check_way_ST();
+    bool check_way_SI();
+    bool check_way_si();
 
     const int16_t can_paddy_collect_id;
     const int16_t can_paddy_install_id;
@@ -130,21 +135,26 @@ private:
 
     int progress = 0;
     int select_silo = 0;
-    int ball_num = 0;
+    int camera_check[5][3] = {};
+    int silo_priority[5] = {}; 
+    int check_time = 0;
+    int target_silo = 0;
+    int priority_num = 0;
+    int special_progress = 0;
 
     bool is_start = false;
     bool get_front_ball = false;
+    bool get_suction_check = false;
     bool get_ball_pose = false;
     bool front_ball = false;
-    bool process_skip = false;
 
     geometry_msgs::msg::Vector3 self_pose;
     geometry_msgs::msg::Vector3 ball_pose;
 
     std::string silo_data[5][3]; 
-    int camera_check[5][3] = {};
+
     std::string silo_norm[11][4];//3,2,1,num
-    int silo_priority[5] = {}; 
+
     const std::string court_color;
     bool tof[3] = {false, false, false};
 
@@ -152,22 +162,25 @@ private:
 
     std::string way_point = "";
 
-    std::chrono::system_clock::time_point suction_time;
+    std::chrono::system_clock::time_point time;
 
-    bool tof_mode = false;
-    
-    int target_silo = 0;
     bool silo_flag = false;
 
     std::string interrupt_node = "";
-    bool c3orc4_flag = false; 
+    std::string pre_interrupt_node = "";
+    bool c3orc6_flag = false; 
     bool c1_flag = false; 
 
     const std::vector<double> strage_dist;
     const double suction_wait; 
     const double silo_wait; 
 
-    bool video = false;
+    std::string suction_check = "";
+    
+    bool special0 = false;
+    bool special1 = false;
+
+    int tof_buffer[5] = {}; 
 };
 
 }  // namespace sequencer
