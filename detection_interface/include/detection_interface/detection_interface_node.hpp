@@ -98,7 +98,7 @@ namespace detection_interface
             //C1cameraのc1から見たとき、サイロのボール情報取得。
             void c1camera_c1(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy, 
                                 const std::vector<int> center_x, const std::vector<int> center_y, std::vector<int> bbounbox_size,
-                                std::vector<int> before_ball_place, std::vector<std::string> ball_color, const std::vector<std::string> class_id);
+                                const std::vector<std::string> class_id);
 
             //同じ領域にボールが複数存在している場合、バウンディングボックスのサイズが大きい方を採用する。それのところ
             void c1camera_pick_best_BoundingBox(std::vector<int> before_ball_place, std::vector<int> bbounbox_size, std::vector<std::string> ball_color);
@@ -132,7 +132,7 @@ namespace detection_interface
             /////////////////////////flag系
             bool storage_flag = true;
             bool c3_c4_flag = true;
-            bool silo_flag = false;
+            bool silo_flag = true;
             /////////////////////////
 
             /////////////////////////座標変換
@@ -179,8 +179,17 @@ namespace detection_interface
 
             ////////////////////////変数
             uint8_t c1camera_count = 0;
-            // vector<vector<int>> data(3, vector<int>(4));
+            std::array<std::vector<std::string>, 5> class_id_c1camera;
+            std::array<std::vector<int>, 5> center_x_c1camera;
+            std::array<std::vector<int>, 5> center_y_c1camera;
+            std::array<std::vector<int>, 5> bbounbox_size_c1camera;
             std::array<std::vector<int>, 5> ymax_c1camera;
-            
+
+            //c1カメラから受け取った情報を入れる配列
+            std::vector<std::string> class_id;//redballとかblueballとか
+            std::vector<int> center_x;//バウンディングボックスの真ん中(x)
+            std::vector<int> center_y;//バウンディングボックスの真ん中(y)
+            std::vector<int> bbounbox_size;//バウンディングの面積
+            std::vector<int> ymax;//ボールのバウンディングの右下(y)
     };
 }

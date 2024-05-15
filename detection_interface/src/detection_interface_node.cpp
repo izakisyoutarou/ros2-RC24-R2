@@ -100,57 +100,40 @@ namespace detection_interface
                 auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
 
                 int silo_num = 0;
-                int count = 0;
-                bool before_ball_place_flag = false;
+                int silo_count = 0;
 
-                //c1カメラから受け取った情報を入れる配列
-                std::vector<std::string> class_id;//redballとかblueballとか
-                std::vector<int> center_x_c1camera;//バウンディングボックスの真ん中(x)
-                std::vector<int> center_y;//バウンディングボックスの真ん中(y)
-                std::vector<int> bbounbox_size;//バウンディングの面積
+                int max_size = 0;
+                int max_index = 0;
+
                 std::array<std::array<int, 4>, 5> min_max_xy; //{min_x、max_x、min_y、max_y}
-                std::vector<int> ymax;//ボールのバウンディングの右下(y)
-
-                //関数内で使用する配列
-                std::vector<int> before_ball_place;//推論情報をとりあえず放り込む
-                // std::vector<int> after_ball_place;//領域内に複数のボールが存在した場合の処理が終わった
-                std::vector<std::string> ball_color;//ボールの色
 
                 //boxeesの配列からboxの内容を取り出し
                 for (const auto& box : msg->bounding_boxes) {
 
-                    if (box.class_id == "silo" && count < 5) {
-                        min_max_xy[count][0] = box.xmin;
-                        min_max_xy[count][1] = box.xmax;
-                        min_max_xy[count][2] = box.ymin;
-                        min_max_xy[count][3] = box.ymax;
-                        count++;// 使用された要素数をインクリメント
+                    if (box.class_id == "silo" && silo_count < 5) {
+                        min_max_xy[silo_count][0] = box.xmin;
+                        min_max_xy[silo_count][1] = box.xmax;
+                        min_max_xy[silo_count][2] = box.ymin;
+                        min_max_xy[silo_count][3] = box.ymax;
+                        silo_count++;// 使用された要素数をインクリメント
                     }
-
-                    // if(box.class_id == "redball" || box.class_id == "blueball"){
-
-                    //     class_id.push_back(box.class_id);
-
-                    //     int size = static_cast<int>((box.xmax - box.xmin) * (box.ymax - box.ymin));
-                    //     bbounbox_size.push_back(size);
-
-                    //     int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
-                    //     int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
-                    //     center_x.push_back(center_x_value);
-                    //     center_y.push_back(center_y_value);
-
-                    //     ymax.push_back(box.ymax);
-                    // }
 
                     if(box.class_id == "redball" || box.class_id == "blueball"){
-                        // ymax_c1camera.push_back(box.ymax);
+                        class_id_c1camera[c1camera_count].push_back(box.class_id);
+
+                        int size = static_cast<int>((box.xmax - box.xmin) * (box.ymax - box.ymin));
+                        bbounbox_size_c1camera[c1camera_count].push_back(size);
+
+                        int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
+                        int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
+                        center_x_c1camera[c1camera_count].push_back(center_x_value);
+                        center_y_c1camera[c1camera_count].push_back(center_y_value);
+
                         ymax_c1camera[c1camera_count].push_back(box.ymax);
-                        c1camera_count++;
                     }
                 }
-
                 // for (int z = 0; z < center_x.size(); ++z) {
-                //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d,サイズ@%d", z, center_x[z]);
+                //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, center_x[z]);
                 // }
 
                 // for (int z = 0; z < count; ++z) {
@@ -158,10 +141,43 @@ namespace detection_interface
                 //                 z, min_max_xy[z][0], min_max_xy[z][1], min_max_xy[z][2], min_max_xy[z][3]);
                 // }
 
-                if(c1camera_count > 5){
-                    c1camera_count = 0;
-                    for (int z = 0; z < 5; ++z) {
-                        RCLCPP_INFO(this->get_logger(), "まえ%d@%d,サイズ@%d", z, ymax_c1camera[z].size());
+                c1camera_count++;
+
+                //ボールを5回検出した中で一番検出数が大きいものを選ぶ
+                if(c1camera_count >= 5){
+                    c1camera_count = 0;//5回推論したかどうかcountの初期化
+
+                    //関数に渡すvector変数の初期化
+                    for (int i = 0; i < ymax.size(); ++i) {
+                        class_id.clear();
+                        center_x.clear();
+                        center_y.clear();
+                        bbounbox_size.clear();
+                        ymax.clear();
+                    }
+
+                    //5回の推論結果から一番認識数が多いindexを探す
+                    for (int i = 0; i < ymax_c1camera.size(); ++i) {                        
+                        if (ymax_c1camera[i].size() > max_size) {
+                            max_size = ymax_c1camera[i].size();
+                            max_index = i;
+                        }
+                    }
+
+                    //関数に渡すvector変数に一番認識数が多いindexを代入
+                    class_id.insert(class_id.end(), class_id_c1camera[max_index].begin(), class_id_c1camera[max_index].end());
+                    center_x.insert(center_x.end(), center_x_c1camera[max_index].begin(), center_x_c1camera[max_index].end());
+                    center_y.insert(center_y.end(), center_y_c1camera[max_index].begin(), center_y_c1camera[max_index].end());
+                    bbounbox_size.insert(bbounbox_size.end(), bbounbox_size_c1camera[max_index].begin(), bbounbox_size_c1camera[max_index].end());
+                    ymax.insert(ymax.end(), ymax_c1camera[max_index].begin(), ymax_c1camera[max_index].end());
+
+                    //5回の推論結果用のvector変数の初期化
+                    for (int i = 0; i < ymax_c1camera.size(); ++i) {
+                        class_id_c1camera[i].clear();
+                        center_x_c1camera[i].clear();
+                        center_y_c1camera[i].clear();
+                        bbounbox_size_c1camera[i].clear();
+                        ymax_c1camera[i].clear();
                     }
                 }
 
@@ -174,12 +190,11 @@ namespace detection_interface
                 // }
 
                 // if(min_max_xy.size() != 0){
-                //     if(now_sequence == "silo"){
-                //         if(way_point == "c1") c1camera_c1(  ymax, min_max_xy,
-                //                                             center_x, center_y, bbounbox_size,
-                //                                             before_ball_place, ball_color, class_id);
-                //     }
-                // }
+                if(silo_count == 5){
+                    if(now_sequence == "silo"){
+                        if(way_point == "c1") c1camera_c1(ymax, min_max_xy, center_x, center_y, bbounbox_size, class_id);
+                    }
+                }
 
                 // time_end = chrono::system_clock::now();
                 // RCLCPP_INFO(this->get_logger(), "scan time->%d[ms]", chrono::duration_cast<chrono::milliseconds>(time_end-time_start).count());
@@ -382,13 +397,16 @@ namespace detection_interface
 
         void DetectionInterface::c1camera_c1(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy,
                                                 const std::vector<int> center_x, const std::vector<int> center_y, std::vector<int> bbounbox_size,
-                                                std::vector<int> before_ball_place, std::vector<std::string> ball_color, const std::vector<std::string> class_id){
+                                                const std::vector<std::string> class_id){
             if(silo_flag){
                 int silo_num = 0;
+                bool is_ball_color_push_back = false;
 
                 silo_flag = false;
                 
                 std::array<std::array<int, 4>, 5> silo_y;//{min_y、min_yとcnterの間、max_yとcenterの間、max_y}
+                std::vector<int> before_ball_place;//推論情報をとりあえず放り込む
+                std::vector<std::string> ball_color;//ボールの色
 
                 storage_flag = true;//c1カメラのストレージゾーン認識のflag
                 c3_c4_flag = true; //realsenseのc3、c4からの認識
@@ -426,10 +444,8 @@ namespace detection_interface
                         else if(center_x[i] > min_max_xy[4][0] && center_x[i] < min_max_xy[4][1]) silo_num += 12;
                     }
 
-                    // RCLCPP_INFO(this->get_logger(), "まえ%d", silo_num);
-
                     //ボールの段数
-                    if(silo_num != 0){
+                    if(silo_num == 0 || silo_num == 3 || silo_num == 6 ||silo_num == 9 ||silo_num == 12){
                         int silo_num_count = silo_num;
                         int silo_beside = silo_num / 3;
 
@@ -448,11 +464,13 @@ namespace detection_interface
 
                             if(class_id[i] == "redball") ball_color.push_back("R");
                             else if(class_id[i] == "blueball") ball_color.push_back("B");
+
+                            is_ball_color_push_back = true;
                         }
                     }
                 }
 
-                c1camera_pick_best_BoundingBox(before_ball_place, bbounbox_size, ball_color);
+                if(is_ball_color_push_back) c1camera_pick_best_BoundingBox(before_ball_place, bbounbox_size, ball_color);
             }
         }
 
@@ -497,23 +515,25 @@ namespace detection_interface
 
                 if(ball_height != 0){
                     for(int j = 1; j < 3; ++j){//ball_heightの可能性として1%3と2%3と3%3なのでj < 3
-                        if(ball_height == j){//その領域にballが他に存在しているか。
+                        if(ball_height == j){
                             for(size_t k = 0; k < before_ball_place.size(); ++k){
                                 if(before_ball_place[k] == ball_width * 3 + 3) stage_three = true;
                                 else if(before_ball_place[k] == ball_width * 3 + 2) stage_two = true;
                                 else if(before_ball_place[k] == ball_width * 3 + 1) stage_one = true;
                             }
-                            if(stage_three && stage_two && stage_one) silo_num = ball_width * 3 + 1;
+                            if(stage_three && stage_two && stage_one) silo_num = before_ball_place[i];//そのサイロはすべて埋まっているから
                             else if(stage_three && stage_two && !stage_one) silo_num = ball_width * 3 + 2;
                             else if(stage_three && !stage_two && stage_one) silo_num = ball_width * 3 + 2;
                             else if(!stage_three && stage_two && !stage_one) silo_num = ball_width * 3 + 3;
                             else if(!stage_three && !stage_two && stage_one) silo_num = ball_width * 3 + 3;
+                            else if(!stage_three && stage_two && stage_one) silo_num = before_ball_place[i];//状況的にはありえないが、推論結果でなってしまう場合がある
                         }
                     }
                 }
                 else{
                     silo_num = ball_width * 3;
                 }
+
                 after_ball_place.push_back(silo_num);
             }
 
