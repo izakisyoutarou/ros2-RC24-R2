@@ -16,16 +16,16 @@ class coordinate_transformation {
         double HEIGHT = 720.0;
         double HFOV = 86.0;
         double VFOV = 57.0;
-        int ball_r = 95;
+        double ball_r = 97.75;
         double x = 0.0 ;
         double y = 0.0 ;
         double z = 0.0 ;
         double z_angle = 0.0;
-        double theta_x = -180.0; //Camera mounting position
-        double theta_y = 115.8;
+        double theta_x = -180.0; 
+        double theta_y = 118.5; //Camera mounting position
         double theta_z = 270.0;
         double tx = 0.2335; //offset robot and camera
-        double ty = -0.034599; //offset robot and camera
+        double ty = -0.0845; //offset robot and camera
         double tz = 0.0; //offset robot and camera
 };
 
