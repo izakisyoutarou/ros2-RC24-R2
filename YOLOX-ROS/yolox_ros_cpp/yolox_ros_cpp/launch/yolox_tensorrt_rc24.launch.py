@@ -13,8 +13,8 @@ def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument(#学習済みデータの指定
             'model_path_c1camera',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0508.trt',
             default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0508_rtx3060.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(#学習済みデータの指定
@@ -49,7 +49,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#しきい値
             'conf',
-            default_value='0.8',
+            default_value='0.85',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(#しきい値
@@ -63,8 +63,8 @@ def generate_launch_description():
             description='yolox nms threshold'
         ),
         DeclareLaunchArgument(#プレビューの表示
-            'imshow_isshow',
-            default_value='true',
+            'imshow_isshow_c1camera',
+            default_value='false',
             description=''
         ),
         DeclareLaunchArgument(#プレビューの表示
@@ -172,7 +172,7 @@ def generate_launch_description():
                     'tensorrt/device': LaunchConfiguration('tensorrt/device'),
                     'conf': LaunchConfiguration('conf'),
                     'nms': LaunchConfiguration('nms'),
-                    'imshow_isshow': LaunchConfiguration('imshow_isshow'),
+                    'imshow_isshow': LaunchConfiguration('imshow_isshow_c1camera'),
                     'src_image_topic_name': LaunchConfiguration('src_image_topic_name'),
                     'publish_image_topic_name': LaunchConfiguration('publish_image_topic_name'),
                     'publish_boundingbox_topic_name': LaunchConfiguration('publish_boundingbox_topic_name'),
@@ -215,8 +215,8 @@ def generate_launch_description():
     )
     return launch.LaunchDescription(
         launch_args +   [
-                        #realsense_d435i_launch,
+                        realsense_d435i_launch,
                         container, c1_launch, 
-                        # container_realsense, realsense_d455_launch,
+                        container_realsense, realsense_d455_launch,
                         ]
     )

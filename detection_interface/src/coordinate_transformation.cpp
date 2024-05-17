@@ -5,7 +5,7 @@
         double v_angle = 0.0;
         h_angle = (px - WIDTH / 2) * (HFOV / WIDTH);
         v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT);
-        cout << "h " << h_angle << "  v " << v_angle << endl;
+        // cout << "h " << h_angle << "  v " << v_angle << endl;
         
         x = depth* tan( h_angle * M_PI/180)*0.001;
         y = depth* tan( v_angle * M_PI/180)*0.001;
@@ -20,7 +20,7 @@
 
     Matrix3d coordinate_transformation::euler_angle(Vector3d pose){ //Euler angle 
         z_angle = pose[2]; 
-        cout << z_angle << endl;
+        // cout << z_angle << endl;
         Matrix3d Rx;
         Rx << 1.0,                     0.0,                      0.0,
               0.0, cos(theta_x * M_PI/180), -sin(theta_x * M_PI/180),
@@ -40,8 +40,8 @@
         R_self << cos(z_angle), -sin(z_angle), 0.0,
                   sin(z_angle),  cos(z_angle), 0.0,
                             0.0,            0.0, 1.0;
-        cout << "R_self" << endl;
-        cout << R_self << endl;
+        // cout << "R_self" << endl;
+        // cout << R_self << endl;
 
         Matrix3d R;
         R = R_self*Rx*Ry*Rz;
@@ -72,7 +72,7 @@
         for(int i=0; i<3; i++) XYZ[i] = after_xyz(i,0);
         XYZ = XYZ + pose;
 
-        cout << XYZ << endl;
+        // cout << XYZ << endl;
         return XYZ;
     }
 

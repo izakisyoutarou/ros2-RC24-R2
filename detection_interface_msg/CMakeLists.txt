@@ -10,8 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(msg_files
-  "msg/ArmParam.msg"
-  "msg/SiroParam.msg"
+  "msg/SiloParam.msg"
   "msg/VisualizerC1.msg"
   "msg/VisualizerRealsense.msg"
   "msg/Threshold.msg"

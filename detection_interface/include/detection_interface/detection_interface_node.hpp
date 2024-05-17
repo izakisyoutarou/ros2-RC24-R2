@@ -13,8 +13,7 @@
 #include <sensor_msgs/msg/image.hpp>
 #include "bboxes_ex_msgs/msg/bounding_box.hpp"
 #include "bboxes_ex_msgs/msg/bounding_boxes.hpp"
-#include "detection_interface_msg/msg/arm_param.hpp"
-#include "detection_interface_msg/msg/siro_param.hpp"
+#include "detection_interface_msg/msg/silo_param.hpp"
 #include "detection_interface_msg/msg/threshold.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "realsense2_camera_msgs/msg/rgbd.hpp"
@@ -61,12 +60,9 @@ namespace detection_interface
             //sequncerへ
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_collection_point;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_suction_check;//ボールの吸引判定
-            rclcpp::Publisher<detection_interface_msg::msg::SiroParam>::SharedPtr _pub_silo_param;
+            rclcpp::Publisher<detection_interface_msg::msg::SiloParam>::SharedPtr _pub_silo_param;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_front_ball;
             rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _pub_ball_coordinate;
-
-            //arm_param_caluculatorへ
-            rclcpp::Publisher<detection_interface_msg::msg::ArmParam>::SharedPtr _pub_arm_param;
 
             //yolox_rosへ
             rclcpp::Publisher<detection_interface_msg::msg::Threshold>::SharedPtr _pub_threshold;
@@ -92,9 +88,6 @@ namespace detection_interface
             //ransacからのcallback
             void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
 
-            //C1cameraのc2から見たとき、c3とc4のどっちに行くか
-            void c1camera_c2(const std::vector<int> center_x, const std::vector<int> center_y);
-
             //C1cameraのc1から見たとき、サイロのボール情報取得。
             void c1camera_c1(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy, 
                                 const std::vector<int> center_x, const std::vector<int> center_y, std::vector<int> bbounbox_size,
@@ -113,12 +106,6 @@ namespace detection_interface
             //ボールが手前かどうか
             bool realsense_front_ball(int center_y, int threshold_y);
 
-            //坂上から見たときにC3かC5かをみる境界線の計算
-            bool bounday_line(int x, int y, const std::vector<long int> point1, const std::vector<long int> point2);
-
-            //坂上から見たときに(C2付近)ひし形の内側かどうかの計算をまとめる関数
-            bool rhombus_inside(int x, int y);
-
             /////////////////////////トピックのグローバル変数
             Vector3d pose;
             std::string now_sequence;
@@ -131,7 +118,8 @@ namespace detection_interface
             
             /////////////////////////flag系
             bool storage_flag = true;
-            bool c3_c4_flag = true;
+            bool c3_c4_flag = true;//ST系のcollection_pointを出すトリガー
+            bool is_c3_c6 = false;//吸引判定のトリガー用
             bool silo_flag = true;
             /////////////////////////
 
@@ -178,18 +166,32 @@ namespace detection_interface
             ////////////////////////
 
             ////////////////////////変数
+            //c1カメラのリスト
             uint8_t c1camera_count = 0;
-            std::array<std::vector<std::string>, 5> class_id_c1camera;
-            std::array<std::vector<int>, 5> center_x_c1camera;
-            std::array<std::vector<int>, 5> center_y_c1camera;
-            std::array<std::vector<int>, 5> bbounbox_size_c1camera;
-            std::array<std::vector<int>, 5> ymax_c1camera;
+            std::array<std::vector<std::string>, 5> class_id_c1camera_list;
+            std::array<std::vector<int>, 5> center_x_c1camera_list;
+            std::array<std::vector<int>, 5> center_y_c1camera_list;
+            std::array<std::vector<int>, 5> bbounbox_size_c1camera_list;
+            std::array<std::vector<int>, 5> ymax_c1camera_list;
 
             //c1カメラから受け取った情報を入れる配列
-            std::vector<std::string> class_id;//redballとかblueballとか
-            std::vector<int> center_x;//バウンディングボックスの真ん中(x)
-            std::vector<int> center_y;//バウンディングボックスの真ん中(y)
-            std::vector<int> bbounbox_size;//バウンディングの面積
-            std::vector<int> ymax;//ボールのバウンディングの右下(y)
+            std::vector<std::string> class_id_c1camera;//redballとかblueballとか
+            std::vector<int> center_x_c1camera;//バウンディングボックスの真ん中(x)
+            std::vector<int> center_y_c1camera;//バウンディングボックスの真ん中(y)
+            std::vector<int> bbounbox_size_c1camera;//バウンディングの面積
+            std::vector<int> ymax_c1camera;//ボールのバウンディングの右下(y)
+
+            //realsenseカメラのリスト
+            uint8_t realsense_count = 0;
+            std::array<std::vector<int>, 5> center_x_realsense_list;
+            std::array<std::vector<int>, 5> center_y_realsense_list;
+            std::array<std::vector<int>, 5> center_depth_realsense_list;
+            std::array<std::vector<int>, 5> ymin_realsense_list;
+
+            //realsenseから受け取った情報を入れる配列
+            std::vector<int> center_x_realsense;//バウンディングボックスの真ん中(x)
+            std::vector<int> center_y_realsense;//バウンディングボックスの真ん中(y)
+            std::vector<int> center_depth_realsense;//バウンディングボックスの真ん中のdepth(y)
+            std::vector<int> ymin_realsense;//バウンディングボックスの左上(y)
     };
 }
