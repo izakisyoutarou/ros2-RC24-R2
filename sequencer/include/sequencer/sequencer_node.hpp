@@ -12,7 +12,7 @@
 #include "controller_interface_msg/msg/convergence.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
-#include "detection_interface_msg/msg/siro_param.hpp"
+#include "detection_interface_msg/msg/silo_param.hpp"
 #include "path_msg/msg/turning.hpp"
 #include "utilities/utils.hpp"
 
@@ -46,7 +46,7 @@ private:
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _subscription_front_ball;
     rclcpp::Subscription<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _subscription_tof;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_ball_coordinate;
-    rclcpp::Subscription<detection_interface_msg::msg::SiroParam>::SharedPtr _subscription_siro_param;
+    rclcpp::Subscription<detection_interface_msg::msg::SiloParam>::SharedPtr _subscription_silo_param;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_suction_check;
 
     void callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg);
@@ -58,14 +58,14 @@ private:
     void callback_front_ball(const std_msgs::msg::Bool::SharedPtr msg);
     void callback_tof(const socketcan_interface_msg::msg::SocketcanIF::SharedPtr msg);
     void callback_ball_coordinate(const geometry_msgs::msg::Vector3::SharedPtr msg);
-    void callback_siro_param(const detection_interface_msg::msg::SiroParam::SharedPtr msg);
+    void callback_silo_param(const detection_interface_msg::msg::SiloParam::SharedPtr msg);
     void callback_suction_check(const std_msgs::msg::String::SharedPtr msg);
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_node;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _publisher_canusb;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_now_sequence;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_interrupt_node;
-    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _publisher_ball_tracking;
+    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _publisher_coord_tracking;
 
     //指令関数
     //移動系
@@ -168,6 +168,8 @@ private:
 
     std::string interrupt_node = "";
     std::string pre_interrupt_node = "";
+    std::string move_node = "";
+    std::string pre_move_node = "";
     bool c3orc6_flag = false; 
     bool c1_flag = false; 
 
