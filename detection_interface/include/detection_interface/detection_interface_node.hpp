@@ -61,11 +61,7 @@ namespace detection_interface
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_collection_point;
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_suction_check;//ボールの吸引判定
             rclcpp::Publisher<detection_interface_msg::msg::SiloParam>::SharedPtr _pub_silo_param;
-            rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_front_ball;
             rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _pub_ball_coordinate;
-
-            //yolox_rosへ
-            rclcpp::Publisher<detection_interface_msg::msg::Threshold>::SharedPtr _pub_threshold;
 
             //Qos
             rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -101,16 +97,12 @@ namespace detection_interface
             void c1camera_correct_silo_levels(std::vector<int> before_ball_place, const std::vector<std::string> ball_color);
 
             //realseneのc3、c4から見たとき、どこのSTに行くか。中でfront_ball関数を呼び出す。
-            void realsense_c3_c4(int xmax, int xmin, int ymin, const std::vector<std::string> class_id, const std::vector<int> center_x, std::vector<int> center_y);
-
-            //ボールが手前かどうか
-            bool realsense_front_ball(int center_y, int threshold_y);
+            void realsense_c3_c4(const std::vector<int> center_x, std::vector<int> center_y, std::vector<int> center_depth);
 
             /////////////////////////トピックのグローバル変数
             Vector3d pose;
             std::string now_sequence;
             std::string way_point;
-            std_msgs::msg::Bool msg_front_ball;
             ////////////////////////
 
             //実行時間の計測用
@@ -125,41 +117,12 @@ namespace detection_interface
 
             /////////////////////////座標変換
             coordinate_transformation ct;
-            Vector3d test111;
-            cv::Mat cv_image_;
             ////////////////////////
 
             ////////////////////////定数
-
-            //坂上の画像認識の範囲
-            const std::vector<long int> str_range_point1_blue;
-            const std::vector<long int> str_range_point2_blue;
-            const std::vector<long int> str_range_point1_red;
-            const std::vector<long int> str_range_point2_red;
-
-            //C2から見たひし形の枠の範囲
-            const std::vector<long int> str_range_point1_1_C2;
-            const std::vector<long int> str_range_point1_2_C2;
-            const std::vector<long int> str_range_point2_1_C2;
-            const std::vector<long int> str_range_point2_2_C2;
-            const std::vector<long int> str_range_point3_1_C2;
-            const std::vector<long int> str_range_point3_2_C2;
-            const std::vector<long int> str_range_point4_1_C2;
-            const std::vector<long int> str_range_point4_2_C2;
-
-            //C3かC5についたときのST1~8につながる画像認識の範囲
-            const int str_range_y_C3orC5_2;
-
             //ST系に行ったときの吸引判定
-            const std::vector<long int> front_suction_check_point;
-            const std::vector<long int> back_suction_check_point;
-            const int depth_front_suction_check_value;
-            const int depth_back_suction_check_value;
-
-            //realsenseの最小、最大閾値
-            const int realsense_max_x;
-            const int realsense_min_x;
-            const int realsense_min_y;
+            const std::vector<long int> suction_check_point;
+            const int depth_suction_check_value;
 
             //コートの色
             const std::string court_color;
@@ -186,12 +149,10 @@ namespace detection_interface
             std::array<std::vector<int>, 5> center_x_realsense_list;
             std::array<std::vector<int>, 5> center_y_realsense_list;
             std::array<std::vector<int>, 5> center_depth_realsense_list;
-            std::array<std::vector<int>, 5> ymin_realsense_list;
 
             //realsenseから受け取った情報を入れる配列
             std::vector<int> center_x_realsense;//バウンディングボックスの真ん中(x)
             std::vector<int> center_y_realsense;//バウンディングボックスの真ん中(y)
             std::vector<int> center_depth_realsense;//バウンディングボックスの真ん中のdepth(y)
-            std::vector<int> ymin_realsense;//バウンディングボックスの左上(y)
     };
 }
