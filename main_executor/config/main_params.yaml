@@ -1,8 +1,8 @@
 launch: #起動パラメータ
   ros__parameters:
-    slcan: false
-    scan: false
-    trajectory_planner: false
+    slcan: true
+    scan: true
+    trajectory_planner: true
     yolox_launch: true
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
@@ -121,8 +121,8 @@ rasnac_localization:
   ros__parameters:
     plot_mode: true #実機のときはfalse
     laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
-    odom_weight_liner: 3.0e-4 #値が大きくなると共分散が小さくなる 
-    odom_weight_angler: 3.0e-5
+    odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
+    odom_weight_angler: 3.0e-4
     voxel_size: 0.08
     trial_num: 40
     inlier_dist_threshold: 0.012
@@ -136,10 +136,10 @@ spline_pid_node:
     curvature_attenuation_rate: 0.0 #曲率の速度の減衰>=0 (0だと減衰なし)
     linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
 
-    linear_planner_gain: 1.5 #並進速度計画機ゲイン
+    linear_planner_gain: 1.2 #並進速度計画機ゲイン
     linear_pos_gain: 2.5  #並進位置ズレのゲイン
-    linear_pos_diff_gain: 1.0
-    linear_pos_integral_gain: 0.05  #並進位置ズレの積分ゲイン
+    linear_pos_diff_gain: 0.8
+    linear_pos_integral_gain: 0.01  #並進位置ズレの積分ゲイン
 
     angular_planner_gain: 1.0 #回転速度計画機ゲイン
     angular_pos_gain: 2.5 #回転位置ズレのゲイン
@@ -155,7 +155,7 @@ spline_trajectories_node:
 detection_interface_node:
   ros__parameters:
     #ST系の行ったときの吸引判定
-    suction_check_point: [500, 675]
+    suction_check_point: [500, 675] #[y,x]
     depth_suction_check_value: 330
 
 sequencer_node:

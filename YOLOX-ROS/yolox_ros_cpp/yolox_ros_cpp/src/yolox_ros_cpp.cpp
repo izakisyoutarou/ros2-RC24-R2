@@ -7,7 +7,7 @@ namespace yolox_ros_cpp
     {
         using namespace std::chrono_literals; // NOLINT
         this->init_timer_ = this->create_wall_timer(
-            5ms, std::bind(&YoloXNode::onInit, this));
+            3ms, std::bind(&YoloXNode::onInit, this));
     }
 
     void YoloXNode::onInit()
@@ -218,7 +218,24 @@ namespace yolox_ros_cpp
             if(this->params_.depth_flag){
                 int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
                 int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
-                box.center_dist = depth_image.at<uint16_t>(center_y_value, center_x_value);
+
+                // box.center_dist = depth_image.at<uint16_t>(center_y_value, center_x_value);
+
+                std::vector<uint16_t> center_dist = {   depth_image.at<uint16_t>(center_y_value, center_x_value), depth_image.at<uint16_t>(center_y_value-1, center_x_value), 
+                                                        depth_image.at<uint16_t>(center_y_value-1, center_x_value+1), depth_image.at<uint16_t>(center_y_value, center_x_value+1),
+                                                        depth_image.at<uint16_t>(center_y_value+1, center_x_value+1), depth_image.at<uint16_t>(center_y_value+1, center_x_value),
+                                                        depth_image.at<uint16_t>(center_y_value+1, center_x_value-1), depth_image.at<uint16_t>(center_y_value, center_x_value-1),
+                                                        depth_image.at<uint16_t>(center_y_value-1, center_x_value-1)};
+
+                center_dist.erase(std::remove(center_dist.begin(), center_dist.end(), 0), center_dist.end());
+
+                // ゼロを削除した後、配列が空でない場合は平均を計算
+                if (!center_dist.empty()) {
+                    uint16_t sum = std::accumulate(center_dist.begin(), center_dist.end(), static_cast<uint16_t>(0));
+                    uint16_t average = sum / center_dist.size();
+                    // std::cout << "平均: " << average << std::endl;
+                    box.center_dist = average;
+                }
             }
 
             boxes.bounding_boxes.emplace_back(box);
