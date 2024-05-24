@@ -74,7 +74,9 @@ namespace controller_interface
         r2_pc(get_parameter("ip.r2_pc").as_string()),
         //回収、射出機構の初期値
         initial_pickup_state(get_parameter("initial_pickup_state").as_string()),
-        initial_inject_state(get_parameter("initial_inject_state").as_string())
+        initial_inject_state(get_parameter("initial_inject_state").as_string()),
+
+        connection_check(get_parameter("connection_check").as_bool())
 
         {
             //周期
@@ -145,6 +147,9 @@ namespace controller_interface
             //gazeboへ
             _pub_gazebo = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", _qos);
 
+            _pub_is_start = this->create_publisher<std_msgs::msg::UInt8>("is_start", _qos);
+            _pub_process_skip = this->create_publisher<std_msgs::msg::Empty>("process_skip", _qos);
+
             //sequenserへ
             _pub_initial_sequense = this->create_publisher<std_msgs::msg::String>("initial_sequense", _qos);
 
@@ -211,38 +216,40 @@ namespace controller_interface
                 }
             );
 
-            check_controller_connection = this->create_wall_timer(
-                std::chrono::milliseconds(static_cast<int>(controller_ms)),
-                [this] {
-                    std::chrono::system_clock::time_point now_time = std::chrono::system_clock::now();
-                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_controller_time).count() > 100 * 10){
-                        auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
-                        msg_emergency->canid = can_emergency_id;
-                        msg_emergency->candlc = 1;
-                        msg_emergency->candata[0] = 1;
-                        _pub_canusb->publish(*msg_emergency);
-                        RCLCPP_INFO(get_logger(),"controller_connection_lost!!");
+            if(connection_check){
+                check_controller_connection = this->create_wall_timer(
+                    std::chrono::milliseconds(static_cast<int>(controller_ms)),
+                    [this] {
+                        std::chrono::system_clock::time_point now_time = std::chrono::system_clock::now();
+                        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_controller_time).count() > 100 * 10){
+                            auto msg_emergency = std::make_shared<socketcan_interface_msg::msg::SocketcanIF>();
+                            msg_emergency->canid = can_emergency_id;
+                            msg_emergency->candlc = 1;
+                            msg_emergency->candata[0] = 1;
+                            _pub_canusb->publish(*msg_emergency);
+                            RCLCPP_INFO(get_logger(),"controller_connection_lost!!");
+                        }
                     }
-                }
-            );
+                );
 
-            check_mainboard_connection = this->create_wall_timer(
-                std::chrono::milliseconds(static_cast<int>(mainboard_ms)),
-                [this] { 
-                    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_mainboard_time).count() > 200 * 10){
-                        is_emergency = true;
-                        is_restart = false; 
-                        auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();   
-                        msg_base_control->is_restart = is_restart;
-                        msg_base_control->is_emergency = is_emergency;
-                        msg_base_control->is_move_autonomous = is_move_autonomous;
-                        msg_base_control->is_slow_speed = is_slow_speed;
-                        msg_base_control->initial_state = initial_state;
-                        _pub_base_control->publish(*msg_base_control);
-                        RCLCPP_INFO(get_logger(),"mainboard_connection_lost!!");
+                check_mainboard_connection = this->create_wall_timer(
+                    std::chrono::milliseconds(static_cast<int>(mainboard_ms)),
+                    [this] { 
+                        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - get_mainboard_time).count() > 500 * 10){
+                            is_emergency = true;
+                            is_restart = false; 
+                            auto msg_base_control = std::make_shared<controller_interface_msg::msg::BaseControl>();   
+                            msg_base_control->is_restart = is_restart;
+                            msg_base_control->is_emergency = is_emergency;
+                            msg_base_control->is_move_autonomous = is_move_autonomous;
+                            msg_base_control->is_slow_speed = is_slow_speed;
+                            msg_base_control->initial_state = initial_state;
+                            _pub_base_control->publish(*msg_base_control);
+                            RCLCPP_INFO(get_logger(),"mainboard_connection_lost!!");
+                        }
                     }
-                }
-            );
+                );
+            }
 
             //速度計画機のリミットを初期設定
             high_velPlanner_linear_x.limit(high_limit_linear);
@@ -294,13 +301,29 @@ namespace controller_interface
             else if(msg->data == "up") gamebtn.steer_reset(_pub_canusb);
             else if(msg->data == "down") gamebtn.calibrate(_pub_canusb);
             else if(msg->data == "left") gamebtn.board_reset(_pub_canusb);
-            // else if(msg->data == "right") 
-            else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);  
-            else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
-            else if(msg->data == "x") gamebtn.paddy_collect_2(is_arm_convergence,_pub_canusb);
-            else if(msg->data == "y") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
-            else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
-            else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
+            else if(msg->data == "right") {
+                auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
+                msg_is_start->data = 0;
+                _pub_is_start->publish(*msg_is_start);
+            }
+            // else if(msg->data == "a") gamebtn.paddy_collect_0(is_arm_convergence,_pub_canusb);  
+            // else if(msg->data == "b") gamebtn.paddy_collect_1(is_arm_convergence,_pub_canusb);
+            // else if(msg->data == "x") gamebtn.paddy_collect_2(is_arm_convergence,_pub_canusb);
+            // else if(msg->data == "y") gamebtn.paddy_install(is_arm_convergence,_pub_canusb); 
+            else if(msg->data == "x") gamebtn.canusb_test(0x234,0,_pub_canusb);
+            else if(msg->data == "y") gamebtn.canusb_test(0x234,1,_pub_canusb); 
+            // else if(msg->data == "r1") gamebtn.net_open(is_net_convergence,_pub_canusb); 
+            // else if(msg->data == "r2") gamebtn.net_close(is_net_convergence,_pub_canusb); 
+            else if(msg->data == "r1") {
+                auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
+                msg_is_start->data = 1;
+                _pub_is_start->publish(*msg_is_start);
+            }
+            else if(msg->data == "r2") {
+                auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
+                msg_is_start->data = 3;
+                _pub_is_start->publish(*msg_is_start);
+            }
             else if(msg->data == "r3"){
                 robotcontrol_flag = true;
                 if(is_move_autonomous == false){

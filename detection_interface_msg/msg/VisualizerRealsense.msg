@@ -1,0 +1,2 @@
+bool str_from_c3_c5
+bool str_front_ball

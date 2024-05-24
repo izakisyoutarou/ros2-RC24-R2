@@ -13,6 +13,13 @@ find_package(utilities REQUIRED)
 find_package(ransac_localization REQUIRED)
 find_package(logger_converter REQUIRED)
 find_package(controller_interface REQUIRED)
+find_package(detection_interface REQUIRED)
+find_package(detection_interface_msg REQUIRED)
+find_package(bboxes_ex_msgs REQUIRED)
+find_package(sequencer REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(realsense2_camera_msgs REQUIRED)
 
 add_executable(main_exec
         src/main.cpp
@@ -25,6 +32,13 @@ ament_target_dependencies(main_exec
         ransac_localization
         logger_converter
         controller_interface
+        detection_interface
+        detection_interface_msg
+        bboxes_ex_msgs
+        sequencer
+        image_transport
+        cv_bridge
+        realsense2_camera_msgs
         )
 
 target_include_directories(main_exec
@@ -32,7 +46,6 @@ target_include_directories(main_exec
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         )
-
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
