@@ -538,24 +538,63 @@ namespace detection_interface
             uint16_t depth_average;
             int n = 0;
 
+            std::array<cv::Vec3b, 9> colors2= {
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0], suction_check_point[1]), 
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0]-1, suction_check_point[1]), 
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0]-1, suction_check_point[1]+1), 
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0], suction_check_point[1]+1),
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0]+1, suction_check_point[1]+1), 
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0]+1, suction_check_point[1]),
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0]+1, suction_check_point[1]-1), 
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0], suction_check_point[1]-1),
+                frame_rgb.at<cv::Vec3b>(suction_check_point[0]-1, suction_check_point[1]-1)
+            };
 
-            // std::array<std::array<uint16_t, 3>, 9> colors2 = {
-            //     frame_rgb.at<uint16_t>(suction_check_point[0], suction_check_point[1]), 
-            //     frame_rgb.at<uint16_t>(suction_check_point[0]-1, suction_check_point[1]), 
-            //     frame_rgb.at<uint16_t>(suction_check_point[0]-1, suction_check_point[1]+1), 
-            //     frame_rgb.at<uint16_t>(suction_check_point[0], suction_check_point[1]+1),
-            //     frame_rgb.at<uint16_t>(suction_check_point[0]+1, suction_check_point[1]+1), 
-            //     frame_rgb.at<uint16_t>(suction_check_point[0]+1, suction_check_point[1]),
-            //     frame_rgb.at<uint16_t>(suction_check_point[0]+1, suction_check_point[1]-1), 
-            //     frame_rgb.at<uint16_t>(suction_check_point[0], suction_check_point[1]-1),
-            //     frame_rgb.at<uint16_t>(suction_check_point[0]-1, suction_check_point[1]-1)
-            // };
+            // RCLCPP_INFO(this->get_logger(), "まえ----[0]%d[1]%d[2]%d" , colors2[0][0], colors2[0][1], colors2[0][2]);
 
-            // for (const auto& color : colors) {
-            //     average_color[0] += color[0]; // Blueチャネルを加算
-            //     average_color[1] += color[1]; // Greenチャネルを加算
-            //     average_color[2] += color[2]; // Redチャネルを加算
+            // for (int i=0; i < colors2.size(); i++) {
+            //     average_color[0] += colors2[i][0];
+            //     average_color[1] += colors2[i][1];
+            //     average_color[2] += colors2[i][2];
             // }
+
+            // average_color[0] /= static_cast<int>(colors2.size());
+            // average_color[1] /= static_cast<int>(colors2.size());
+            // average_color[2] /= static_cast<int>(colors2.size());
+
+            // std::cout << "Average Color - B: " << static_cast<int>(average_color[0]) << " G: " << static_cast<int>(average_color[1]) << " R: " << static_cast<int>(average_color[2]) << std::endl;
+
+            std::array<int, 9> blue_values, green_values, red_values;
+            for (size_t i = 0; i < colors2.size(); ++i) {
+                blue_values[i] = colors2[i][0];
+                green_values[i] = colors2[i][1];
+                red_values[i] = colors2[i][2];
+            }
+
+            // 各チャンネルごとにソート
+            std::sort(blue_values.begin(), blue_values.end());
+            std::sort(green_values.begin(), green_values.end());
+            std::sort(red_values.begin(), red_values.end());
+
+            // 中央値を計算
+            cv::Vec3b median_color;
+            median_color[0] = blue_values[blue_values.size() / 2];
+            median_color[1] = green_values[green_values.size() / 2];
+            median_color[2] = red_values[red_values.size() / 2];
+
+            // 中央値を表示
+            std::cout << "Median Color - B: " << static_cast<int>(median_color[0]) 
+                    << " G: " << static_cast<int>(median_color[1]) 
+                    << " R: " << static_cast<int>(median_color[2]) << std::endl;
+
+            // for (const auto& row : colors2) {
+            //     for (const auto& color : row) {
+            //         average_color[0] += color[0]; // Blueチャネルを加算
+            //         average_color[1] += color[1]; // Greenチャネルを加算
+            //         average_color[2] += color[2]; // Redチャネルを加算
+            //     }
+            // }
+
             // average_color[0] /= colors.size();
             // average_color[1] /= colors.size();
             // average_color[2] /= colors.size();
@@ -602,38 +641,38 @@ namespace detection_interface
 
 
 
-            pixel_value = frame_rgb.at<cv::Vec3b>(suction_check_point[0], suction_check_point[1]-1);
+            // pixel_value = frame_rgb.at<cv::Vec3b>(suction_check_point[0], suction_check_point[1]-1);
 
-            RCLCPP_INFO(this->get_logger(), "あと----[0]%d[1]%d[2]%d" , pixel_value[0], pixel_value[1], pixel_value[2]);
-            depth_value = frame_depth.at<uint16_t>(suction_check_point[0], suction_check_point[1]);
+            // RCLCPP_INFO(this->get_logger(), "あと----[0]%d[1]%d[2]%d" , pixel_value[0], pixel_value[1], pixel_value[2]);
+            // depth_value = frame_depth.at<uint16_t>(suction_check_point[0], suction_check_point[1]);
 
-            if(depth_value < depth_suction_check_value) {
-                uchar blue = pixel_value[0];
-                uchar green = pixel_value[1];
-                uchar red = pixel_value[2];
+            // if(depth_value < depth_suction_check_value) {
+            //     uchar blue = pixel_value[0];
+            //     uchar green = pixel_value[1];
+            //     uchar red = pixel_value[2];
 
-                if(red > green + 50 && red > blue + 50) msg_suction_check->data = "R"; //赤ボール
-                else if(blue > green + 30 && blue > red + 30) msg_suction_check->data = "B"; //青ボール
-                else if(red > green + 20 && blue > green + 20) msg_suction_check->data = "P"; //紫ボール
-            }
-            else {
-                msg_suction_check->data = ""; //何も吸着できていない
-            }
+            //     if(red > green + 50 && red > blue + 50) msg_suction_check->data = "R"; //赤ボール
+            //     else if(blue > green + 30 && blue > red + 30) msg_suction_check->data = "B"; //青ボール
+            //     else if(red > green + 20 && blue > green + 20) msg_suction_check->data = "P"; //紫ボール
+            // }
+            // else {
+            //     msg_suction_check->data = ""; //何も吸着できていない
+            // }
 
-            _pub_suction_check->publish(*msg_suction_check);
+            // _pub_suction_check->publish(*msg_suction_check);
 
             ////////////d435iを見る(これは常に見てる)
             // 点の座標を設定
-            // cv::Point front_point(suction_check_point[1], suction_check_point[0]);
+            cv::Point front_point(suction_check_point[1], suction_check_point[0]);
 
-            // // 画像に緑色の点を描画（半径2の小さい円として）
-            // const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
-            // cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
+            // 画像に緑色の点を描画（半径2の小さい円として）
+            const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
+            cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
 
-            // cv::Size target_size(1280, 720);
-            // cv::resize(frame_rgb, frame_prev, target_size);
-            // cv::imshow("d435i", frame_prev);
-            // cv::waitKey(1);
+            cv::Size target_size(1280, 720);
+            cv::resize(frame_rgb, frame_prev, target_size);
+            cv::imshow("d435i", frame_prev);
+            cv::waitKey(1);
             ///////////
         }
 

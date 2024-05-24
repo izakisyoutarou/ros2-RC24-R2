@@ -10,17 +10,17 @@
         // v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT);
         h_angle = -(px - WIDTH / 2) * (HFOV / WIDTH);
         v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT);
-        r = depth;                                  //極座標へ変換
-        fai = h_angle*M_PI/180;                              //極座標へ変換
+        r = depth;                                    //極座標へ変換
+        fai = h_angle*M_PI/180;                       //極座標へ変換
         theta = M_PI_2+(theta_y+v_angle)*M_PI/180;    //極座標へ変換
 
-        // cout << "h_angle: " << h_angle << "v_angle: " << v_angle << endl;
+        cout << "h_angle: " << h_angle << "v_angle: " << v_angle << endl;
         
         // x = depth* tan( h_angle * M_PI/180)*0.001;
         // y = depth* tan( v_angle * M_PI/180)*0.001;
         // z = (depth + ball_r)*0.001;
         x = r* sin(theta) * cos(fai)*0.001; //メートル単位に変換
-        y = r* sin(theta) * sin(fai)*0.001; //メートル単位に変換
+        y = r* cos(theta) * cos(fai)*0.001; //メートル単位に変換
         z = r* cos(theta) * 0.001;          //メートル単位に変換
 
         cout << "x: " << x << "y: " << y << "z: " << z <<endl;
@@ -60,7 +60,7 @@
         Matrix3d before_xyz = conversion(px, py, depth);
         z_angle = pose[2];
 
-        // cout << "-before_xyz-"<<endl;
+        // cout << "回転前"<<endl;
         // cout << before_xyz <<endl;
         // Matrix3d R = euler_angle(pose);  //カメラ座標に変換する際に、カメラの傾きを考慮して変換したため、self_poseの回転のみでよくなったため。
 
@@ -77,16 +77,14 @@
         Matrix3d R_self;
         R_self << cos(z_angle), -sin(z_angle), 0.0,
                   sin(z_angle),  cos(z_angle), 0.0,
-                            0.0,          0.0, 1.0;      
+                            0.0,          0.0, 1.0;
         // cout << "------------"<<endl;
         // cout << R_self<<endl;
 
         // Rxyz = Rxyz + T;
         // Rxyz = R_self*Rxyz;
-        before_xyz = R_self*before_xyz; //Rxyzをコメントアウトしたため
+        before_xyz = R_self*before_xyz; //Rxyzを使用しなくしたため
 
-        // cout << "-Rxyz_after-" << endl;
-        // cout << Rxyz << endl;
         cout << "before_xyz" << endl;
         cout << before_xyz << endl;
         
