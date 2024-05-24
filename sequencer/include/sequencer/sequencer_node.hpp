@@ -9,6 +9,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/u_int8.hpp"
 #include "std_msgs/msg/empty.hpp"
+#include "std_msgs/msg/float64.hpp"
 #include "controller_interface_msg/msg/convergence.hpp"
 #include "controller_interface_msg/msg/base_control.hpp"
 #include "socketcan_interface_msg/msg/socketcan_if.hpp"
@@ -47,6 +48,7 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _subscription_ball_coordinate;
     rclcpp::Subscription<detection_interface_msg::msg::SiloParam>::SharedPtr _subscription_silo_param;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _subscription_suction_check;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr _subscription_move_progress;
 
     void callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg);
     void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
@@ -58,6 +60,7 @@ private:
     void callback_ball_coordinate(const geometry_msgs::msg::Vector3::SharedPtr msg);
     void callback_silo_param(const detection_interface_msg::msg::SiloParam::SharedPtr msg);
     void callback_suction_check(const std_msgs::msg::String::SharedPtr msg);
+    void callback_move_progress(const std_msgs::msg::Float64::SharedPtr msg);
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_node;
     rclcpp::Publisher<socketcan_interface_msg::msg::SocketcanIF>::SharedPtr _publisher_canusb;
@@ -130,6 +133,8 @@ private:
     bool retry_flag = false;
     bool special0 = false;
     bool special1 = false;
+    bool move_progress = false;
+    bool net_flag = false;
 
     geometry_msgs::msg::Vector3 self_pose;
     geometry_msgs::msg::Vector3 ball_pose;

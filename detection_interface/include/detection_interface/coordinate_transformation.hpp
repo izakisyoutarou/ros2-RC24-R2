@@ -15,17 +15,23 @@ class coordinate_transformation {
         double WIDTH = 1280.0;
         double HEIGHT = 720.0;
         double HFOV = 86.0;
-        double VFOV = 57.0;
-        double ball_r = 97.75;
+        double VFOV = 58.0;
+        double ball_r = 95.0;
         double x = 0.0 ;
         double y = 0.0 ;
         double z = 0.0 ;
         double z_angle = 0.0;
-        double theta_x = -180.0; 
-        double theta_y = 118.5; //Camera mounting position
-        double theta_z = 270.0;
-        double tx = 0.2335; //offset robot and camera
-        double ty = -0.0845; //offset robot and camera
+        // double theta_x = 0.0; 
+        // double theta_y = -30.0+180.0; //Camera mounting position
+        // double theta_z = -90.0;
+        double theta_x = 0.0;
+        double theta_y = 30.0;
+        double theta_z = 0.0;
+        // double tx = 0.27737; //offset robot and camera
+        // double ty = -0.0945; //offset robot and camera
+        // double ty = -0.0105; //offset robot and camera
+        double tx = 0.0; //offset robot and camera
+        double ty = 0.0; //offset robot and camera
         double tz = 0.0; //offset robot and camera
 };
 
