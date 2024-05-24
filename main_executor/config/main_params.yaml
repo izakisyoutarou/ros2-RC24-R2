@@ -3,7 +3,7 @@ launch: #起動パラメータ
     slcan: true
     scan: true
     trajectory_planner: true
-    yolox_launch: true
+    yolox_launch: false
 
 /**:  #ワイルドカード(ここのパラメータは全ノードから読める: <名前に注意>)
   ros__parameters:

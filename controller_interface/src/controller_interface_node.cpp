@@ -276,7 +276,11 @@ namespace controller_interface
                 _pub_base_control->publish(msg_base_control);
             }
             // else if(msg->data == "l1") 
-            else if(msg->data == "l2") msg_base_control.is_slow_speed = !msg_base_control.is_slow_speed;
+            else if(msg->data == "l2") {
+                msg_base_control.is_slow_speed = !msg_base_control.is_slow_speed;
+                _pub_base_control->publish(msg_base_control);
+            }
+
             // else if(msg->data == "l3")
         }
 
