@@ -13,13 +13,14 @@ def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument(#学習済みデータの指定
             'model_path_c1camera',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0508_rtx3060.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_nano_c1_0520.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(#学習済みデータの指定
             'model_path_realsense',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0518.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(
@@ -54,7 +55,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#しきい値
             'conf_d455',
-            default_value='0.85',
+            default_value='0.6',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(
@@ -109,7 +110,7 @@ def generate_launch_description():
             description='topic name for publishing bounding box message.'
         ),
         DeclareLaunchArgument(
-            'c1camera_depth_flag',
+            'c1camera_depth_flag',#これは動かすためのダミー。c1cameraにdepthはない
             default_value='false',
             description='topic name for publishing bounding box message.'
         ),
@@ -136,6 +137,7 @@ def generate_launch_description():
             'align_depth.enable': 'true',
             'enable_color': 'true',
             'enable_depth': 'true',
+            'initial_reset': 'true',
         }.items()
     )
     realsense_d455_launch = launch.actions.IncludeLaunchDescription(
@@ -148,7 +150,7 @@ def generate_launch_description():
             'align_depth.enable': 'true',
             'enable_color': 'true',
             'enable_depth': 'true',
-            # 'initial_reset': 'true',
+            'initial_reset': 'true',
         }.items()
     )
 
