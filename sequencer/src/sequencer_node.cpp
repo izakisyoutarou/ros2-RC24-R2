@@ -195,7 +195,6 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
     }
 
     else if(sequence_mode == SEQUENCE_MODE::transfer){
-        // RCLCPP_INFO(get_logger(),"%d, %d",msg->net_convergence, tof[0]);
         if(progress == n++){
             RCLCPP_INFO(get_logger(),"_____transfer0_____");
             command_move_node("ST8");
@@ -204,7 +203,6 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
         else if(progress == n++ && msg->net_convergence && way_point == "ST8"){
             RCLCPP_INFO(get_logger(),"_____transfer1_____");
-            // command_base_state();
             command_net_close();
             progress++;
         }
@@ -221,6 +219,47 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
     }
 
+    else if(sequence_mode == SEQUENCE_MODE::collect){
+
+        if(progress == n++){
+            RCLCPP_INFO(get_logger(),"_____collect0_____");
+            command_move_node("c2");
+            progress++;
+        }
+        else if(progress == n++ && (way_point == "c7" || way_piint == "c8")){
+            RCLCPP_INFO(get_logger(),"_____collect1_____");
+            get_ball_pose = false;
+            progress++;
+        }
+        else if(progress == n++ && msg->arm_convergence && get_ball_pose){
+            RCLCPP_INFO(get_logger(),"_____strage2_____");
+            command_hand_suction_on();
+            command_ball_tracking();
+            progress++;
+        }
+        else if(progress == n++ && way_point == "coord"){
+            RCLCPP_INFO(get_logger(),"_____strage4_____");
+            command_strage_state(false);
+            progress++;
+        }
+        else if(progress == n++ && get_suction_check && msg->arm_convergence){
+            suction_check = "M";
+            if(suction_check == "M"){
+                RCLCPP_INFO(get_logger(),"_____strage5_M_____");
+                command_strage_state2();
+                command_sequence(SEQUENCE_MODE::silo); 
+                get_suction_check = false;
+            }
+            else {
+                RCLCPP_INFO(get_logger(),"_____strage5_P[]_____");
+                command_hand_suction_off();
+                command_strage_state2();
+                get_ball_pose = false
+                progress -= 2;
+            }
+        }
+
+    }
     else if(sequence_mode == SEQUENCE_MODE::silo){
         if(progress == n++){
             RCLCPP_INFO(get_logger(),"_____silo0_____");
