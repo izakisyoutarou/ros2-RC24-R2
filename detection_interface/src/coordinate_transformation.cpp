@@ -19,9 +19,16 @@
         // x = depth* tan( h_angle * M_PI/180)*0.001;
         // y = depth* tan( v_angle * M_PI/180)*0.001;
         // z = (depth + ball_r)*0.001;
+        
         x = r* sin(theta) * cos(fai)*0.001; //メートル単位に変換
-        y = r* cos(theta) * cos(fai)*0.001; //メートル単位に変換
+        y = r* sin(theta) * sin(fai)*0.001; //メートル単位に変換
         z = r* cos(theta) * 0.001;          //メートル単位に変換
+
+        // x = depth * cos(theta) * cos(h_angle)*0.001; //メートル単位に変換
+        // y = depth * cos((v_angle-theta_y)*M_PI/180) * sin(h_angle)*0.001; //メートル単位に変換
+        // z = depth * cos(M_PI-theta_y*M_PI/180) * 0.001;          //メートル単位に変換
+
+        
 
         cout << "x: " << x << "y: " << y << "z: " << z <<endl;
                 

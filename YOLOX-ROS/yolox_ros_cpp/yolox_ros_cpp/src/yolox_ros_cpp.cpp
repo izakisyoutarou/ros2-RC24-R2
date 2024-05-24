@@ -216,8 +216,11 @@ namespace yolox_ros_cpp
             box.img_height = frame.rows;
 
             if(this->params_.depth_flag){
+                int center_value = 0;
                 int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
                 int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
+
+                // std::cout << "center_x " << center_x_value << "center_y" << center_y_value << std::endl;
 
                 // box.center_dist = depth_image.at<uint16_t>(center_y_value, center_x_value);
 
@@ -227,15 +230,21 @@ namespace yolox_ros_cpp
                                                         depth_image.at<uint16_t>(center_y_value+1, center_x_value-1), depth_image.at<uint16_t>(center_y_value, center_x_value-1),
                                                         depth_image.at<uint16_t>(center_y_value-1, center_x_value-1)};
 
-                center_dist.erase(std::remove(center_dist.begin(), center_dist.end(), 0), center_dist.end());
+                std::sort(center_dist.begin(), center_dist.end());
 
-                // ゼロを削除した後、配列が空でない場合は平均を計算
-                if (!center_dist.empty()) {
-                    uint16_t sum = std::accumulate(center_dist.begin(), center_dist.end(), static_cast<uint16_t>(0));
-                    uint16_t average = sum / center_dist.size();
-                    // std::cout << "平均: " << average << std::endl;
-                    box.center_dist = average;
-                }
+                center_value = center_dist[center_dist.size() / 2];
+
+                box.center_dist = center_value;
+
+                // center_dist.erase(std::remove(center_dist.begin(), center_dist.end(), 0), center_dist.end());
+
+                // // ゼロを削除した後、配列が空でない場合は平均を計算
+                // if (!center_dist.empty()) {
+                //     uint16_t sum = std::accumulate(center_dist.begin(), center_dist.end(), static_cast<uint16_t>(0));
+                //     uint16_t average = sum / center_dist.size();
+                //     // std::cout << "平均: " << average << std::endl;
+                //     box.center_dist = average;
+                // }
             }
 
             boxes.bounding_boxes.emplace_back(box);

@@ -113,8 +113,6 @@ namespace detection_interface
             bool c3_c4_flag = true;//ST系のcollection_pointを出すトリガー
             bool is_c3_c6 = false;//吸引判定のトリガー用
             bool silo_flag = true;
-            bool is_c1camera_callback = true;
-            int n = 0;
             /////////////////////////
 
             /////////////////////////座標変換

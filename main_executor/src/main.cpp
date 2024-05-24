@@ -22,7 +22,7 @@ int main(int argc, char * argv[]){
     auto controller_node = std::make_shared<controller_interface::SmartphoneGamepad>(nodes_option);
     auto unity_node = std::make_shared<controller_interface::Unity>(nodes_option);
     auto heartbeat_node = std::make_shared<controller_interface::Heartbeat>(nodes_option);
-    auto logger_converter_node = std::make_shared<logger_converter::LoggerConverter>(nodes_option);
+    // auto logger_converter_node = std::make_shared<logger_converter::LoggerConverter>(nodes_option);
     auto ransac_localization = std::make_shared<self_localization::ransaclocalization>(nodes_option);
     auto socketcan_node = std::make_shared<socketcan_interface::SocketcanInterface>(nodes_option);
     auto spline_pid_node = std::make_shared<spline_pid::SplinePid>(nodes_option);
@@ -32,7 +32,7 @@ int main(int argc, char * argv[]){
     exec.add_node(controller_node);
     exec.add_node(unity_node);
     exec.add_node(heartbeat_node);
-    exec.add_node(logger_converter_node);
+    // exec.add_node(logger_converter_node);
     exec.add_node(ransac_localization);
     exec.add_node(socketcan_node);
     exec.add_node(spline_pid_node);
