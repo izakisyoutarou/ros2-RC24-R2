@@ -81,6 +81,7 @@ launch: #起動パラメータ
 
     convergence_ms: 100 #収束周期[ms]
     base_state_communication_ms: 50
+    heartbeat_ms: 100 #ハートビート周期[ms]
     #リスタート、緊急、足回りの手自動、上物の手自動、手動の射角、ボタンのカラー情報
     defalt_restart_flag: false
     defalt_emergency_flag: false
@@ -106,7 +107,6 @@ controller_interface_node:
     angular_max_acc: 360.0
     angular_max_dec: 360.0
     
-    heartbeat_ms: 100 #ハートビート周期[ms]
     interval_ms: 50
     start_ms: 3000
     controller_ms: 100
@@ -147,6 +147,7 @@ spline_pid_node:
 
     linear_pos_tolerance: 0.02  #並進到達位置の許容誤差[m]
     angular_pos_tolerance: 2.0  #回転到達位置の許容誤差[deg]
+    waypoint_tolerance: [4.0, 4.0, 0.4]
 
 spline_trajectories_node:
   ros__parameters:
