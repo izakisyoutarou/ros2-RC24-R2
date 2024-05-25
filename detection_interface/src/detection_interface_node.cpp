@@ -221,9 +221,11 @@ namespace detection_interface
                         if(way_point == "c1")c1camera_c1node(ymax_c1camera, min_max_xy, center_x_c1camera, center_y_c1camera, bbounbox_size_c1camera, class_id_c1camera);
                     }
                 }
-
-                if(now_sequence == "collect"){
-                    if(way_point == "c2")c1camera_c2node(ymax_c1camera, center_x_c1camera);
+                
+                if(center_x_c1camera.size() != 0){
+                    if(now_sequence == "collect"){
+                        if(way_point == "c2")c1camera_c2node(ymax_c1camera, center_x_c1camera);
+                    }
                 }
 
                 // time_end = chrono::system_clock::now();
@@ -397,16 +399,16 @@ namespace detection_interface
 
                 c1caera_c2ode_flag = false;
 
-                int max_it = *std::max_element(ymax.begin(), ymax.end());
+                auto max_it = std::max_element(ymax.begin(), ymax.end());
                 int max_index = std::distance(ymax.begin(), max_it);
 
                 if(court_color == "blue"){
-                    if(center_x > c2node_threshold_x) msg_collection_point->data = "c8"
-                    else msg_collection_point->data = "c7"
+                    if(center_x[max_index] > c2node_threshold_x) msg_collection_point->data = "c8";
+                    else msg_collection_point->data = "c7";
                 }
                 else if(court_color == "red"){
-                    if(center_x > c2node_threshold_x) msg_collection_point->data = "c7"
-                    else msg_collection_point->data = "c8"
+                    if(center_x[max_index] > c2node_threshold_x) msg_collection_point->data = "c7";
+                    else msg_collection_point->data = "c8";
                 }
 
                 _pub_collection_point->publish(*msg_collection_point);
@@ -588,7 +590,7 @@ namespace detection_interface
             median_color[1] = green_values[green_values.size() / 2];
             median_color[2] = red_values[red_values.size() / 2];
 
-            RCLCPP_INFO(this->get_logger(), "b%d----r%d----g%d" , median_color[0], median_color[1], median_color[2]);
+            RCLCPP_INFO(this->get_logger(), "b%d----g%d----r%d" , median_color[0], median_color[1], median_color[2]);
             /////////////////////////////////////
 
             /////////////////////////////////////depthの中央値を計算

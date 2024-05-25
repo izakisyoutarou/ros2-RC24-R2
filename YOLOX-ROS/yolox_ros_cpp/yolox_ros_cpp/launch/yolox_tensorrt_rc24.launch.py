@@ -13,8 +13,8 @@ def generate_launch_description():
     launch_args = [
         DeclareLaunchArgument(#学習済みデータの指定
             'model_path_c1camera',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_nano_c1_0520.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_nano_c1_0520.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(#学習済みデータの指定
@@ -65,7 +65,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#プレビューの表示
             'imshow_isshow_c1camera',
-            default_value='false',
+            default_value='true',
             description=''
         ),
         DeclareLaunchArgument(#プレビューの表示
