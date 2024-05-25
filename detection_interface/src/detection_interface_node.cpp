@@ -470,14 +470,16 @@ namespace detection_interface
 
                 if(center_x_realsense.size() != 0){//何も認識していないときに、下にいったらエラーを出す。そのためのif文
                     // //realseneのc3、c4から見たとき、どこのSTに行くか。ボールが手前か奥かaZZ
-                    if(way_point == "c3" || way_point == "c6") realsense_c3_c4(center_x_realsense, center_y_realsense, center_depth_realsense, ymax_realsense);
+                    if(way_point == "c3" || way_point == "c6") {
+                        realsense_c3_c4(center_x_realsense, center_y_realsense, center_depth_realsense, ymax_realsense);
+                    }
                 }
             }
         }
 
         void DetectionInterface::realsense_c3_c4(const std::vector<int> center_x, std::vector<int> center_y, const std::vector<int> center_depth, const std::vector<int> ymax){
             auto msg_ball_coordinate = std::make_shared<geometry_msgs::msg::Vector3>();
-
+            
             // 最大値のイテレータを取得
             int max_it = *std::max_element(ymax.begin(), ymax.end());
             int threshold = max_it - 160;

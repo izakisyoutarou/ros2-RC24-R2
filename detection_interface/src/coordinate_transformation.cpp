@@ -8,13 +8,16 @@
         double theta = 0.0; //極座標空間における角度(方位角)
         // h_angle = (px - WIDTH / 2) * (HFOV / WIDTH);
         // v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT);
-        h_angle = -(px - WIDTH / 2) * (HFOV / WIDTH);
-        v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT);
+        
+        // h_angle = -(px - WIDTH / 2) * (HFOV / WIDTH);
+        v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT)*M_PI/180;
+        // h_angle = atan(-(px-WIDTH/2)/(WIDTH/2))*HFOV/2*M_PI/180;
+        h_angle = atan((px-WIDTH/2)/(WIDTH/2)*tan(HFOV/2));
         r = depth;                                    //極座標へ変換
-        fai = h_angle*M_PI/180;                       //極座標へ変換
-        theta = M_PI_2+(theta_y+v_angle)*M_PI/180;    //極座標へ変換
+        fai = h_angle;                                //極座標へ変換
+        theta = M_PI_2+theta_y*M_PI/180+v_angle;      //極座標へ変換
 
-        cout << "h_angle: " << h_angle << "v_angle: " << v_angle << endl;
+        cout << "h_angle: " << h_angle*180/M_PI << endl;
         
         // x = depth* tan( h_angle * M_PI/180)*0.001;
         // y = depth* tan( v_angle * M_PI/180)*0.001;

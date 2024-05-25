@@ -55,7 +55,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(#しきい値
             'conf_d455',
-            default_value='0.6',
+            default_value='0.75',
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(
