@@ -10,7 +10,7 @@
         // v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT);
         
         // h_angle = -(px - WIDTH / 2) * (HFOV / WIDTH);
-        v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT)*M_PI/180;
+        v_angle = (py - HEIGHT / 2) * (VFOV / HEIGHT) * M_PI/180;
         // h_angle = atan(-(px-WIDTH/2)/(WIDTH/2))*HFOV/2*M_PI/180;
         h_angle = atan((px-WIDTH/2)/(WIDTH/2)*tan(HFOV/2));
         r = depth;                                    //極座標へ変換
@@ -33,7 +33,7 @@
 
         
 
-        cout << "x: " << x << "y: " << y << "z: " << z <<endl;
+        // cout << "x: " << x << "y: " << y << "z: " << z <<endl;
                 
         Matrix3d camera_xyz;
         camera_xyz <<  x, 0.0, 0.0,
@@ -95,12 +95,12 @@
         // Rxyz = R_self*Rxyz;
         before_xyz = R_self*before_xyz; //Rxyzを使用しなくしたため
 
-        cout << "before_xyz" << endl;
-        cout << before_xyz << endl;
+        // cout << "before_xyz" << endl;
+        // cout << before_xyz << endl;
         
         T = R_self*T;
-        cout << "T" << endl;
-        cout << T << endl;
+        // cout << "T" << endl;
+        // cout << T << endl;
 
         Matrix3d after_xyz;
         // after_xyz = Rxyz + T;

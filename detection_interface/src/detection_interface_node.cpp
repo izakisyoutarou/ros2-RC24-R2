@@ -470,9 +470,7 @@ namespace detection_interface
 
                 if(center_x_realsense.size() != 0){//何も認識していないときに、下にいったらエラーを出す。そのためのif文
                     // //realseneのc3、c4から見たとき、どこのSTに行くか。ボールが手前か奥かaZZ
-                    if(way_point == "c3" || way_point == "c6") {
-                        realsense_c3_c4(center_x_realsense, center_y_realsense, center_depth_realsense, ymax_realsense);
-                    }
+                    if(way_point == "c3" || way_point == "c6") realsense_c3_c4(center_x_realsense, center_y_realsense, center_depth_realsense, ymax_realsense);
                 }
             }
         }
