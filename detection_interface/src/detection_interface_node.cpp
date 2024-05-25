@@ -9,6 +9,10 @@ namespace detection_interface
         suction_check_point(get_parameter("suction_check_point").as_integer_array()),
         depth_suction_check_value(get_parameter("depth_suction_check_value").as_int()),
 
+        c2node_threshold_x(get_parameter("c2node_threshold_x").as_int()),
+
+        str_range_y_C3orC5(get_parameter("str_range_y_C3orC5").as_int()),
+
         court_color(get_parameter("court_color").as_string())
         {
             //yolox_ros_cppのrealsenseから
@@ -22,7 +26,7 @@ namespace detection_interface
             _sub_c1 = this->create_subscription<bboxes_ex_msgs::msg::BoundingBoxes>(
                 "yolox/c1",
                 _qos,
-                std::bind(&DetectionInterface::callback_c1, this, std::placeholders::_1)
+                std::bind(&DetectionInterface::callback_c1camera, this, std::placeholders::_1)
             );
 
             //ransacから
@@ -65,10 +69,9 @@ namespace detection_interface
             _pub_ball_coordinate = this->create_publisher<geometry_msgs::msg::Vector3>("ball_coordinate", _qos);
         }
 
-        void DetectionInterface::callback_c1(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
+        void DetectionInterface::callback_c1camera(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
             if(now_sequence == "silo" && way_point == "c1" || now_sequence == "collect" && way_point == "c2"){
                 // time_start = chrono::system_clock::now();
-                auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
 
                 int silo_count = 0;
 
@@ -83,152 +86,152 @@ namespace detection_interface
                 std::vector<int> center_x_c1camera;//バウンディングボックスの真ん中(x)
                 std::vector<int> center_y_c1camera;//バウンディングボックスの真ん中(y)
                 std::vector<int> bbounbox_size_c1camera;//バウンディングの面積
-                    std::vector<int> ymax_c1camera;//ボールのバウンディングの右下(y)
+                std::vector<int> ymax_c1camera;//ボールのバウンディングの右下(y)
 
-                    // std::array<std::vector<std::string>, 5> class_id_c1camera_list2;
-                    // std::array<std::vector<int>, 5> center_x_c1camera_list2;
-                    // std::array<std::vector<int>, 5> center_y_c1camera_list2;
-                    // std::array<std::vector<int>, 5> bbounbox_size_c1camera_list2;
-                    // std::array<std::vector<int>, 5> ymax_c1camera_list2;
+                // std::array<std::vector<std::string>, 5> class_id_c1camera_list2;
+                // std::array<std::vector<int>, 5> center_x_c1camera_list2;
+                // std::array<std::vector<int>, 5> center_y_c1camera_list2;
+                // std::array<std::vector<int>, 5> bbounbox_size_c1camera_list2;
+                // std::array<std::vector<int>, 5> ymax_c1camera_list2;
 
-                    std::array<std::array<int, 4>, 5> min_max_xy; //{min_x、max_x、min_y、max_y}
+                std::array<std::array<int, 4>, 5> min_max_xy; //{min_x、max_x、min_y、max_y}
 
-                    //boxeesの配列からboxの内容を取り出し
-                    for (const auto& box : msg->bounding_boxes) {
+                //boxeesの配列からboxの内容を取り出し
+                for (const auto& box : msg->bounding_boxes) {
 
-                        if (box.class_id == "silo" && silo_count < 5) {
-                            min_max_xy[silo_count][0] = box.xmin;
-                            min_max_xy[silo_count][1] = box.xmax;
-                            min_max_xy[silo_count][2] = box.ymin;
-                            min_max_xy[silo_count][3] = box.ymax;
-                            silo_count++;// 使用された要素数をインクリメント
-                        }
-
-                        if(box.class_id == "redball" || box.class_id == "blueball"){
-                            // class_id_c1camera_list[c1camera_count].push_back(box.class_id);
-
-                            // int size = static_cast<int>((box.xmax - box.xmin) * (box.ymax - box.ymin));
-                            // bbounbox_size_c1camera_list[c1camera_count].push_back(size);
-
-                            // int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
-                            // int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
-                            // center_x_c1camera_list[c1camera_count].push_back(center_x_value);
-                            // center_y_c1camera_list[c1camera_count].push_back(center_y_value);
-
-                            // ymax_c1camera_list[c1camera_count].push_back(box.ymax);
-
-                            // c1camera_count_flag = true;
-
-
-                            
-                            int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
-                            int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
-                            center_x_c1camera.push_back(center_x_value);
-                            center_y_c1camera.push_back(center_y_value);
-
-                            class_id_c1camera.push_back(box.class_id);
-
-                            int size = static_cast<int>((box.xmax - box.xmin) * (box.ymax - box.ymin));
-                            bbounbox_size_c1camera.push_back(size);
-
-                            ymax_c1camera.push_back(box.ymax);
-                        }
+                    if (box.class_id == "silo" && silo_count < 5) {
+                        min_max_xy[silo_count][0] = box.xmin;
+                        min_max_xy[silo_count][1] = box.xmax;
+                        min_max_xy[silo_count][2] = box.ymin;
+                        min_max_xy[silo_count][3] = box.ymax;
+                        silo_count++;// 使用された要素数をインクリメント
                     }
 
-                    // for (int z = 0; z < center_x_c1camera.size(); ++z) {
-                    //     RCLCPP_INFO(this->get_logger(), "まえ%dceter_x%d", z, center_x_c1camera_list[c1camera_count][z]);
-                    //     std::cout << class_id_c1camera_list[c1camera_count][z] << std::endl;
-                    // }
-                    
-                    // for (int z = 0; z < center_x.size(); ++z) {
-                    //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, center_x[z]);
-                    // }
+                    if(box.class_id == "redball" || box.class_id == "blueball"){
+                        // class_id_c1camera_list[c1camera_count].push_back(box.class_id);
 
-                    // for (int z = 0; z < count; ++z) {
-                    //     RCLCPP_INFO(this->get_logger(), "Index: %d, xmin: %d, xmax: %d, ymin: %d, ymax: %d",
-                    //                 z, min_max_xy[z][0], min_max_xy[z][1], min_max_xy[z][2], min_max_xy[z][3]);
-                    // }
+                        // int size = static_cast<int>((box.xmax - box.xmin) * (box.ymax - box.ymin));
+                        // bbounbox_size_c1camera_list[c1camera_count].push_back(size);
 
-                    // if(c1camera_count_flag) c1camera_count++;
+                        // int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
+                        // int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
+                        // center_x_c1camera_list[c1camera_count].push_back(center_x_value);
+                        // center_y_c1camera_list[c1camera_count].push_back(center_y_value);
 
-                    //ボールを5回検出した中で一番検出数が大きいものを選ぶ
-                    // if(c1camera_count >= 5){
-                    //     // for (int i = 0; i < 5; ++i) {
-                    //     //     for (const auto& item : class_id_c1camera_list[i]) {
-                    //     //         class_id_c1camera_list2[i].push_back(item);
-                    //     //     }
-                    //     //     for (const auto& item : center_x_c1camera_list[i]) {
-                    //     //         center_x_c1camera_list2[i].push_back(item);
-                    //     //     }
-                    //     //     for (const auto& item : center_y_c1camera_list[i]) {
-                    //     //         center_y_c1camera_list2[i].push_back(item);
-                    //     //     }
-                    //     //     for (const auto& item : bbounbox_size_c1camera_list[i]) {
-                    //     //         bbounbox_size_c1camera_list2[i].push_back(item);
-                    //     //     }
-                    //     //     for (const auto& item : ymax_c1camera_list[i]) {
-                    //     //         ymax_c1camera_list2[i].push_back(item);
-                    //     //     }
-                    //     // }
+                        // ymax_c1camera_list[c1camera_count].push_back(box.ymax);
 
-                    //     c1camera_count = 0;//5回推論したかどうかcountの初期化
+                        // c1camera_count_flag = true;
 
-                    //     //関数に渡すvector変数の初期化
-                    //     for (int i = 0; i < ymax_c1camera.size(); ++i) {
-                    //         class_id_c1camera.clear();
-                    //         center_x_c1camera.clear();
-                    //         center_y_c1camera.clear();
-                    //         bbounbox_size_c1camera.clear();
-                    //         ymax_c1camera.clear();
-                    //     }
 
-                    //     //5回の推論結果から一番認識数が多いindexを探す
-                    //     for (int i = 0; i < ymax_c1camera_list.size(); ++i) {                        
-                    //         if (ymax_c1camera_list[i].size() >= max_size) {
-                    //             max_size = ymax_c1camera_list[i].size();
-                    //             max_index = i;
-                    //         }
-                    //     }
 
-                    //     //関数に渡すvector変数に一番認識数が多いindexを代入
-                    //     class_id_c1camera.insert(class_id_c1camera.end(), class_id_c1camera_list[max_index].begin(), class_id_c1camera_list[max_index].end());
-                    //     center_x_c1camera.insert(center_x_c1camera.end(), center_x_c1camera_list[max_index].begin(), center_x_c1camera_list[max_index].end());
-                    //     center_y_c1camera.insert(center_y_c1camera.end(), center_y_c1camera_list[max_index].begin(), center_y_c1camera_list[max_index].end());
-                    //     bbounbox_size_c1camera.insert(bbounbox_size_c1camera.end(), bbounbox_size_c1camera_list[max_index].begin(), bbounbox_size_c1camera_list[max_index].end());
-                    //     ymax_c1camera.insert(ymax_c1camera.end(), ymax_c1camera_list[max_index].begin(), ymax_c1camera_list[max_index].end());
+                        int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
+                        int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
+                        center_x_c1camera.push_back(center_x_value);
+                        center_y_c1camera.push_back(center_y_value);
 
-                    //     //5回の推論結果用のvector変数の初期化
-                    //     for (int i = 0; i < ymax_c1camera_list.size(); ++i) {
-                    //         center_x_c1camera_list[i].clear();
-                    //         center_y_c1camera_list[i].clear();
-                    //         bbounbox_size_c1camera_list[i].clear();
-                    //         ymax_c1camera_list[i].clear();
-                    //     }
+                        class_id_c1camera.push_back(box.class_id);
 
-                    //     c1camera_ball_flag = true;
-                    // }
+                        int size = static_cast<int>((box.xmax - box.xmin) * (box.ymax - box.ymin));
+                        bbounbox_size_c1camera.push_back(size);
 
-                    // for (int z = 0; z < center_x_c1camera.size(); ++z) {
-                    //     RCLCPP_INFO(this->get_logger(), "まえ%dceter_x%d", z, center_x_c1camera[z]);
-                    //     std::cout << class_id_c1camera[z] << std::endl;
-                    // }
-
-                    if(silo_count == 5 /*&& c1camera_ball_flag*/){//サイロが5個検出できたとき
-                        if(now_sequence == "silo"){
-                            if(way_point == "c1")c1camera_c1(ymax_c1camera, min_max_xy, center_x_c1camera, center_y_c1camera, bbounbox_size_c1camera, class_id_c1camera);
-                        }
+                        ymax_c1camera.push_back(box.ymax);
                     }
-
-                    if(now_sequence == "collect"){
-                        if(way_point == "c2")c1camera_c1(ymax_c1camera, min_max_xy, center_x_c1camera, center_y_c1camera, bbounbox_size_c1camera, class_id_c1camera);
-                    }
-
-                    // time_end = chrono::system_clock::now();
-                    // RCLCPP_INFO(this->get_logger(), "scan time->%d[ms]", chrono::duration_cast<chrono::microseconds>(time_end-time_start).count());
                 }
+
+                // for (int z = 0; z < center_x_c1camera.size(); ++z) {
+                //     RCLCPP_INFO(this->get_logger(), "まえ%dceter_x%d", z, center_x_c1camera_list[c1camera_count][z]);
+                //     std::cout << class_id_c1camera_list[c1camera_count][z] << std::endl;
+                // }
+                
+                // for (int z = 0; z < center_x.size(); ++z) {
+                //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, center_x[z]);
+                // }
+
+                // for (int z = 0; z < count; ++z) {
+                //     RCLCPP_INFO(this->get_logger(), "Index: %d, xmin: %d, xmax: %d, ymin: %d, ymax: %d",
+                //                 z, min_max_xy[z][0], min_max_xy[z][1], min_max_xy[z][2], min_max_xy[z][3]);
+                // }
+
+                // if(c1camera_count_flag) c1camera_count++;
+
+                //ボールを5回検出した中で一番検出数が大きいものを選ぶ
+                // if(c1camera_count >= 5){
+                //     // for (int i = 0; i < 5; ++i) {
+                //     //     for (const auto& item : class_id_c1camera_list[i]) {
+                //     //         class_id_c1camera_list2[i].push_back(item);
+                //     //     }
+                //     //     for (const auto& item : center_x_c1camera_list[i]) {
+                //     //         center_x_c1camera_list2[i].push_back(item);
+                //     //     }
+                //     //     for (const auto& item : center_y_c1camera_list[i]) {
+                //     //         center_y_c1camera_list2[i].push_back(item);
+                //     //     }
+                //     //     for (const auto& item : bbounbox_size_c1camera_list[i]) {
+                //     //         bbounbox_size_c1camera_list2[i].push_back(item);
+                //     //     }
+                //     //     for (const auto& item : ymax_c1camera_list[i]) {
+                //     //         ymax_c1camera_list2[i].push_back(item);
+                //     //     }
+                //     // }
+
+                //     c1camera_count = 0;//5回推論したかどうかcountの初期化
+
+                //     //関数に渡すvector変数の初期化
+                //     for (int i = 0; i < ymax_c1camera.size(); ++i) {
+                //         class_id_c1camera.clear();
+                //         center_x_c1camera.clear();
+                //         center_y_c1camera.clear();
+                //         bbounbox_size_c1camera.clear();
+                //         ymax_c1camera.clear();
+                //     }
+
+                //     //5回の推論結果から一番認識数が多いindexを探す
+                //     for (int i = 0; i < ymax_c1camera_list.size(); ++i) {                        
+                //         if (ymax_c1camera_list[i].size() >= max_size) {
+                //             max_size = ymax_c1camera_list[i].size();
+                //             max_index = i;
+                //         }
+                //     }
+
+                //     //関数に渡すvector変数に一番認識数が多いindexを代入
+                //     class_id_c1camera.insert(class_id_c1camera.end(), class_id_c1camera_list[max_index].begin(), class_id_c1camera_list[max_index].end());
+                //     center_x_c1camera.insert(center_x_c1camera.end(), center_x_c1camera_list[max_index].begin(), center_x_c1camera_list[max_index].end());
+                //     center_y_c1camera.insert(center_y_c1camera.end(), center_y_c1camera_list[max_index].begin(), center_y_c1camera_list[max_index].end());
+                //     bbounbox_size_c1camera.insert(bbounbox_size_c1camera.end(), bbounbox_size_c1camera_list[max_index].begin(), bbounbox_size_c1camera_list[max_index].end());
+                //     ymax_c1camera.insert(ymax_c1camera.end(), ymax_c1camera_list[max_index].begin(), ymax_c1camera_list[max_index].end());
+
+                //     //5回の推論結果用のvector変数の初期化
+                //     for (int i = 0; i < ymax_c1camera_list.size(); ++i) {
+                //         center_x_c1camera_list[i].clear();
+                //         center_y_c1camera_list[i].clear();
+                //         bbounbox_size_c1camera_list[i].clear();
+                //         ymax_c1camera_list[i].clear();
+                //     }
+
+                //     c1camera_ball_flag = true;
+                // }
+
+                // for (int z = 0; z < center_x_c1camera.size(); ++z) {
+                //     RCLCPP_INFO(this->get_logger(), "まえ%dceter_x%d", z, center_x_c1camera[z]);
+                //     std::cout << class_id_c1camera[z] << std::endl;
+                // }
+
+                if(silo_count == 5 /*&& c1camera_ball_flag*/){//サイロが5個検出できたとき
+                    if(now_sequence == "silo"){
+                        if(way_point == "c1")c1camera_c1node(ymax_c1camera, min_max_xy, center_x_c1camera, center_y_c1camera, bbounbox_size_c1camera, class_id_c1camera);
+                    }
+                }
+
+                if(now_sequence == "collect"){
+                    if(way_point == "c2")c1camera_c2node(ymax_c1camera, center_x_c1camera);
+                }
+
+                // time_end = chrono::system_clock::now();
+                // RCLCPP_INFO(this->get_logger(), "scan time->%d[ms]", chrono::duration_cast<chrono::microseconds>(time_end-time_start).count());
+            }
         }
 
-        void DetectionInterface::c1camera_c1(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy,
+        void DetectionInterface::c1camera_c1node(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy,
                                                 const std::vector<int> center_x, const std::vector<int> center_y, std::vector<int> bbounbox_size,
                                                 const std::vector<std::string> class_id){
             if(silo_flag){
@@ -388,11 +391,30 @@ namespace detection_interface
             _pub_silo_param->publish(*msg_silo_param);
         }
 
+        void DetectionInterface::c1camera_c2node(const std::vector<int> ymax, const std::vector<int> center_x){
+            if(c1caera_c2ode_flag){
+                auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
+
+                c1caera_c2ode_flag = false;
+
+                int max_it = *std::max_element(ymax.begin(), ymax.end());
+                int max_index = std::distance(ymax.begin(), max_it);
+
+                if(court_color == "blue"){
+                    if(center_x > c2node_threshold_x) msg_collection_point->data = "c8"
+                    else msg_collection_point->data = "c7"
+                }
+                else if(court_color == "red"){
+                    if(center_x > c2node_threshold_x) msg_collection_point->data = "c7"
+                    else msg_collection_point->data = "c8"
+                }
+
+                _pub_collection_point->publish(*msg_collection_point);
+            }
+        }
+
         void DetectionInterface::callback_realsense(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
             if(now_sequence == "storage" || now_sequence == "collect"){
-                auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
-                auto msg_front_ball = std::make_shared<std_msgs::msg::Bool>();
-
                 bool realsense_count_flag = false;
 
                 int max_size = 0;
@@ -469,18 +491,25 @@ namespace detection_interface
                 // }
 
                 if(center_x_realsense.size() != 0){//何も認識していないときに、下にいったらエラーを出す。そのためのif文
-                    // //realseneのc3、c4から見たとき、どこのSTに行くか。ボールが手前か奥かaZZ
-                    if(way_point == "c3" || way_point == "c6") realsense_c3_c4(center_x_realsense, center_y_realsense, center_depth_realsense, ymax_realsense);
+                    // //realseneのc3、c4から見たとき、どこのSTに行くか。ボールが手前か奥か
+                    if(now_sequence == "storage"){
+                        if(way_point == "c3" || way_point == "c6") realsense_c3_c6_c7_c8node(center_x_realsense, center_y_realsense, center_depth_realsense, ymax_realsense);
+                    }
+                    if(now_sequence == "collect"){
+                        if(way_point == "c7" || way_point == "c8") realsense_c3_c6_c7_c8node(center_x_realsense, center_y_realsense, center_depth_realsense, ymax_realsense);
+                    }
                 }
             }
         }
 
-        void DetectionInterface::realsense_c3_c4(const std::vector<int> center_x, std::vector<int> center_y, const std::vector<int> center_depth, const std::vector<int> ymax){
+        void DetectionInterface::realsense_c3_c6_c7_c8node(const std::vector<int> center_x, std::vector<int> center_y, const std::vector<int> center_depth, const std::vector<int> ymax){
             auto msg_ball_coordinate = std::make_shared<geometry_msgs::msg::Vector3>();
+
+            c1caera_c2ode_flag = true;
 
             // 最大値のイテレータを取得
             int max_it = *std::max_element(ymax.begin(), ymax.end());
-            int threshold = max_it - 160;
+            int threshold = max_it - str_range_y_C3orC5;
 
             std::vector<std::vector<int>> xy_realsense_list;
 
@@ -491,7 +520,7 @@ namespace detection_interface
                 }
             }
 
-            int target_value = 640;
+            int target_value = 640;//realsenseのスクリーンの真ん中
             int closest_index = 0;
 
             int closest_distance = std::numeric_limits<int>::max();
@@ -642,8 +671,7 @@ namespace detection_interface
 
         void DetectionInterface::callback_way_point(const std_msgs::msg::String::SharedPtr msg){
             way_point = msg->data;
-            if(way_point == "c3")c3_c4_flag = true;
-            if(way_point == "c6")c3_c4_flag = true;
-            if(way_point == "c1")silo_flag = true;
+            if(way_point == "c3" || way_point == "c6") c3_c4_flag = true;
+            if(way_point == "c1") silo_flag = true;
         }    
 }

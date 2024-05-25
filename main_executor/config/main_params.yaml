@@ -159,6 +159,12 @@ detection_interface_node:
     suction_check_point: [500, 675] #[y,x]
     depth_suction_check_value: 330
 
+    #c1caeraでc2nodeから見たときのxの閾値
+    c2node_threshold_x: 500
+
+    #realsenseがc3 or c6nodeから見たボール1個分のy
+    str_range_y_C3orC5: 160
+
 sequencer_node:
   ros__parameters:
     strage_dist: [0.38 , 0.20] #m

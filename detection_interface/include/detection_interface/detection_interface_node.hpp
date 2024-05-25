@@ -69,8 +69,8 @@ namespace detection_interface
             //yolox_ros_cppのrealsenseからのcallback
             void callback_realsense(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
 
-            //yolox_ros_cppのc1からのcallback
-            void callback_c1(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
+            //yolox_ros_cppのc1cameraからのcallback
+            void callback_c1camera(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
 
             //controller_interfaceからのcallback
             void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
@@ -85,9 +85,11 @@ namespace detection_interface
             void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
 
             //C1cameraのc1から見たとき、サイロのボール情報取得。
-            void c1camera_c1(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy, 
+            void c1camera_c1node(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy, 
                                 const std::vector<int> center_x, const std::vector<int> center_y, std::vector<int> bbounbox_size,
                                 const std::vector<std::string> class_id);
+
+            void c1camera_c2node(const std::vector<int> ymax, const std::vector<int> center_x);
 
             //同じ領域にボールが複数存在している場合、バウンディングボックスのサイズが大きい方を採用する。それのところ
             void c1camera_pick_best_BoundingBox(std::vector<int> before_ball_place, std::vector<int> bbounbox_size, std::vector<std::string> ball_color);
@@ -97,7 +99,7 @@ namespace detection_interface
             void c1camera_correct_silo_levels(std::vector<int> before_ball_place, const std::vector<std::string> ball_color);
 
             //realseneのc3、c4から見たとき、どこのSTに行くか。中でfront_ball関数を呼び出す。
-            void realsense_c3_c4(const std::vector<int> center_x, std::vector<int> center_y, const std::vector<int> center_depth, const std::vector<int> ymax);
+            void realsense_c3_c6_c7_c8node(const std::vector<int> center_x, std::vector<int> center_y, const std::vector<int> center_depth, const std::vector<int> ymax);
 
             /////////////////////////トピックのグローバル変数
             Vector3d pose;
@@ -113,6 +115,7 @@ namespace detection_interface
             bool c3_c4_flag = true;//ST系のcollection_pointを出すトリガー
             bool is_c3_c6 = false;//吸引判定のトリガー用
             bool silo_flag = true;
+            bool c1caera_c2ode_flag = true;
             /////////////////////////
 
             /////////////////////////座標変換
@@ -123,6 +126,12 @@ namespace detection_interface
             //ST系に行ったときの吸引判定
             const std::vector<long int> suction_check_point;
             const int depth_suction_check_value;
+
+            //c1cameraがc2node(坂上)から見たxの閾値
+            const int c2node_threshold_x;
+
+            //realsenseがc3 or c6nodeから見たボール1個分のy
+            const int str_range_y_C3orC5;
 
             //コートの色
             const std::string court_color;
