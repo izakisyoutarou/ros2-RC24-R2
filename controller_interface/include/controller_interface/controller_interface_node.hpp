@@ -38,7 +38,6 @@ namespace controller_interface
             //R2_mainのcontrollerから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_main_pad;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_screen_pad;
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_state_num_R2;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_initial_state;
             rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr _sub_connection_state;            
 
@@ -56,9 +55,6 @@ namespace controller_interface
             //各nodeと共有
             rclcpp::Publisher<controller_interface_msg::msg::BaseControl>::SharedPtr _pub_base_control;
             rclcpp::Publisher<controller_interface_msg::msg::Convergence>::SharedPtr _pub_convergence;
-
-            //sequenserから他のノードへ
-            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_initial_sequense;
             
             //gazebo_simulator用のpub
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_gazebo;
@@ -67,14 +63,11 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_move_node;
 
             rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr _pub_is_start;
-            rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_process_skip;
 
             //timer
             rclcpp::TimerBase::SharedPtr _pub_heartbeat;
             rclcpp::TimerBase::SharedPtr _pub_timer_convergence;
             rclcpp::TimerBase::SharedPtr _socket_timer;
-            rclcpp::TimerBase::SharedPtr _start_timer;
-            rclcpp::TimerBase::SharedPtr _pub_state_communication_timer;
             rclcpp::TimerBase::SharedPtr check_controller_connection;
             rclcpp::TimerBase::SharedPtr check_mainboard_connection;
 
@@ -100,53 +93,7 @@ namespace controller_interface
 
             //メッセージ型の宣言
             controller_interface_msg::msg::BaseControl msg_base_control;
-            std_msgs::msg::Bool msg_unity_control;
-            std_msgs::msg::Bool msg_unity_sub_control;
-            std_msgs::msg::String msg_unity_initial_state;
-
-            //base_control用
-            bool is_restart = false;
-            bool is_emergency = false;
-            bool is_move_autonomous = false;
-            bool is_slow_speed = false;
-            std::string initial_state = "O";
-
-            //unityにsubscrib
-            bool is_restart_unity = false;
-            bool is_emergency_unity = false;
-            bool is_move_autonomous_unity = false;
-            bool is_slow_speed_unity = false;
-            std::string initial_state_unity = "O";
-            
-            bool spline_convergence = false;
-            bool arm_convergence = false;
-            bool net_convergence = false;
-            bool arm_flag = false;
-
-            bool robotcontrol_flag = false;
-
-            //canusb
-            bool a;
-            bool b;
-            bool y;
-            bool x;
-            bool r1;
-            bool r2;
-            bool r3;
-            bool l1;
-            bool l2;
-            bool l3;
-            bool s;
-            bool g;
-            bool up;
-            bool left;
-            bool down;
-            bool right;
-
-            //convergence用
-            bool is_spline_convergence;
-            bool is_arm_convergence;
-            bool is_net_convergence;
+            controller_interface_msg::msg::Convergence msg_convergence;
 
             //初期化指定用
             const float high_manual_linear_max_vel;
@@ -175,22 +122,6 @@ namespace controller_interface
             const int16_t can_paddy_convergence_id;
             const int16_t can_net_id;
             const int16_t can_net_convergence_id;
-            const int16_t can_main_button_id;
-
-            const std::string r1_pc;
-            const std::string r2_pc;
-
-            const std::string initial_pickup_state;
-            const std::string initial_inject_state;
-
-            //udp初期化用
-            const int udp_port_state;
-            const int udp_port_pole;
-            const int udp_port_spline_state;
-
-            bool start_r2_main;
-
-            bool start_flag;
 
             //計画機
             VelPlanner high_velPlanner_linear_x;
@@ -203,8 +134,6 @@ namespace controller_interface
 
             VelPlanner velPlanner_angular_z;
             const VelPlannerLimit limit_angular;
-
-            std::string move_node;
 
             Gamebtn gamebtn;
 

@@ -9,6 +9,7 @@ using namespace Eigen;
 class coordinate_transformation {
     public:
         Vector3d Rx_Ry_Rz(double px, double py, double depth, Vector3d pose);
+        double angle_offset(int py);
     private:
         Matrix3d conversion(double px, double py, double depth);
         Matrix3d euler_angle(Vector3d pose);
@@ -21,17 +22,12 @@ class coordinate_transformation {
         double y = 0.0 ;
         double z = 0.0 ;
         double z_angle = 0.0;
-        // double theta_x = 0.0; 
-        // double theta_y = -30.0+180.0; //Camera mounting position
-        // double theta_z = -90.0;
         double theta_x = 0.0;
         double theta_y = 30.0;
         double theta_z = 0.0;
-        // double tx = 0.27737; //offset robot and camera
-        // double ty = -0.0945; //offset robot and camera
-        // double ty = -0.0105; //offset robot and camera
-        double tx = 0.0; //offset robot and camera
-        double ty = 0.0; //offset robot and camera
-        double tz = 0.0; //offset robot and camera
+        double tx = 0.27737; //offset robot and camera
+        double ty = -0.037; //offset robot and camera
+        double tz = 0.0;
+        const double angle_offset_coff[2] = {-0.0145,0.8838};
 };
 

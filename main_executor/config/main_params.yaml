@@ -61,26 +61,11 @@ launch: #起動パラメータ
       transfer_state: 0x233
       silo_state: 0x234
       silo_state2: 0x235
-
-      
-      #デジタルボタン
-      main_button: 0x410
-
-      vel: 0x400 #適当
-      ang: 0x401 #適当
         
     port:
       joy_main: 50000
-      pole_share: 53000
-      spline_state: 55000
-      robot_state: 57000
-      
-    ip:
-      r1_pc: "192.168.1.2"
-      r2_pc: "192.168.1.3"
 
     convergence_ms: 100 #収束周期[ms]
-    base_state_communication_ms: 50
     heartbeat_ms: 100 #ハートビート周期[ms]
     #リスタート、緊急、足回りの手自動、上物の手自動、手動の射角、ボタンのカラー情報
     defalt_restart_flag: false
@@ -111,9 +96,6 @@ controller_interface_node:
     start_ms: 3000
     controller_ms: 100
     mainboard_ms: 200
-    
-    initial_pickup_state: "A"
-    initial_inject_state: "B"
 
     connection_check: false
 
@@ -147,7 +129,7 @@ spline_pid_node:
 
     linear_pos_tolerance: 0.02  #並進到達位置の許容誤差[m]
     angular_pos_tolerance: 2.0  #回転到達位置の許容誤差[deg]
-    waypoint_tolerance: [4.0, 4.0, 0.4]
+    waypoint_tolerance: [0.03, 0.03, 3.0]
 
 spline_trajectories_node:
   ros__parameters:

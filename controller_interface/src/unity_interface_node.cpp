@@ -23,7 +23,6 @@ namespace controller_interface
     defalt_arm_convergence(get_parameter("defalt_arm_convergence").as_bool())
     {
 
-        const auto base_state_communication_ms = this->get_parameter("base_state_communication_ms").as_int();
         const auto convergence_ms = this->get_parameter("convergence_ms").as_int();
 
         _sub_convergence_unity = this->create_subscription<controller_interface_msg::msg::Convergence>(
@@ -45,8 +44,6 @@ namespace controller_interface
         _pub_base_restart = this->create_publisher<std_msgs::msg::Bool>("restart_unity", _qos);
         _pub_base_emergency = this->create_publisher<std_msgs::msg::Bool>("emergency_unity", _qos);
         _pub_move_auto = this->create_publisher<std_msgs::msg::Bool>("move_autonomous_unity", _qos);
-        _pub_base_state_communication = this->create_publisher<std_msgs::msg::Empty>("state_communication_unity" , _qos);
-
         _pub_con_spline_convergence = this->create_publisher<std_msgs::msg::Bool>("spline_convergence_unity", _qos);
         _pub_con_arm_convergence = this->create_publisher<std_msgs::msg::Bool>("arm_convergence_unity", _qos);
         _pub_con_net_convergence = this->create_publisher<std_msgs::msg::Bool>("net_convergence_unity", _qos);
@@ -84,14 +81,6 @@ namespace controller_interface
         msg_unity_control->data = net_convergence;
         _pub_con_net_convergence->publish(*msg_unity_control);
 
-        //スマホコントローラとの通信状況を確認
-        _pub_state_communication_timer = create_wall_timer(
-            std::chrono::milliseconds(base_state_communication_ms),
-            [this] {
-                auto msg_base_state_communication = std::make_shared<std_msgs::msg::Empty>();
-                _pub_base_state_communication->publish(*msg_base_state_communication);
-            }
-        );
     }
 
     void Unity::unity_callback(const controller_interface_msg::msg::BaseControl::SharedPtr msg){
