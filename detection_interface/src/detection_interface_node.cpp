@@ -389,7 +389,7 @@ namespace detection_interface
         }
 
         void DetectionInterface::callback_realsense(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
-            if(now_sequence == "storage" || now_sequence == "collect"){
+            if((now_sequence == "storage" && way_point == "c3") || (now_sequence == "storage" && way_point == "c6") || now_sequence == "collect"){
                 auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
                 auto msg_front_ball = std::make_shared<std_msgs::msg::Bool>();
 
@@ -559,7 +559,7 @@ namespace detection_interface
             median_color[1] = green_values[green_values.size() / 2];
             median_color[2] = red_values[red_values.size() / 2];
 
-            RCLCPP_INFO(this->get_logger(), "b%d----r%d----g%d" , median_color[0], median_color[1], median_color[2]);
+            // RCLCPP_INFO(this->get_logger(), "b%d----r%d----g%d" , median_color[0], median_color[1], median_color[2]);
             /////////////////////////////////////
 
             /////////////////////////////////////depthの中央値を計算
@@ -587,7 +587,7 @@ namespace detection_interface
             if (!center_dist.empty()) {
                 uint16_t sum = std::accumulate(center_dist.begin(), center_dist.end(), static_cast<uint16_t>(0));
                 depth_average = sum / center_dist.size();
-                RCLCPP_INFO(this->get_logger(), "まえ%d" , depth_average);
+                // RCLCPP_INFO(this->get_logger(), "まえ%d" , depth_average);
             }
             /////////////////////////////////////
 
@@ -608,16 +608,16 @@ namespace detection_interface
 
             ////////////d435iを見る(これは常に見てる)
             // 点の座標を設定
-            cv::Point front_point(suction_check_point[1], suction_check_point[0]);
+            // cv::Point front_point(suction_check_point[1], suction_check_point[0]);
 
             // 画像に緑色の点を描画（半径2の小さい円として）
-            const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
-            cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
+            // const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
+            // cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
 
-            cv::Size target_size(1280, 720);
-            cv::resize(frame_rgb, frame_prev, target_size);
-            cv::imshow("d435i", frame_prev);
-            cv::waitKey(1);
+            // cv::Size target_size(1280, 720);
+            // cv::resize(frame_rgb, frame_prev, target_size);
+            // cv::imshow("d435i", frame_prev);
+            // cv::waitKey(1);
             ///////////
         }
 

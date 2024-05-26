@@ -168,12 +168,12 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             c3orc6_flag = false;
             progress++;
         }
-        else if(progress == n++ && move_progress){
-            RCLCPP_INFO(get_logger(),"_____strage3_____");
-            command_ball_tracking();
-            get_suction_check = false;
-            progress++;           
-        }
+        // else if(progress == n++ && move_progress){
+        //     RCLCPP_INFO(get_logger(),"_____strage3_____");
+        //     command_ball_tracking();
+        //     get_suction_check = false;
+        //     progress++;           
+        // }
         else if(progress == n++ && way_point == "coord"){
             RCLCPP_INFO(get_logger(),"_____strage4_____");
             command_strage_state(false);
