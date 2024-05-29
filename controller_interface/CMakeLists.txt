@@ -28,6 +28,7 @@ add_library(controller_interface_node
   src/controller_interface_node.cpp
   src/unity_interface_node.cpp
   src/Gamebtn.cpp
+  src/heartbeat_interface_node.cpp
 )
 
 target_compile_definitions(controller_interface_node

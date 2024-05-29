@@ -75,37 +75,18 @@ namespace yolox_cpp{
                 cv::circle(bgr, back_point, 2, line_color, -1); 
 
                 // //c3、c4
-                cv::line(bgr, cv::Point(xmin, 0), cv::Point(xmin, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point((center_line+xmin)/2, 0), cv::Point((center_line+xmin)/2, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(center_line, 0), cv::Point(center_line, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point((center_line+xmax)/2, 0), cv::Point((center_line+xmax)/2, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(xmax, 0), cv::Point(xmax, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(0, ymin), cv::Point(bgr.cols, ymin), line_color, 2);
-                cv::line(bgr, cv::Point(0, ymin+160), cv::Point(bgr.cols, ymin+160), line_color, 2);
-                cv::line(bgr, cv::Point(0, ymin+320), cv::Point(bgr.cols, ymin+320), line_color, 2);//カメラの向きが上下逆
+                // cv::line(bgr, cv::Point(xmin, 0), cv::Point(xmin, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point((center_line+xmin)/2, 0), cv::Point((center_line+xmin)/2, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(center_line, 0), cv::Point(center_line, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point((center_line+xmax)/2, 0), cv::Point((center_line+xmax)/2, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(xmax, 0), cv::Point(xmax, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(0, ymin), cv::Point(bgr.cols, ymin), line_color, 2);
+                // cv::line(bgr, cv::Point(0, ymin+160), cv::Point(bgr.cols, ymin+160), line_color, 2);
+                // cv::line(bgr, cv::Point(0, ymin+320), cv::Point(bgr.cols, ymin+320), line_color, 2);//カメラの向きが上下逆
 
-                //ST1~8
-                // cv::line(bgr, cv::Point(550, 0), cv::Point(550, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(800, 0), cv::Point(800, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(0, 340), cv::Point(bgr.cols, 340), line_color, 2);
-                // cv::line(bgr, cv::Point(0, 500), cv::Point(bgr.cols, 500), line_color, 2);
-
-                //坂上
-                // cv::line(bgr, cv::Point(0, 630 + c1_kakoi), cv::Point(1920, 1230 + c1_kakoi),  line_color, 2); //c1 坂上斜め赤
-                // cv::line(bgr, cv::Point(0, 1270), cv::Point(1920, 570),  line_color, 2); //c1 坂上斜め青
-                // cv::line(bgr, cv::Point(0, 1180 + c1_kakoi), cv::Point(1920, 520 + c1_kakoi),  line_color, 2); //c1 囲い hidariue 
-                // cv::line(bgr, cv::Point(0, 1650 + c1_kakoi), cv::Point(1920, 590 + c1_kakoi),  line_color, 2); //c1 囲い migisita
-                // cv::line(bgr, cv::Point(0, 600 + c1_kakoi), cv::Point(1920, 1550 + c1_kakoi),  line_color, 2); //c1 囲い hidarisita
-                // cv::line(bgr, cv::Point(0, 570 + c1_kakoi), cv::Point(1920, 1100 + c1_kakoi),  line_color, 2); //c1 囲い migiue
-
-                // サイロ
-                // cv::line(bgr, cv::Point(350, 0), cv::Point(350, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(768, 0), cv::Point(768, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(1220, 0), cv::Point(1220, bgr.rows), line_color, 2);               
-                // cv::line(bgr, cv::Point(1600, 0), cv::Point(1600, bgr.rows), line_color, 2);                
-                // cv::line(bgr, cv::Point(0, 780), cv::Point(bgr.cols, 780), line_color, 2);
-                // cv::line(bgr, cv::Point(0, 900), cv::Point(bgr.cols, 900), line_color, 2);
-                // cv::line(bgr, cv::Point(0, 1050), cv::Point(bgr.cols, 1050), line_color, 2);
+                // cv::line(bgr, cv::Point(1000, 0), cv::Point(1000, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 530), cv::Point(bgr.cols, 530), line_color, 2);
+                // cv::line(bgr, cv::Point(0, 330), cv::Point(bgr.cols, 330), line_color, 2);
             }
         }
     }

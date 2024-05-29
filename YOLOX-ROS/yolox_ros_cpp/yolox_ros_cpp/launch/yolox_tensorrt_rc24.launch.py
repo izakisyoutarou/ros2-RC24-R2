@@ -18,9 +18,15 @@ def generate_launch_description():
             description='yolox model path.'
         ),
         DeclareLaunchArgument(#学習済みデータの指定
-            'model_path_realsense',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0518.trt',
+            'model_path_realsense_d455',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0518.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
+            description='yolox model path.'
+        ),
+        DeclareLaunchArgument(#学習済みデータの指定
+            'model_path_realsense_d435i',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0518.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(
@@ -49,13 +55,18 @@ def generate_launch_description():
             description='yolox model version.'
         ),
         DeclareLaunchArgument(#しきい値
-            'conf',
-            default_value='0.85',
+            'conf_c1camera',
+            default_value='0.83',#デフォルト値 0.85
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(#しきい値
             'conf_d455',
-            default_value='0.85',
+            default_value='0.5',#デフォルト値 0.85
+            description='yolox confidence threshold.'
+        ),
+        DeclareLaunchArgument(#しきい値
+            'conf_d435i',
+            default_value='0.7',#デフォルト値 0.85
             description='yolox confidence threshold.'
         ),
         DeclareLaunchArgument(
@@ -63,54 +74,84 @@ def generate_launch_description():
             default_value='0.45',
             description='yolox nms threshold'
         ),
+        
         DeclareLaunchArgument(#プレビューの表示
             'imshow_isshow_c1camera',
             default_value='false',
             description=''
         ),
         DeclareLaunchArgument(#プレビューの表示
-            'imshow_isshow_realsense',
+            'imshow_isshow_realsense_d455',
             default_value='true',
             description=''
         ),
+        DeclareLaunchArgument(#プレビューの表示
+            'imshow_isshow_realsense_d435i',
+            default_value='false',
+            description=''
+        ),
+        
         DeclareLaunchArgument(#YOLOX-ROSがサブしてる画像トピックのトピック名
-            'src_image_topic_name',
+            'src_image_topic_name_c1camera',
             default_value='/image_raw', #C1camera
             description='topic name for source image'
         ),
         DeclareLaunchArgument(#YOLOX-ROSがパブしてる画像トピックのトピック名
-            'publish_image_topic_name',
+            'publish_image_topic_name_c1camera',
             default_value='/yolox/image_raw_c1',
             description='topic name for publishing image with bounding box drawn'
         ),
         DeclareLaunchArgument(#YOLOX-ROSが推論データをdetection_interfaceにパブしているトピック名
-            'publish_boundingbox_topic_name',
+            'publish_boundingbox_topic_name_c1camera',
             default_value='/yolox/c1',
             description='topic name for publishing bounding box message.'
         ),
+        
         DeclareLaunchArgument(
-            'src_image_topic_name_realsense',
+            'src_image_topic_name_realsense_d455',
             # default_value='/camera/d455/color/image_raw', #realsense
-            default_value='/camera/camera/rgbd', #realsense
+            default_value='/camera/d455/rgbd', #realsense
             description='topic name for source image'
         ),
         DeclareLaunchArgument(
-            'publish_image_topic_name_realsense',
-            default_value='/yolox/image_raw_realsense',
+            'publish_image_topic_name_realsense_d455',
+            default_value='/yolox/image_raw_realsense_d455',
             description='topic name for publishing image with bounding box drawn'
         ),
         DeclareLaunchArgument(
-            'publish_boundingbox_topic_name_realsense',
-            default_value='/yolox/realsense',
+            'publish_boundingbox_topic_name_realsense_d455',
+            default_value='/yolox/realsense_d455',
+            description='topic name for publishing bounding box message.'
+        ),
+        
+        DeclareLaunchArgument(
+            'src_image_topic_name_realsense_d435i',
+            default_value='/camera/d435i/color/image_raw', #realsense
+            description='topic name for source image'
+        ),
+        DeclareLaunchArgument(
+            'publish_image_topic_name_realsense_d435i',
+            default_value='/yolox/image_raw_realsense_d435i',
+            description='topic name for publishing image with bounding box drawn'
+        ),
+        DeclareLaunchArgument(
+            'publish_boundingbox_topic_name_realsense_d435i',
+            default_value='/yolox/realsense_d435i',
+            description='topic name for publishing bounding box message.'
+        ),
+        
+        DeclareLaunchArgument(
+            'depth_flag_c1camera',#これは動かすためのダミー。c1cameraにdepthはない
+            default_value='false',
             description='topic name for publishing bounding box message.'
         ),
         DeclareLaunchArgument(
-            'd455_depth_flag',
+            'depth_flag_d455',
             default_value='true',
             description='topic name for publishing bounding box message.'
         ),
         DeclareLaunchArgument(
-            'c1camera_depth_flag',#これは動かすためのダミー。c1cameraにdepthはない
+            'depth_flag_d435i',
             default_value='false',
             description='topic name for publishing bounding box message.'
         ),
@@ -137,6 +178,7 @@ def generate_launch_description():
             'align_depth.enable': 'true',
             'enable_color': 'true',
             'enable_depth': 'true',
+            'initial_reset': 'true',
         }.items()
     )
     realsense_d455_launch = launch.actions.IncludeLaunchDescription(
@@ -153,7 +195,7 @@ def generate_launch_description():
         }.items()
     )
 
-    container = ComposableNodeContainer(
+    container_c1camera = ComposableNodeContainer(
         name='yolox_container_c1',
         namespace='',
         package='rclcpp_components',
@@ -171,21 +213,21 @@ def generate_launch_description():
                     'model_type': 'tensorrt',
                     'model_version': LaunchConfiguration('model_version'),
                     'tensorrt/device': LaunchConfiguration('tensorrt/device'),
-                    'conf': LaunchConfiguration('conf'),
+                    'conf': LaunchConfiguration('conf_c1camera'),
                     'nms': LaunchConfiguration('nms'),
                     'imshow_isshow': LaunchConfiguration('imshow_isshow_c1camera'),
-                    'src_image_topic_name': LaunchConfiguration('src_image_topic_name'),
-                    'publish_image_topic_name': LaunchConfiguration('publish_image_topic_name'),
-                    'publish_boundingbox_topic_name': LaunchConfiguration('publish_boundingbox_topic_name'),
-                    'depth_flag': LaunchConfiguration('c1camera_depth_flag'),
+                    'src_image_topic_name': LaunchConfiguration('src_image_topic_name_c1camera'),
+                    'publish_image_topic_name': LaunchConfiguration('publish_image_topic_name_c1camera'),
+                    'publish_boundingbox_topic_name': LaunchConfiguration('publish_boundingbox_topic_name_c1camera'),
+                    'depth_flag': LaunchConfiguration('depth_flag_c1camera'),
                 }],
             ),
         ],
         output='screen',
     )
     
-    container_realsense = ComposableNodeContainer(
-        name='yolox_container_realsense',
+    container_realsense_d455 = ComposableNodeContainer(
+        name='yolox_container_realsense_d455',
         namespace='',
         package='rclcpp_components',
         executable='component_container',
@@ -193,9 +235,9 @@ def generate_launch_description():
             ComposableNode(
                 package='yolox_ros_cpp',
                 plugin='yolox_ros_cpp::YoloXNode',
-                name='yolox_ros_cpp_realsense',
+                name='yolox_ros_cpp_realsense_d455',
                 parameters=[{
-                    'model_path': LaunchConfiguration('model_path_realsense'),
+                    'model_path': LaunchConfiguration('model_path_realsense_d455'),
                     'p6': LaunchConfiguration('p6'),
                     'class_labels_path': LaunchConfiguration('class_labels_path'),
                     'num_classes': LaunchConfiguration('num_classes'),
@@ -204,11 +246,42 @@ def generate_launch_description():
                     'tensorrt/device': LaunchConfiguration('tensorrt/device'),
                     'conf': LaunchConfiguration('conf_d455'),
                     'nms': LaunchConfiguration('nms'),
-                    'imshow_isshow': LaunchConfiguration('imshow_isshow_realsense'),
-                    'src_image_topic_name': LaunchConfiguration('src_image_topic_name_realsense'),
-                    'publish_image_topic_name': LaunchConfiguration('publish_image_topic_name_realsense'),
-                    'publish_boundingbox_topic_name': LaunchConfiguration('publish_boundingbox_topic_name_realsense'),
-                    'depth_flag': LaunchConfiguration('d455_depth_flag'),
+                    'imshow_isshow': LaunchConfiguration('imshow_isshow_realsense_d455'),
+                    'src_image_topic_name': LaunchConfiguration('src_image_topic_name_realsense_d455'),
+                    'publish_image_topic_name': LaunchConfiguration('publish_image_topic_name_realsense_d455'),
+                    'publish_boundingbox_topic_name': LaunchConfiguration('publish_boundingbox_topic_name_realsense_d455'),
+                    'depth_flag': LaunchConfiguration('depth_flag_d455'),
+                }],
+            ),
+        ],
+        output='screen',
+    )
+    
+    container_realsense_d435i = ComposableNodeContainer(
+        name='yolox_container_realsense_d435i',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container',
+        composable_node_descriptions=[
+            ComposableNode(
+                package='yolox_ros_cpp',
+                plugin='yolox_ros_cpp::YoloXNode',
+                name='yolox_ros_cpp_realsense_d435i',
+                parameters=[{
+                    'model_path': LaunchConfiguration('model_path_realsense_d435i'),
+                    'p6': LaunchConfiguration('p6'),
+                    'class_labels_path': LaunchConfiguration('class_labels_path'),
+                    'num_classes': LaunchConfiguration('num_classes'),
+                    'model_type': 'tensorrt',
+                    'model_version': LaunchConfiguration('model_version'),
+                    'tensorrt/device': LaunchConfiguration('tensorrt/device'),
+                    'conf': LaunchConfiguration('conf_d435i'),
+                    'nms': LaunchConfiguration('nms'),
+                    'imshow_isshow': LaunchConfiguration('imshow_isshow_realsense_d435i'),
+                    'src_image_topic_name': LaunchConfiguration('src_image_topic_name_realsense_d435i'),
+                    'publish_image_topic_name': LaunchConfiguration('publish_image_topic_name_realsense_d435i'),
+                    'publish_boundingbox_topic_name': LaunchConfiguration('publish_boundingbox_topic_name_realsense_d435i'),
+                    'depth_flag': LaunchConfiguration('depth_flag_d435i'),
                 }],
             ),
         ],
@@ -216,8 +289,10 @@ def generate_launch_description():
     )
     return launch.LaunchDescription(
         launch_args +   [
+                        
+                        # container_c1camera, c1_launch, 
+                        container_realsense_d455, realsense_d455_launch,
+                        # container_realsense_d435i, 
                         # realsense_d435i_launch,
-                        container, c1_launch, 
-                        container_realsense, realsense_d455_launch,
                         ]
     )

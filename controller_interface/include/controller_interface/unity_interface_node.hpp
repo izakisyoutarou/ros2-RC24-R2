@@ -42,14 +42,11 @@ namespace controller_interface
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_spline_convergence;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_arm_convergence;
             rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _pub_con_net_convergence;
-            rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _pub_base_state_communication;
             
             rclcpp::Subscription<controller_interface_msg::msg::Convergence>::SharedPtr _sub_convergence_unity;
             rclcpp::Subscription<controller_interface_msg::msg::BaseControl>::SharedPtr _sub_unity;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_initial_state;
 
-
-            rclcpp::TimerBase::SharedPtr _pub_state_communication_timer;
             rclcpp::TimerBase::SharedPtr _pub_timer_convergence;
 
             void unity_callback(const controller_interface_msg::msg::BaseControl::SharedPtr msg);

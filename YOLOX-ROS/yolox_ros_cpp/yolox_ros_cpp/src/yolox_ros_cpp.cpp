@@ -7,7 +7,7 @@ namespace yolox_ros_cpp
     {
         using namespace std::chrono_literals; // NOLINT
         this->init_timer_ = this->create_wall_timer(
-            3ms, std::bind(&YoloXNode::onInit, this));
+            5ms, std::bind(&YoloXNode::onInit, this));
     }
 
     void YoloXNode::onInit()
@@ -138,7 +138,7 @@ namespace yolox_ros_cpp
 
         auto end = std::chrono::system_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
-        //RCLCPP_INFO(this->get_logger(), "Inference: %f FPS", 1000.0f / elapsed.count()); //FPSを確認できる
+        // RCLCPP_INFO(this->get_logger(), "Inference: %f FPS", 1000.0f / elapsed.count()); //FPSを確認できる
 
         yolox_cpp::utils::draw_objects(xmin, ymin, xmax, frame, objects, this->class_names_);
         if (this->params_.imshow_isshow)
@@ -216,25 +216,36 @@ namespace yolox_ros_cpp
             box.img_height = frame.rows;
 
             if(this->params_.depth_flag){
+                int center_value = 0;
                 int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
                 int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
 
+                // std::cout << "center_x " << center_x_value << "center_y" << center_y_value << std::endl;
+
                 // box.center_dist = depth_image.at<uint16_t>(center_y_value, center_x_value);
 
-                std::vector<uint16_t> center_dist = {   depth_image.at<uint16_t>(center_y_value, center_x_value), depth_image.at<uint16_t>(center_y_value-1, center_x_value), 
-                                                        depth_image.at<uint16_t>(center_y_value-1, center_x_value+1), depth_image.at<uint16_t>(center_y_value, center_x_value+1),
-                                                        depth_image.at<uint16_t>(center_y_value+1, center_x_value+1), depth_image.at<uint16_t>(center_y_value+1, center_x_value),
-                                                        depth_image.at<uint16_t>(center_y_value+1, center_x_value-1), depth_image.at<uint16_t>(center_y_value, center_x_value-1),
-                                                        depth_image.at<uint16_t>(center_y_value-1, center_x_value-1)};
+                if(center_x_value > 0 && center_x_value < 1200 && center_y_value > 0 && center_y_value < 700){
+                    std::vector<uint16_t> center_dist = {   depth_image.at<uint16_t>(center_y_value, center_x_value), depth_image.at<uint16_t>(center_y_value-1, center_x_value), 
+                                                            depth_image.at<uint16_t>(center_y_value-1, center_x_value+1), depth_image.at<uint16_t>(center_y_value, center_x_value+1),
+                                                            depth_image.at<uint16_t>(center_y_value+1, center_x_value+1), depth_image.at<uint16_t>(center_y_value+1, center_x_value),
+                                                            depth_image.at<uint16_t>(center_y_value+1, center_x_value-1), depth_image.at<uint16_t>(center_y_value, center_x_value-1),
+                                                            depth_image.at<uint16_t>(center_y_value-1, center_x_value-1)};
 
-                center_dist.erase(std::remove(center_dist.begin(), center_dist.end(), 0), center_dist.end());
+                    std::sort(center_dist.begin(), center_dist.end());
 
-                // ゼロを削除した後、配列が空でない場合は平均を計算
-                if (!center_dist.empty()) {
-                    uint16_t sum = std::accumulate(center_dist.begin(), center_dist.end(), static_cast<uint16_t>(0));
-                    uint16_t average = sum / center_dist.size();
-                    // std::cout << "平均: " << average << std::endl;
-                    box.center_dist = average;
+                    center_value = center_dist[center_dist.size() / 2];
+
+                    box.center_dist = center_value;
+
+                    // center_dist.erase(std::remove(center_dist.begin(), center_dist.end(), 0), center_dist.end());
+
+                    // // ゼロを削除した後、配列が空でない場合は平均を計算
+                    // if (!center_dist.empty()) {
+                    //     uint16_t sum = std::accumulate(center_dist.begin(), center_dist.end(), static_cast<uint16_t>(0));
+                    //     uint16_t average = sum / center_dist.size();
+                    //     // std::cout << "平均: " << average << std::endl;
+                    //     box.center_dist = average;
+                    // }
                 }
             }
 
