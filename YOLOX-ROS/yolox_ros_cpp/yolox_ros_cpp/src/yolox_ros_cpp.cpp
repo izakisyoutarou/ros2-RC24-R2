@@ -224,7 +224,7 @@ namespace yolox_ros_cpp
 
                 // box.center_dist = depth_image.at<uint16_t>(center_y_value, center_x_value);
 
-                if(center_x_value > 0 && center_x_value < 1270 || center_y_value > 0 && center_y_value < 720){
+                if(center_x_value > 0 && center_x_value < 1200 && center_y_value > 0 && center_y_value < 700){
                     std::vector<uint16_t> center_dist = {   depth_image.at<uint16_t>(center_y_value, center_x_value), depth_image.at<uint16_t>(center_y_value-1, center_x_value), 
                                                             depth_image.at<uint16_t>(center_y_value-1, center_x_value+1), depth_image.at<uint16_t>(center_y_value, center_x_value+1),
                                                             depth_image.at<uint16_t>(center_y_value+1, center_x_value+1), depth_image.at<uint16_t>(center_y_value+1, center_x_value),
