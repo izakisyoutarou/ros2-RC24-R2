@@ -30,13 +30,13 @@ int main(int argc, char * argv[]){
     auto detection_interface_node = std::make_shared<detection_interface::DetectionInterface>(nodes_option);
 
     // exec.add_node(logger_converter_node);
-    // exec.add_node(controller_node);
-    // exec.add_node(unity_node);
-    // exec.add_node(heartbeat_node);
-    // exec.add_node(ransac_localization);
-    // exec.add_node(socketcan_node);
-    // exec.add_node(spline_pid_node);
-    // exec.add_node(sequencer_node);
+    exec.add_node(controller_node);
+    exec.add_node(unity_node);
+    exec.add_node(heartbeat_node);
+    exec.add_node(ransac_localization);
+    exec.add_node(socketcan_node);
+    exec.add_node(spline_pid_node);
+    exec.add_node(sequencer_node);
     exec.add_node(detection_interface_node);
 
     exec.spin();
