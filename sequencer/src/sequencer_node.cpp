@@ -25,6 +25,7 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
         can_transfer_state_id(get_parameter("canid.transfer_state").as_int()),
         can_silo_state_id(get_parameter("canid.silo_state").as_int()),
         can_silo_state2_id(get_parameter("canid.silo_state2").as_int()),
+        can_hand_lift_id(get_parameter("canid.hand_lift").as_int()),
         court_color(get_parameter("court_color").as_string()),
         strage_dist(get_parameter("strage_dist").as_double_array()),
         suction_wait(get_parameter("suction_wait").as_double()),
@@ -103,6 +104,7 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
     _publisher_now_sequence = this->create_publisher<std_msgs::msg::String>("now_sequence", _qos);
     _publisher_move_interrupt_node = this->create_publisher<std_msgs::msg::String>("move_interrupt_node", _qos);
     _publisher_coord_tracking = this->create_publisher<geometry_msgs::msg::Vector3>("coord_tracking", _qos);
+    _publisher_move_autonomous = this->create_publisher<std_msgs::msg::Bool>("move_autonomous", _qos);
 
     std::ifstream ifs1(ament_index_cpp::get_package_share_directory("main_executor") + "/config/sequencer/silo_priority.cfg");
     std::string str1;
@@ -123,7 +125,7 @@ Sequencer::Sequencer(const std::string &name_space, const rclcpp::NodeOptions &o
 
 void Sequencer::callback_convergence(const controller_interface_msg::msg::Convergence::SharedPtr msg){
     
-    if(!is_start) return;
+    if(!is_start && !move_automonous) return;
     int n = 0;
 
     if(sequence_mode == SEQUENCE_MODE::storage){
@@ -132,12 +134,13 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             if(special_progress == s++){
                 RCLCPP_INFO(get_logger(),"_____strage3_S0_0_____");
                 command_hand_suction_off();
-                command_strage_state2();
                 timer(500);
                 special_progress++;
             }
             else if(special_progress == s++ && timer()){
                 RCLCPP_INFO(get_logger(),"_____strage3_S0_1_____");
+                //command_strage_state2();
+                command_base_state();
                 if(c4_flag) command_move_interrupt_node("c6");
                 else  command_move_interrupt_node("c3");
                 get_suction_check = false;
@@ -150,9 +153,10 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
         if(progress == n++){
             RCLCPP_INFO(get_logger(),"_____strage0_____");
-            if(c4_flag || retry_flag) command_move_node("c6");
+            if(c4_flag) command_move_node("c6");
             else command_move_node("c3");
             get_ball_pose = false;
+            c3orc6_flag = true;
             timer(1000);
             progress++;
         }
@@ -161,25 +165,20 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             command_base_state();
             progress++;
         }
-        else if(progress == n++ && msg->arm_convergence && c3orc6_flag && get_ball_pose){
+        else if(progress == n++ && msg->arm_convergence && c3orc6_flag && !msg->spline_convergence && get_ball_pose){
             RCLCPP_INFO(get_logger(),"_____strage2_____");
             command_hand_suction_on();
             command_ball_tracking();
             c3orc6_flag = false;
             progress++;
         }
-        // else if(progress == n++ && move_progress){
-        //     RCLCPP_INFO(get_logger(),"_____strage3_____");
-        //     command_ball_tracking();
-        //     get_suction_check = false;
-        //     progress++;           
-        // }
         else if(progress == n++ && way_point == "coord"){
             RCLCPP_INFO(get_logger(),"_____strage4_____");
-            command_strage_state(false);
+            command_strage_state(kado_flag);
             progress++;
         }
         else if(progress == n++ && get_suction_check && msg->arm_convergence){
+            RCLCPP_INFO(get_logger(),"suction:%s",suction_check.c_str());
             suction_check = "M";
             if(suction_check == "M"){
                 RCLCPP_INFO(get_logger(),"_____strage5_M_____");
@@ -200,24 +199,24 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             RCLCPP_INFO(get_logger(),"_____transfer0_____");
             command_move_node("ST8");
             command_net_open();
+            command_hand_lift_pickup();
             progress++;
         }
         else if(progress == n++ && msg->net_convergence && way_point == "ST8"){
             RCLCPP_INFO(get_logger(),"_____transfer1_____");
-            // command_base_state();
             command_net_close();
             progress++;
         }
         else if(progress == n++){
-            if(tof[0]){
+            if(tof[0] || tof[1]){
                 RCLCPP_INFO(get_logger(),"_____transfer2_____");
                 command_sequence(SEQUENCE_MODE::silo);
             }
-            else if(msg->net_convergence){
-                net_flag = !net_flag;
-                if(net_flag) command_net_open();
-                else command_net_close();
-            }
+            // else if(msg->net_convergence){
+            //     net_flag = !net_flag;
+            //     if(net_flag) command_net_open();
+            //     else command_net_close();
+            // }
         }
     }
 
@@ -244,7 +243,15 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                 command_transfer_state();
                 progress++;
             } 
-            else progress++;
+            else if(pre_sequence != SEQUENCE_MODE::transfer) progress++;
+        }
+        else if(progress == n++){
+            RCLCPP_INFO(get_logger(),"_____silo3_____");
+            if(pre_sequence == SEQUENCE_MODE::transfer && msg->arm_convergence){
+                command_hand_lift_pickup();
+                progress++;
+            } 
+            else if(pre_sequence != SEQUENCE_MODE::transfer) progress++;
         }
         else if(progress == n++ && c1_flag && msg->arm_convergence && silo_flag){
             RCLCPP_INFO(get_logger(),"_____silo3_____");
@@ -254,7 +261,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             priority_num = 0;
             progress++;
         }       
-        else if(progress == n++ && msg->arm_convergence){
+        else if(progress == n++){
             RCLCPP_INFO(get_logger(),"_____silo4_____");
             std::string silo_node = "si" + std::to_string(silo_priority[priority_num]);
             command_move_interrupt_node(silo_node);
@@ -280,13 +287,18 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         else if(progress == n++ && check_way_SI()){
             RCLCPP_INFO(get_logger(),"_____silo6_____");
             command_hand_suction_off();
-            timer(500);
+            timer(400);
             progress++;
         } 
         else if(progress == n++ && msg->arm_convergence && timer()) {
             RCLCPP_INFO(get_logger(),"_____silo7_____");
             command_silo_state2();
-            if(pre_sequence == SEQUENCE_MODE::storage) command_sequence(SEQUENCE_MODE::storage);
+            if(pre_sequence == SEQUENCE_MODE::storage) {
+                ball_num++;
+                if(ball_num == 3) command_sequence(SEQUENCE_MODE::transfer);
+                else command_sequence(SEQUENCE_MODE::storage);
+
+            }
             else if(pre_sequence == SEQUENCE_MODE::transfer) command_sequence(SEQUENCE_MODE::transfer);
         }
     }
@@ -304,21 +316,31 @@ void Sequencer::callback_base_control(const controller_interface_msg::msg::BaseC
         special0 = false;
         special1 = false;
         c4_flag = false;
+        ball_num = 0;
     }
     if(msg->initial_state == "O") retry_flag = false;
     else if(msg->initial_state == "A") retry_flag = true;
+    move_automonous = msg->is_move_autonomous;
 }
 
 void Sequencer::callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg){
-    if(msg->data == 0) command_sequence(SEQUENCE_MODE::storage);
+    if(msg->data == 0){
+        // if(!retry_flag) command_sequence(SEQUENCE_MODE::storage);
+        // else command_sequence(SEQUENCE_MODE::transfer);
+        command_sequence(SEQUENCE_MODE::storage);
+    }
     else if(msg->data == 1) command_sequence(SEQUENCE_MODE::transfer);
     else if(msg->data == 2) command_sequence(SEQUENCE_MODE::collect);
     else if(msg->data == 3) command_sequence(SEQUENCE_MODE::silo);
     is_start = true;
+    command_move_autonomous(true);
+
+    // command_strage_state(false);
 }
 
 void Sequencer::callback_collection_point(const std_msgs::msg::String::SharedPtr msg){
     if((!retry_flag && way_point == "c6" && msg->data == "" && sequence_mode == SEQUENCE_MODE::storage) || (retry_flag && way_point == "c3" && msg->data == "" && sequence_mode == SEQUENCE_MODE::storage)) command_sequence(SEQUENCE_MODE::transfer);
+    else if(way_point == "c3" && msg->data == "c4" && sequence_mode == SEQUENCE_MODE::storage) command_move_node("c6");
     else command_move_interrupt_node(msg->data);
     if(msg->data == "c4") c4_flag = true;
 }
@@ -382,15 +404,35 @@ void Sequencer::command_move_interrupt_node(const std::string node){
 }
 
  void Sequencer::command_ball_tracking(){
-    float L = 0.566f;//mm
-    auto msg_coord_tracking = std::make_shared<geometry_msgs::msg::Vector3>();
-    msg_coord_tracking->x = ball_pose.x - L*cos(self_pose.z);
-    msg_coord_tracking->y = ball_pose.y - L*sin(self_pose.z);
-    msg_coord_tracking->z = self_pose.z;
-    _publisher_coord_tracking->publish(*msg_coord_tracking);
-    move_progress = false;
-    // RCLCPP_INFO(get_logger(),"<<<<< bx:%f, by:%f, tx:%f, ty%f >>>>>", ball_pose.x, ball_pose.y,msg_coord_tracking->x,msg_coord_tracking->y);
+    if(ball_pose.x > 9.90 && abs(ball_pose.y) < 0.80){
+        float L = 0.296f;//m
+        auto msg_coord_tracking = std::make_shared<geometry_msgs::msg::Vector3>();
+        msg_coord_tracking->x = ball_pose.x - L*cos(self_pose.z);
+        msg_coord_tracking->y = ball_pose.y - L*sin(self_pose.z);
+        msg_coord_tracking->z = self_pose.z;
+        _publisher_coord_tracking->publish(*msg_coord_tracking);
+        move_progress = false;
+        kado_flag = true;
+    RCLCPP_INFO(get_logger(),"aaaaa bx:%f, by:%f, tx:%f, ty%f >>>>>", ball_pose.x, ball_pose.y,msg_coord_tracking->x,msg_coord_tracking->y);
+    }
+    else {
+        float L = 0.566f;//m
+        auto msg_coord_tracking = std::make_shared<geometry_msgs::msg::Vector3>();
+        msg_coord_tracking->x = ball_pose.x - L*cos(self_pose.z);
+        msg_coord_tracking->y = ball_pose.y - L*sin(self_pose.z);
+        msg_coord_tracking->z = self_pose.z;
+        _publisher_coord_tracking->publish(*msg_coord_tracking);
+        move_progress = false;
+        kado_flag = false;
+    RCLCPP_INFO(get_logger(),"bbbbb bx:%f, by:%f, tx:%f, ty%f >>>>>", ball_pose.x, ball_pose.y,msg_coord_tracking->x,msg_coord_tracking->y);
+    }
  }
+
+ void Sequencer::command_move_autonomous(bool flag){
+    auto msg_move_autonomous = std::make_shared<std_msgs::msg::Bool>();
+    msg_move_autonomous->data = flag;
+    _publisher_move_autonomous->publish(*msg_move_autonomous);
+}
 
 void Sequencer::command_sequence(const SEQUENCE_MODE sequence){
     pre_sequence = sequence_mode;
@@ -442,6 +484,7 @@ void Sequencer::command_strage_state2(){ command_canusb_empty(can_strage_state2_
 void Sequencer::command_transfer_state(){ command_canusb_empty(can_transfer_state_id); }
 void Sequencer::command_silo_state(){ command_canusb_empty(can_silo_state_id); }
 void Sequencer::command_silo_state2(){ command_canusb_empty(can_silo_state2_id); }
+void Sequencer::command_hand_lift_pickup(){ command_canusb_uint8(can_hand_lift_id, 2); }
 
 void Sequencer::silo_evaluate(std::string camera[15]){
     //コート色による情報反転

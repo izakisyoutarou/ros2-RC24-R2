@@ -67,6 +67,7 @@ private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_now_sequence;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_interrupt_node;
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _publisher_coord_tracking;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _publisher_move_autonomous;
 
     void command_move_node(const std::string node);//node位置に通常移動
     void command_move_interrupt_node(const std::string node);//node位置に割り込み直線移動
@@ -86,7 +87,10 @@ private:
     void command_silo_state();
     void command_silo_state2();
 
+    void command_hand_lift_pickup();//アーム高さ_中央
+
     void silo_evaluate(std::string camera[15]);
+    void command_move_autonomous(bool flag);
     void timer(int ms);
     bool timer();
 
@@ -103,6 +107,7 @@ private:
     const int16_t can_transfer_state_id;
     const int16_t can_silo_state_id;
     const int16_t can_silo_state2_id;
+    const int16_t can_hand_lift_id;
 
     //QoS
     rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -117,6 +122,7 @@ private:
     int target_silo = 0;
     int priority_num = 0;
     int special_progress = 0;
+    int ball_num = 0;
 
     const std::vector<double> strage_dist;
     const double suction_wait; 
@@ -135,6 +141,8 @@ private:
     bool special1 = false;
     bool move_progress = false;
     bool net_flag = false;
+    bool kado_flag = false;
+    bool move_automonous = false;
 
     geometry_msgs::msg::Vector3 self_pose;
     geometry_msgs::msg::Vector3 ball_pose;
