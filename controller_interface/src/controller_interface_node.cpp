@@ -124,6 +124,12 @@ namespace controller_interface
                 std::bind(&SmartphoneGamepad::callback_initial_state, this, std::placeholders::_1)
             );
 
+            _sub_move_autonomous = this->create_subscription<std_msgs::msg::Bool>(
+                "move_autonomous",
+                _qos,
+                std::bind(&SmartphoneGamepad::callback_move_autonomous, this, std::placeholders::_1)
+            );
+
             //canusbへ
             _pub_canusb = this->create_publisher<socketcan_interface_msg::msg::SocketcanIF>("can_tx", _qos);
             //armへ
@@ -261,6 +267,7 @@ namespace controller_interface
             // else if(msg->data == "y") gamebtn.paddy_install(msg_convergence.is_arm_convergence,_pub_canusb); 
             // else if(msg->data == "r1") gamebtn.net_open(msg_convergence.is_net_convergence,_pub_canusb); 
             // else if(msg->data == "r2") gamebtn.net_close(msg_convergence.is_net_convergence,_pub_canusb); 
+            else if(msg->data == "a") gamebtn.canusb_test(0x231, 0, _pub_canusb);
             else if(msg->data == "r1") {
                 auto msg_is_start = std::make_shared<std_msgs::msg::UInt8>();
                 msg_is_start->data = 1;
@@ -318,6 +325,11 @@ namespace controller_interface
 
         void SmartphoneGamepad::callback_initial_state(const std_msgs::msg::String::SharedPtr msg){
             msg_base_control.initial_state = msg->data;
+            _pub_base_control->publish(msg_base_control);
+        }
+
+        void SmartphoneGamepad::callback_move_autonomous(const std_msgs::msg::Bool::SharedPtr msg){
+            msg_base_control.is_move_autonomous = msg->data;
             _pub_base_control->publish(msg_base_control);
         }
 

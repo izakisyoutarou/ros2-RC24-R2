@@ -64,6 +64,8 @@ namespace controller_interface
 
             rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr _pub_is_start;
 
+            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr _sub_move_autonomous;
+
             //timer
             rclcpp::TimerBase::SharedPtr _pub_heartbeat;
             rclcpp::TimerBase::SharedPtr _pub_timer_convergence;
@@ -87,6 +89,9 @@ namespace controller_interface
 
             //splineからのcallback
             void callback_is_move_tracking(const std_msgs::msg::Bool::SharedPtr msg);
+
+            void callback_move_autonomous(const std_msgs::msg::Bool::SharedPtr msg);
+
             void _recv_callback();
 
             void _recv_joy_main(const unsigned char data[16]);
