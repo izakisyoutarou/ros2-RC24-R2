@@ -76,7 +76,7 @@ namespace detection_interface
             void callback_realsense_d455(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
 
             //yolox_ros_cppのrealsense_d435iからのcallback
-            void callback_realsense_d435i(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
+            // void callback_realsense_d435i(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
 
             //controller_interfaceからのcallback
             void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
@@ -137,6 +137,11 @@ namespace detection_interface
             const std::vector<long int> back_suction_check_point;
             const int front_depth_suction_check_value;
             const int back_depth_suction_check_value;
+
+            //c3orc6から見たときの外れ値を防ぐ
+            const int realsense_max_x;
+            const int realsense_min_x;
+            const int realsense_max_y;
 
             //c1cameraがc2node(坂上)から見たxの閾値
             const int c2node_threshold_x;

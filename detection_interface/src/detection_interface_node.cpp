@@ -11,6 +11,10 @@ namespace detection_interface
         front_depth_suction_check_value(get_parameter("front_depth_suction_check_value").as_int()),
         back_depth_suction_check_value(get_parameter("back_depth_suction_check_value").as_int()),
 
+        realsense_max_x(get_parameter("realsense_max_x").as_int()),
+        realsense_min_x(get_parameter("realsense_min_x").as_int()),
+        realsense_max_y(get_parameter("realsense_max_y").as_int()),
+
         c2node_threshold_x(get_parameter("c2node_threshold_x").as_int()),
 
         str_range_y_C3orC5(get_parameter("str_range_y_C3orC5").as_int()),
@@ -31,7 +35,7 @@ namespace detection_interface
                 std::bind(&DetectionInterface::callback_realsense_d455, this, std::placeholders::_1)
             );
 
-            //yolox_ros_cppのrealsense_d435iから
+            // yolox_ros_cppのrealsense_d435iから
             // _sub_realsense_d435i = this->create_subscription<bboxes_ex_msgs::msg::BoundingBoxes>(
             //     "yolox/realsense_d435i",
             //     _qos,
@@ -371,7 +375,24 @@ namespace detection_interface
 
                     // //realseneのc3、c4から見たとき、どこのSTに行くか。ボールが手前か奥か
                     if(now_sequence == "storage"){
-                        if(way_point == "c3" || way_point == "c6") realsense_c3_c6node(center_x_realsense, center_y_realsense, center_depth_realsense, rb_ymax_realsense, rbp_ymax);
+                        if(way_point == "c3" || way_point == "c6"){
+                            // auto center_x_max = std::remove_if(center_x_realsense.begin(), center_x_realsense.end(), [this](int value){
+                            //     return value > this->realsense_max_x;
+                            // });
+                            // center_x_realsense.erase(center_x_max, center_x_realsense.end());
+
+                            // auto center_x_min = std::remove_if(center_x_realsense.begin(), center_x_realsense.end(), [this](int value){
+                            //     return value < this->realsense_min_x;
+                            // });
+                            // center_x_realsense.erase(center_x_min, center_x_realsense.end());
+
+                            // auto center_y_max = std::remove_if(center_y_realsense.begin(), center_y_realsense.end(), [this](int value){
+                            //     return value > this->realsense_max_y;
+                            // });
+                            // center_y_realsense.erase(center_y_max, center_y_realsense.end());
+
+                            realsense_c3_c6node(center_x_realsense, center_y_realsense, center_depth_realsense, rb_ymax_realsense, rbp_ymax);
+                        }
                     }
                     if(now_sequence == "collect"){
                         if(way_point == "c7" || way_point == "c8") realsense_c7_c8node(center_x_realsense, center_y_realsense, center_depth_realsense);
@@ -391,7 +412,7 @@ namespace detection_interface
 
                 int threshold = rbp_ymax - str_range_y_C3orC5 * 2;//一番手前からボール2個分引いている
 
-                RCLCPP_INFO(this->get_logger(), "threshold%d" ,threshold);
+                // RCLCPP_INFO(this->get_logger(), "threshold%d" ,threshold);
 
                 std::vector<std::vector<int>> xy_realsense_list;
 
@@ -399,7 +420,7 @@ namespace detection_interface
                     for(size_t i = 0; i < center_x.size(); i++){
                         if(rb_ymax[i] > threshold){
                             xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                            // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
+                            RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
                         }
                     }
                     if(xy_realsense_list.size() != 0){
@@ -459,96 +480,108 @@ namespace detection_interface
         }
 
         void DetectionInterface::d435iImageCallback(const realsense2_camera_msgs::msg::RGBD::ConstSharedPtr &ptr){
-            auto img_rgb = cv_bridge::toCvCopy(ptr->rgb, "bgr8");
-            auto img_depth = cv_bridge::toCvCopy(ptr->depth, sensor_msgs::image_encodings::TYPE_16UC1);
+            if((now_sequence == "storage" && way_point == "c3") || (now_sequence == "storage" && way_point == "c6")){
+                auto img_rgb = cv_bridge::toCvCopy(ptr->rgb, "bgr8");
+                auto img_depth = cv_bridge::toCvCopy(ptr->depth, sensor_msgs::image_encodings::TYPE_16UC1);
 
-            cv::Mat frame_rgb = img_rgb->image;
-            cv::Mat frame_depth = img_depth->image;
-            cv::Mat frame_prev;
+                cv::Mat frame_rgb = img_rgb->image;
+                cv::Mat frame_depth = img_depth->image;
+                cv::Mat frame_prev;
 
-            //ST系に入ったときにボールの吸着判定
-            auto msg_suction_check = std::make_shared<std_msgs::msg::String>();
+                cv::Mat frame_hsv;
+                cv::cvtColor(frame_rgb, frame_hsv, cv::COLOR_BGR2HSV);
 
-            int rgb_suction_check_point_y = 0;
-            int rgb_suction_check_point_x = 0;
+                //ST系に入ったときにボールの吸着判定
+                auto msg_suction_check = std::make_shared<std_msgs::msg::String>();
 
-            bool suction_check_flag = false;
+                int rgb_suction_check_point_y = 0;
+                int rgb_suction_check_point_x = 0;
 
-            std::array<int, 9> blue_values, green_values, red_values;
-            cv::Vec3b median_color;
+                bool suction_check_flag = false;
 
-            /////////////////////////////////////depthの中央値を計算
-            std::vector<uint16_t> front_center_dist = {   
-                frame_depth.at<uint16_t>(front_suction_check_point[0], front_suction_check_point[1]), 
-                frame_depth.at<uint16_t>(front_suction_check_point[0]-1, front_suction_check_point[1]), 
-                frame_depth.at<uint16_t>(front_suction_check_point[0]-1, front_suction_check_point[1]+1), 
-                frame_depth.at<uint16_t>(front_suction_check_point[0], front_suction_check_point[1]+1),
-                frame_depth.at<uint16_t>(front_suction_check_point[0]+1, front_suction_check_point[1]+1), 
-                frame_depth.at<uint16_t>(front_suction_check_point[0]+1, front_suction_check_point[1]),
-                frame_depth.at<uint16_t>(front_suction_check_point[0]+1, front_suction_check_point[1]-1), 
-                frame_depth.at<uint16_t>(front_suction_check_point[0], front_suction_check_point[1]-1),
-                frame_depth.at<uint16_t>(front_suction_check_point[0]-1, front_suction_check_point[1]-1)
-            };
+                std::array<int, 9> blue_values, green_values, red_values;
+                cv::Vec3b median_color;
 
-            std::vector<uint16_t> back_center_dist = {   
-                frame_depth.at<uint16_t>(back_suction_check_point[0], back_suction_check_point[1]), 
-                frame_depth.at<uint16_t>(back_suction_check_point[0]-1, back_suction_check_point[1]), 
-                frame_depth.at<uint16_t>(back_suction_check_point[0]-1, back_suction_check_point[1]+1), 
-                frame_depth.at<uint16_t>(back_suction_check_point[0], back_suction_check_point[1]+1),
-                frame_depth.at<uint16_t>(back_suction_check_point[0]+1, back_suction_check_point[1]+1), 
-                frame_depth.at<uint16_t>(back_suction_check_point[0]+1, back_suction_check_point[1]),
-                frame_depth.at<uint16_t>(back_suction_check_point[0]+1, back_suction_check_point[1]-1), 
-                frame_depth.at<uint16_t>(back_suction_check_point[0], back_suction_check_point[1]-1),
-                frame_depth.at<uint16_t>(back_suction_check_point[0]-1, back_suction_check_point[1]-1)
-            };
+                /////////////////////////////////////depthの中央値を計算
+                std::vector<uint16_t> front_center_dist = {   
+                    frame_depth.at<uint16_t>(front_suction_check_point[0], front_suction_check_point[1]), 
+                    frame_depth.at<uint16_t>(front_suction_check_point[0]-1, front_suction_check_point[1]), 
+                    frame_depth.at<uint16_t>(front_suction_check_point[0]-1, front_suction_check_point[1]+1), 
+                    frame_depth.at<uint16_t>(front_suction_check_point[0], front_suction_check_point[1]+1),
+                    frame_depth.at<uint16_t>(front_suction_check_point[0]+1, front_suction_check_point[1]+1), 
+                    frame_depth.at<uint16_t>(front_suction_check_point[0]+1, front_suction_check_point[1]),
+                    frame_depth.at<uint16_t>(front_suction_check_point[0]+1, front_suction_check_point[1]-1), 
+                    frame_depth.at<uint16_t>(front_suction_check_point[0], front_suction_check_point[1]-1),
+                    frame_depth.at<uint16_t>(front_suction_check_point[0]-1, front_suction_check_point[1]-1)
+                };
 
-            std::sort(front_center_dist.begin(), front_center_dist.end());
-            std::sort(back_center_dist.begin(), back_center_dist.end());
+                std::vector<uint16_t> back_center_dist = {   
+                    frame_depth.at<uint16_t>(back_suction_check_point[0], back_suction_check_point[1]), 
+                    frame_depth.at<uint16_t>(back_suction_check_point[0]-1, back_suction_check_point[1]), 
+                    frame_depth.at<uint16_t>(back_suction_check_point[0]-1, back_suction_check_point[1]+1), 
+                    frame_depth.at<uint16_t>(back_suction_check_point[0], back_suction_check_point[1]+1),
+                    frame_depth.at<uint16_t>(back_suction_check_point[0]+1, back_suction_check_point[1]+1), 
+                    frame_depth.at<uint16_t>(back_suction_check_point[0]+1, back_suction_check_point[1]),
+                    frame_depth.at<uint16_t>(back_suction_check_point[0]+1, back_suction_check_point[1]-1), 
+                    frame_depth.at<uint16_t>(back_suction_check_point[0], back_suction_check_point[1]-1),
+                    frame_depth.at<uint16_t>(back_suction_check_point[0]-1, back_suction_check_point[1]-1)
+                };
 
-            uint16_t front_depth_average = front_center_dist[front_center_dist.size() / 2];
-            uint16_t back_depth_average = back_center_dist[back_center_dist.size() / 2];
+                std::sort(front_center_dist.begin(), front_center_dist.end());
+                std::sort(back_center_dist.begin(), back_center_dist.end());
 
-            // RCLCPP_INFO(this->get_logger(), "front_depth%d" , front_depth_average);
-            // RCLCPP_INFO(this->get_logger(), "back_depth%d" , back_depth_average);
+                uint16_t front_depth_average = front_center_dist[front_center_dist.size() / 2];
+                uint16_t back_depth_average = back_center_dist[back_center_dist.size() / 2];
 
-            if(front_depth_average < front_depth_suction_check_value){
-                rgb_suction_check_point_y = front_suction_check_point[0];
-                rgb_suction_check_point_x = front_suction_check_point[1];
-                suction_check_flag = true;
-            }
-            else if(back_depth_average > front_depth_suction_check_value && back_depth_average < back_depth_suction_check_value){
-                rgb_suction_check_point_y = back_suction_check_point[0];
-                rgb_suction_check_point_x = back_suction_check_point[1];
-                suction_check_flag = true;
-            }
-            else{
-                msg_suction_check->data = ""; //何も吸着できていない
-            }
-            
-            if(suction_check_flag){
-                cv::Vec3d pixel_value = frame_rgb.at<cv::Vec3b>(rgb_suction_check_point_y, rgb_suction_check_point_x);
+                // RCLCPP_INFO(this->get_logger(), "front_depth%d" , front_depth_average);
+                // RCLCPP_INFO(this->get_logger(), "back_depth%d" , back_depth_average);
 
-                // RCLCPP_INFO(this->get_logger(), "b%d----g%d----r%d" , (int)pixel_value[0], (int)pixel_value[1], (int)pixel_value[2]);
+                if(front_depth_average < front_depth_suction_check_value){
+                    rgb_suction_check_point_y = front_suction_check_point[0];
+                    rgb_suction_check_point_x = front_suction_check_point[1];
+                    suction_check_flag = true;
+                }
+                else if(back_depth_average > front_depth_suction_check_value && back_depth_average < back_depth_suction_check_value){
+                    rgb_suction_check_point_y = back_suction_check_point[0];
+                    rgb_suction_check_point_x = back_suction_check_point[1];
+                    suction_check_flag = true;
+                }
+                else{
+                    msg_suction_check->data = ""; //何も吸着できていない
+                }
+                
+                if(suction_check_flag){
+                    std::vector<cv::Point> offsets = {
+                        {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {0, -1}, {-1, 0}
+                    };
 
-                uchar blue = pixel_value[0];
-                uchar green = pixel_value[1];
-                uchar red = pixel_value[2];
+                    int count = 0;
+                    double hue = 0.0;
 
-                // if(court_color == "red"){
-                //     if(red > green && red > blue) msg_suction_check->data = "R"; //赤ボール
-                //     else msg_suction_check->data = "P";
-                // }
-                // else if(court_color == "blue"){
-                //     if(blue > red && blue > green) msg_suction_check->data = "B"; //青ボール
-                //     else msg_suction_check->data = "P";
-                // }
+                    for(const auto& offset : offsets) {
+                        int px = rgb_suction_check_point_x + offset.x;
+                        int py = rgb_suction_check_point_y + offset.y;
+                        cv::Vec3b pixel = frame_hsv.at<cv::Vec3b>(py, px);
 
-                if(court_color == "red") msg_suction_check->data = "R"; //赤ボール
-                else if(court_color == "blue") msg_suction_check->data = "B"; //青ボール
-            }
-            else msg_suction_check->data = "";
+                        hue += pixel[0];
+                        count++;
+                    }
 
-            _pub_suction_check->publish(*msg_suction_check);
+                    double ave_hue = hue / count;
+
+                    // RCLCPP_INFO(this->get_logger(), "b%f" , ave_hue);
+
+                    if(court_color == "red"){
+                        if(ave_hue <= 120) msg_suction_check->data = "P"; //紫ボール
+                        else msg_suction_check->data = "R"; //赤ボール
+                    }
+                    else if(court_color == "blue"){
+                        if(ave_hue >= 110) msg_suction_check->data = "P"; //紫ボール
+                        else msg_suction_check->data = "B"; //青ボール
+                    }
+                }
+
+                _pub_suction_check->publish(*msg_suction_check);
 
             ////////////d435iを見る(これは常に見てる)
             // 点の座標を設定
@@ -564,31 +597,32 @@ namespace detection_interface
             // cv::imshow("d435i", frame_prev);
             // cv::waitKey(1);
             ///////////
-        }
-
-        void DetectionInterface::callback_realsense_d435i(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
-            if(now_sequence == "storage" && way_point == "c3"){
-                auto msg_suction_check = std::make_shared<std_msgs::msg::String>();
-
-                //realsense_d435iから受け取った情報を入れる配列
-                std::vector<std::string> class_id_d435i;//redballとかblueballとか
-                std::vector<int> bbounbox_size_d435i;//バウンディングの面積
-
-                for (const auto& box : msg->bounding_boxes) {
-                    class_id_d435i.push_back(box.class_id);
-
-                    int size = static_cast<int>((box.xmax - box.xmin) * (box.ymax - box.ymin));
-                    bbounbox_size_d435i.push_back(size);
-                }
-
-                auto max_it = std::max_element(bbounbox_size_d435i.begin(), bbounbox_size_d435i.end());
-                int max_index = std::distance(bbounbox_size_d435i.begin(), max_it);
-
-                msg_suction_check->data = class_id_d435i[max_index];
-
-                _pub_suction_check->publish(*msg_suction_check);
             }
         }
+
+        // void DetectionInterface::callback_realsense_d435i(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
+        //     if(now_sequence == "storage" && way_point == "c3"){
+        //         auto msg_suction_check = std::make_shared<std_msgs::msg::String>();
+
+        //         //realsense_d435iから受け取った情報を入れる配列
+        //         std::vector<std::string> class_id_d435i;//redballとかblueballとか
+        //         std::vector<int> bbounbox_size_d435i;//バウンディングの面積
+
+        //         for (const auto& box : msg->bounding_boxes) {
+        //             class_id_d435i.push_back(box.class_id);
+
+        //             int size = static_cast<int>((box.xmax - box.xmin) * (box.ymax - box.ymin));
+        //             bbounbox_size_d435i.push_back(size);
+        //         }
+
+        //         auto max_it = std::max_element(bbounbox_size_d435i.begin(), bbounbox_size_d435i.end());
+        //         int max_index = std::distance(bbounbox_size_d435i.begin(), max_it);
+
+        //         msg_suction_check->data = class_id_d435i[max_index];
+
+        //         _pub_suction_check->publish(*msg_suction_check);
+        //     }
+        // }
 
         void DetectionInterface::callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg){
             pose[0] = msg->x;
