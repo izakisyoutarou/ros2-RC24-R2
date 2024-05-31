@@ -15,61 +15,22 @@
         double theta = 0.0; //極座標空間における角度(方位角)
 
         // double x_normalized = -(px-WIDTH/2)/(WIDTH/2)*tan(HFOV/2);
-        h_angle = -x_pixel_dis*(HFOV/WIDTH)/**M_PI/180*/;
-        v_angle = y_pixel_dis*(VFOV/HEIGHT)/**M_PI/180*/;
+        h_angle = -x_pixel_dis*(HFOV/WIDTH);
+        v_angle = y_pixel_dis*(VFOV/HEIGHT);
         h_angle = h_angle*M_PI/180 + angle_offset(v_angle,h_angle);
-        // h_angle =atan(x_normalized/cos(theta_x*M_PI/180))+angle_offset(v_angle,h_angle);
-        // h_angle = -x_pixel_dis*(HFOV/WIDTH)*M_PI/180;
-        // cout << "test用" << h_angle*180/M_PI << " " << v_angle*180/M_PI << endl;
-        cout << "h_angle " << h_angle*180/M_PI << "v_angle " << v_angle << endl;         
 
         r = depth+ball_r;                             //極座標へ変換
         fai = h_angle;                                //極座標へ変換
-        theta = M_PI_2+theta_y*M_PI/180+v_angle;      //極座標へ変換
-        
-        // z_pixel_dis = sqrt(abs(r*r-(eliptic_coff[0]*x_pixel_dis*x_pixel_dis+eliptic_coff[1]*y_pixel_dis*y_pixel_dis)));
-        // Matrix3d rot_y;
-        // rot_y << cos(-theta_y*M_PI/180),0.0,sin(-theta*M_PI/180),
-        //          0.0,1.0,0.0,
-        //          -sin(-theta_y*M_PI/180),0.0,cos(-theta_y*M_PI/180);
+        theta = M_PI_2+(theta_y+v_angle)*M_PI/180;    //極座標へ変換
 
-        // Matrix3d pos_ball;
-        // pos_ball << x_pixel_dis,0.0,0.0,
-        //             y_pixel_dis,0.0,0.0,
-        //             z_pixel_dis,0.0,0.0;
-        // pos_ball = rot_y*pos_ball;
-        // v_angle = atan2(pos_ball(1,0),pos_ball(2,0));
-        // h_angle = atan2(pos_ball(0,0),pos_ball(2,0));
-
-        // cout << "v_angle_test " << v_angle*180/M_PI << " h_angle " << h_angle*180/M_PI << endl;
-        // v_angle = y_pixel_dis*(VFOV/HEIGHT)*M_PI/180;
-        // h_angle = -x_pixel_dis*(HFOV/WIDTH)*M_PI/180;
-        // cout << "v_angle " << v_angle*180/M_PI << " h_angle " << h_angle*180/M_PI << endl;
-        
-        
-        // Matrix3d camera_xyz;
-        // camera_xyz << x_pixel_dis,0.0,0.0,
-        //               y_pixel_dis,0.0,0.0,
-        //               pz,0.0,0.0;
-        
-        // Matrix3d Ry;
-        // Ry << cos(-theta_y*M_PI/180),0.0,sin(-theta_y*M_PI/180),
-        //                         0.0,1.0,0.0,
-        //     -sin(-theta_y*M_PI/180),0.0,cos(-theta_y*M_PI/180);
-        
-        // camera_xyz = Ry*camera_xyz;
-
-        // v_angle = y_pixel_dis*(VFOV/HEIGHT)*M_PI/180;
-        // h_angle = -x_pixel_dis*(HFOV/WIDTH)*M_PI/180;
-
-        // cout << "test" << atan2(camera_xyz(0,0),camera_xyz(2,0))*180/M_PI << endl;
-        // cout <<"v_angle: " << v_angle*180/M_PI << " h_angle: " << h_angle*180/M_PI << endl;
-        
-
-
+        cout <<" fai" << fai*180/M_PI << endl;
+        // cout << "v_angle " << v_angle << " h_angle " << h_angle*180/M_PI << endl;
+    
         x = r* sin(theta) * cos(fai)*0.001; //メートル単位に変換
         y = r* sin(theta) * sin(fai)*0.001; //メートル単位に変換
         z = r* cos(theta) * 0.001;          //メートル単位に変換
+
+        cout << "x" << x << " y " << y << " z " << z << endl;
 
         Matrix3d camera_xyz;
         camera_xyz << x,0.0,0.0,
@@ -128,8 +89,13 @@
 
     double coordinate_transformation::angle_offset(double v_angle,double h_angle){
         double angle_offset=0.0;
-        angle_offset = angle_offset_coff[0]*h_angle + angle_offset_coff[1]*v_angle + angle_offset_coff[2];
-        // angle_offset = (angle_offset_coff[0]*v_angle+angle_offset_coff[1])*sin(h_angle);
+        angle_offset = tanh_offset_coff[0]*tanh(tanh_offset_coff[1]*h_angle*M_PI/180) + tanh_offset_coff[2]*v_angle*sign(h_angle);//tanh関数を用いた近似(取り付け角度分補正をかける近似の次に試す)
         cout << "angle_offset: " << angle_offset << endl;
         return angle_offset*M_PI/180;
+    }
+
+    double coordinate_transformation::sign(double h_angle){
+        if(h_angle<0) return -1;
+        else if(h_angle==0) return 0;
+        else return 1;
     }
