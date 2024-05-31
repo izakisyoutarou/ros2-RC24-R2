@@ -121,7 +121,6 @@ private:
     int check_time = 0;
     int target_silo = 0;
     int priority_num = 0;
-    int special_progress = 0;
     int ball_num = 0;
 
     const std::vector<double> strage_dist;
@@ -131,14 +130,12 @@ private:
     bool is_start = false;
     bool get_suction_check = false;
     bool get_ball_pose = false;
-    bool tof[3] = {false, false, false};
+    bool tof[4] = {false, false, false, false};
     bool silo_flag = false;
     bool c3orc6_flag = false; 
     bool c1_flag = false; 
     bool c4_flag = false;
     bool retry_flag = false;
-    bool special0 = false;
-    bool special1 = false;
     bool move_progress = false;
     bool net_flag = false;
     bool kado_flag = false;
