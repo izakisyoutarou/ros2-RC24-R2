@@ -138,16 +138,20 @@ spline_trajectories_node:
 detection_interface_node:
   ros__parameters:
     #ST系の行ったときの吸引判定
-    front_suction_check_point: [500, 700] #[500, 675] #[y,x]
+    front_suction_check_point: [600, 700] #[500, 675] #[y,x]
     back_suction_check_point: [225, 680] #[500, 675] #[y,x]
     front_depth_suction_check_value: 180
-    back_depth_suction_check_value: 270
+    back_depth_suction_check_value: 280
+
+    realsense_max_x: 200
+    realsense_min_x: 200
+    realsense_max_y: 200
 
     #c1caeraでc2nodeから見たときのxの閾値
     c2node_threshold_x: 1000
 
     #realsenseがc3 or c6nodeから見たボール1個分のy(ここの数値を下げることでc3,c6から見えるボールが例:3列から2列になる。上げると見えるボールが例:1列から2列になる)
-    str_range_y_C3orC5: 75 #65
+    str_range_y_C3orC5: 65
 
 sequencer_node:
   ros__parameters:

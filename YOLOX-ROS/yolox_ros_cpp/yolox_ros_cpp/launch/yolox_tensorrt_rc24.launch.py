@@ -11,24 +11,21 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
     launch_args = [
-        DeclareLaunchArgument(#学習済みデータの指定
+        ######################################### 学習済みデータ
+        DeclareLaunchArgument(#c1cameraの学習済みデータの指定
             'model_path_c1camera',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_nano_c1_0520.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0528.trt',
             description='yolox model path.'
         ),
-        DeclareLaunchArgument(#学習済みデータの指定
+        DeclareLaunchArgument(#d455の学習済みデータの指定
             'model_path_realsense_d455',
             # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0518.trt',
             default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
             description='yolox model path.'
         ),
-        DeclareLaunchArgument(#学習済みデータの指定
-            'model_path_realsense_d435i',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0518.trt',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_realsense_0502.trt',
-            description='yolox model path.'
-        ),
+        #########################################
+        
         DeclareLaunchArgument(
             'p6',
             default_value='false',
@@ -54,63 +51,60 @@ def generate_launch_description():
             default_value='0.1.1rc0',
             description='yolox model version.'
         ),
-        DeclareLaunchArgument(#しきい値
+        
+        ######################################### しきい値
+        DeclareLaunchArgument(#c1cameraのしきい値
             'conf_c1camera',
             default_value='0.83',#デフォルト値 0.85
             description='yolox confidence threshold.'
         ),
-        DeclareLaunchArgument(#しきい値
+        DeclareLaunchArgument(#d455のしきい値
             'conf_d455',
-            default_value='0.5',#デフォルト値 0.85
+            default_value='0.85',#デフォルト値 0.85
             description='yolox confidence threshold.'
         ),
-        DeclareLaunchArgument(#しきい値
-            'conf_d435i',
-            default_value='0.7',#デフォルト値 0.85
-            description='yolox confidence threshold.'
-        ),
+        #########################################
+        
         DeclareLaunchArgument(
             'nms',
             default_value='0.45',
             description='yolox nms threshold'
         ),
-        
-        DeclareLaunchArgument(#プレビューの表示
+        ######################################### プレビューの表示
+        DeclareLaunchArgument(#c1cameraの表示
             'imshow_isshow_c1camera',
             default_value='false',
             description=''
         ),
-        DeclareLaunchArgument(#プレビューの表示
+        DeclareLaunchArgument(#d455の表示
             'imshow_isshow_realsense_d455',
-            default_value='true',
-            description=''
-        ),
-        DeclareLaunchArgument(#プレビューの表示
-            'imshow_isshow_realsense_d435i',
             default_value='false',
             description=''
         ),
+        #########################################
         
-        DeclareLaunchArgument(#YOLOX-ROSがサブしてる画像トピックのトピック名
+        ######################################### C1cameraのトピック名
+        DeclareLaunchArgument(#サブしてる画像トピックのトピック名
             'src_image_topic_name_c1camera',
             default_value='/image_raw', #C1camera
             description='topic name for source image'
         ),
-        DeclareLaunchArgument(#YOLOX-ROSがパブしてる画像トピックのトピック名
+        DeclareLaunchArgument(#パブしてる画像トピックのトピック名
             'publish_image_topic_name_c1camera',
             default_value='/yolox/image_raw_c1',
             description='topic name for publishing image with bounding box drawn'
         ),
-        DeclareLaunchArgument(#YOLOX-ROSが推論データをdetection_interfaceにパブしているトピック名
+        DeclareLaunchArgument(#推論データをdetection_interfaceにパブしているトピック名
             'publish_boundingbox_topic_name_c1camera',
             default_value='/yolox/c1',
             description='topic name for publishing bounding box message.'
         ),
+        #########################################
         
+        ######################################### d455のトピック名
         DeclareLaunchArgument(
             'src_image_topic_name_realsense_d455',
-            # default_value='/camera/d455/color/image_raw', #realsense
-            default_value='/camera/d455/rgbd', #realsense
+            default_value='/camera/d455/rgbd', 
             description='topic name for source image'
         ),
         DeclareLaunchArgument(
@@ -123,23 +117,10 @@ def generate_launch_description():
             default_value='/yolox/realsense_d455',
             description='topic name for publishing bounding box message.'
         ),
+        #########################################
+    
         
-        DeclareLaunchArgument(
-            'src_image_topic_name_realsense_d435i',
-            default_value='/camera/d435i/color/image_raw', #realsense
-            description='topic name for source image'
-        ),
-        DeclareLaunchArgument(
-            'publish_image_topic_name_realsense_d435i',
-            default_value='/yolox/image_raw_realsense_d435i',
-            description='topic name for publishing image with bounding box drawn'
-        ),
-        DeclareLaunchArgument(
-            'publish_boundingbox_topic_name_realsense_d435i',
-            default_value='/yolox/realsense_d435i',
-            description='topic name for publishing bounding box message.'
-        ),
-        
+        ######################################### depthを使うかどうか
         DeclareLaunchArgument(
             'depth_flag_c1camera',#これは動かすためのダミー。c1cameraにdepthはない
             default_value='false',
@@ -150,11 +131,7 @@ def generate_launch_description():
             default_value='true',
             description='topic name for publishing bounding box message.'
         ),
-        DeclareLaunchArgument(
-            'depth_flag_d435i',
-            default_value='false',
-            description='topic name for publishing bounding box message.'
-        ),
+        #########################################
     ]
 
     #c1カメラからトピックをパブできるようしているパッケージ
@@ -257,42 +234,11 @@ def generate_launch_description():
         output='screen',
     )
     
-    container_realsense_d435i = ComposableNodeContainer(
-        name='yolox_container_realsense_d435i',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container',
-        composable_node_descriptions=[
-            ComposableNode(
-                package='yolox_ros_cpp',
-                plugin='yolox_ros_cpp::YoloXNode',
-                name='yolox_ros_cpp_realsense_d435i',
-                parameters=[{
-                    'model_path': LaunchConfiguration('model_path_realsense_d435i'),
-                    'p6': LaunchConfiguration('p6'),
-                    'class_labels_path': LaunchConfiguration('class_labels_path'),
-                    'num_classes': LaunchConfiguration('num_classes'),
-                    'model_type': 'tensorrt',
-                    'model_version': LaunchConfiguration('model_version'),
-                    'tensorrt/device': LaunchConfiguration('tensorrt/device'),
-                    'conf': LaunchConfiguration('conf_d435i'),
-                    'nms': LaunchConfiguration('nms'),
-                    'imshow_isshow': LaunchConfiguration('imshow_isshow_realsense_d435i'),
-                    'src_image_topic_name': LaunchConfiguration('src_image_topic_name_realsense_d435i'),
-                    'publish_image_topic_name': LaunchConfiguration('publish_image_topic_name_realsense_d435i'),
-                    'publish_boundingbox_topic_name': LaunchConfiguration('publish_boundingbox_topic_name_realsense_d435i'),
-                    'depth_flag': LaunchConfiguration('depth_flag_d435i'),
-                }],
-            ),
-        ],
-        output='screen',
-    )
     return launch.LaunchDescription(
         launch_args +   [
                         
-                        # container_c1camera, c1_launch, 
+                        container_c1camera, c1_launch, 
                         container_realsense_d455, realsense_d455_launch,
-                        # container_realsense_d435i, 
-                        # realsense_d435i_launch,
+                        realsense_d435i_launch,
                         ]
     )

@@ -10,6 +10,7 @@ class coordinate_transformation {
     public:
         Vector3d Rx_Ry_Rz(double px, double py, double depth, Vector3d pose);
         double angle_offset(double v_angle, double h_angle);
+        double sign(double h_angle);
     private:
         Matrix3d conversion(double px, double py, double depth);
         Matrix3d euler_angle(Vector3d pose);
@@ -28,7 +29,7 @@ class coordinate_transformation {
         double tx = 0.27737; //offset robot and camera
         double ty = -0.037; //offset robot and camera
         double tz = 0.0;
-        const double angle_offset_coff[3] = {0.4579,-0.12759,0.014997};
-        // const double eliptic_coff[2] = {HFOV/180,VFOV/180}; //楕円の係数(x,y)
+        const double angle_offset_coff[3] = {0.4579,-0.12759,0.014997}; //最小二乗法の係数
+        const double tanh_offset_coff[3] = {15.00,3.00,0.15};  //tanh近似の係数
 };
 

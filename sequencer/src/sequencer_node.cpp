@@ -160,7 +160,6 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
         else if(progress == n++ && get_suction_check && msg->arm_convergence){
             RCLCPP_INFO(get_logger(),"suction:%s",suction_check.c_str());
-            suction_check = "M";
             if(suction_check == "M"){
                 RCLCPP_INFO(get_logger(),"_____strage4_M_____");
                 command_strage_state2();
@@ -360,21 +359,13 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         } 
         else if(progress == n++ && msg->arm_convergence && timer()) {
             command_silo_state2();
-            if(pre_sequence == SEQUENCE_MODE::storage) {
-                ball_num++;
-                if(ball_num == 3) {
-                    RCLCPP_INFO(get_logger(),"_____silo8_st/tr_____");
-                    command_sequence(SEQUENCE_MODE::transfer);
-                }
-                else {
-                    RCLCPP_INFO(get_logger(),"_____silo8_storage_____");
-                    command_sequence(SEQUENCE_MODE::storage);
-                }
-            }
-            else if(pre_sequence == SEQUENCE_MODE::transfer) {
-                RCLCPP_INFO(get_logger(),"_____silo8_transfer_____");
-                command_sequence(SEQUENCE_MODE::transfer);
-            }
+            // if(pre_sequence == SEQUENCE_MODE::storage) {
+            //     ball_num++;
+            //     if(ball_num == 3) command_sequence(SEQUENCE_MODE::transfer);
+            //     else command_sequence(SEQUENCE_MODE::storage);
+            // }
+            if(pre_sequence == SEQUENCE_MODE::storage)  command_sequence(SEQUENCE_MODE::storage);
+            else if(pre_sequence == SEQUENCE_MODE::transfer) command_sequence(SEQUENCE_MODE::transfer);
         }
     }
 } 
