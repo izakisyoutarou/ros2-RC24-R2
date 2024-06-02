@@ -619,7 +619,7 @@ namespace detection_interface
                     double ave_saturation = saturation / count;
                     double ave_value = value / count;
 
-                    RCLCPP_INFO(this->get_logger(), "hue%f,saturation%f,value%f" , ave_hue, ave_saturation, ave_value);
+                    // RCLCPP_INFO(this->get_logger(), "hue%f,saturation%f,value%f" , ave_hue, ave_saturation, ave_value);
 
                     if(court_color == "red"){
                         if((ave_hue >= 0 && ave_hue <= 10) ||  (ave_hue >= 160 && ave_hue <= 180)) msg_suction_check->data = "R"; //赤ボール
@@ -627,7 +627,7 @@ namespace detection_interface
                         else msg_suction_check->data = ""; //吸引機構を認識している
                     }
                     else if(court_color == "blue"){
-                        if(ave_value < 50 && ave_saturation < 50) msg_suction_check->data = ""; //吸引機構を認識している
+                        if(ave_value < 90 && ave_saturation < 190) msg_suction_check->data = ""; //吸引機構を認識している
                         else if(ave_hue >= 110) msg_suction_check->data = "P"; //紫ボール
                         else if(ave_hue >= 90)msg_suction_check->data = "B"; //青ボール
                         else msg_suction_check->data = ""; //吸引機構を認識している
@@ -638,17 +638,17 @@ namespace detection_interface
 
             ////////////d435iを見る(これは常に見てる)
             // 点の座標を設定
-            cv::Point front_point(front_suction_check_point[1], front_suction_check_point[0]);
-            cv::Point back_point(back_suction_check_point[1], back_suction_check_point[0]);
+            // cv::Point front_point(front_suction_check_point[1], front_suction_check_point[0]);
+            // cv::Point back_point(back_suction_check_point[1], back_suction_check_point[0]);
 
-            // 画像に緑色の点を描画（半径2の小さい円として）
-            const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
-            cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
-            cv::circle(frame_rgb, back_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
-            cv::Size target_size(1280, 720);
-            cv::resize(frame_rgb, frame_prev, target_size);
-            cv::imshow("d435i", frame_prev);
-            cv::waitKey(1);
+            // // 画像に緑色の点を描画（半径2の小さい円として）
+            // const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
+            // cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
+            // cv::circle(frame_rgb, back_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
+            // cv::Size target_size(1280, 720);
+            // cv::resize(frame_rgb, frame_prev, target_size);
+            // cv::imshow("d435i", frame_prev);
+            // cv::waitKey(1);
             ///////////
             }
         }
