@@ -136,6 +136,10 @@ private:
     bool c3orc6_flag = false; 
     bool c1_flag = false; 
     bool c4_flag = false;
+    bool c3a_flag = false;
+    bool c3b_flag = false;
+    bool c6a_flag = false;
+    bool c6b_flag = false;
     bool retry_flag = false;
     bool special0 = false;
     bool special1 = false;
