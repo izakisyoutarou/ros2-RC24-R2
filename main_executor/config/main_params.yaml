@@ -14,9 +14,9 @@ launch: #起動パラメータ
     court_color: "blue" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
-    linear_max_vel: 2.0
-    linear_max_acc: 3.0
-    linear_max_dec: 3.0
+    linear_max_vel: 2.3
+    linear_max_acc: 3.5
+    linear_max_dec: 3.5
     linear_max_jer: 0.0
     # 回転  速度[deg/sint x, int y, const std::vector<double> point1, const std::vector<double> point2],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
     angular_max_vel: 100.0
@@ -105,7 +105,7 @@ rasnac_localization:
     laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
     odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
     odom_weight_angler: 3.0e-4
-    voxel_size: 0.08
+    voxel_size: 0.06
     trial_num: 40
     inlier_dist_threshold: 0.012
     inlier_length_threshold: 0.5 #インライアのしきい値
@@ -119,7 +119,7 @@ spline_pid_node:
     linear_planner_vel_limit_gain: 1.0  #速度計画機の速度上限値にかけるゲイン
 
     linear_planner_gain: 1.2 #並進速度計画機ゲイン
-    linear_pos_gain: 2.5  #並進位置ズレのゲイン
+    linear_pos_gain: 2.4  #並進位置ズレのゲイン
     linear_pos_diff_gain: 0.8
     linear_pos_integral_gain: 0.01  #並進位置ズレの積分ゲイン
 
@@ -138,20 +138,21 @@ spline_trajectories_node:
 detection_interface_node:
   ros__parameters:
     #ST系の行ったときの吸引判定
-    front_suction_check_point: [600, 700] #[500, 675] #[y,x]
-    back_suction_check_point: [225, 680] #[500, 675] #[y,x]
+    front_suction_check_point: [600, 800] #[500, 675] #[y,x]
+    back_suction_check_point: [225, 800] #[225, 730] #[y,x]
     front_depth_suction_check_value: 180
-    back_depth_suction_check_value: 280
+    back_depth_suction_check_value: 290
 
-    realsense_max_x: 200
-    realsense_min_x: 200
-    realsense_max_y: 200
+    realsense_max_x: 1000
+    realsense_min_x: 260
+    realsense_max_y: 500
 
     #c1caeraでc2nodeから見たときのxの閾値
     c2node_threshold_x: 1000
 
     #realsenseがc3 or c6nodeから見たボール1個分のy(ここの数値を下げることでc3,c6から見えるボールが例:3列から2列になる。上げると見えるボールが例:1列から2列になる)
-    str_range_y_C3orC5: 65
+    str_range_y_C3orC5: 70 #65 
+    str_range_x_C3orC5: 180
 
 sequencer_node:
   ros__parameters:

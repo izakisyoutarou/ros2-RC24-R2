@@ -134,7 +134,10 @@ private:
     bool silo_flag = false;
     bool c3orc6_flag = false; 
     bool c1_flag = false; 
-    bool c4_flag = false;
+    bool c3a_flag = false;
+    bool c3b_flag = false;
+    bool c6a_flag = false;
+    bool c6b_flag = false;
     bool retry_flag = false;
     bool move_progress = false;
     bool net_flag = false;

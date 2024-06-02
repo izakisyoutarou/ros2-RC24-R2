@@ -168,7 +168,7 @@ def generate_launch_description():
             'align_depth.enable': 'true',
             'enable_color': 'true',
             'enable_depth': 'true',
-            'initial_reset': 'true',
+            # 'initial_reset': 'true',
         }.items()
     )
 
@@ -236,7 +236,6 @@ def generate_launch_description():
     
     return launch.LaunchDescription(
         launch_args +   [
-                        
                         container_c1camera, c1_launch, 
                         container_realsense_d455, realsense_d455_launch,
                         realsense_d435i_launch,

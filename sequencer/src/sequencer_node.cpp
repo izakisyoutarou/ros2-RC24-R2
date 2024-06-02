@@ -129,7 +129,35 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
     int n = 0;
 
     if(sequence_mode == SEQUENCE_MODE::storage){
+        if(special0){
+            int s = 0;
+            if(special_progress == s++){
+                RCLCPP_INFO(get_logger(),"_____strage3_S0_0_____");
+                command_hand_suction_off();
+                timer(500);
+                special_progress++;
+            }
+            else if(special_progress == s++ && timer()){
+                RCLCPP_INFO(get_logger(),"_____strage3_S0_1_____");
+                command_base_state();              
+                if(c3b_flag) command_move_interrupt_node("c3_b");
+                else if(c3a_flag) command_move_interrupt_node("c3_a");
+                else if(c6b_flag) command_move_interrupt_node("c6_a");
+                else command_move_interrupt_node("c6_b");
+                get_suction_check = false;
+                special_progress = 0;
+                special0 = false;
+                progress--;
+                progress--;
+            }
+            return;
+        }
         if(progress == n++){
+            RCLCPP_INFO(get_logger(),"_____strage0_____");
+            if(c6b_flag) command_move_node("c3_b");
+            else if(c6a_flag)command_move_node("c3_a");
+            else if(c3a_flag)command_move_node("c6_a");
+            else command_move_node("c6_b");
             get_ball_pose = false;
             timer(1000);
             if(c4_flag) {
@@ -168,7 +196,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
             }
             else {
                 RCLCPP_INFO(get_logger(),"_____strage4_P[]_____");
-                progress++;
+                special0 = true;
             }
         }
         else if(progress == n++){
@@ -271,25 +299,17 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
     }
 
     else if(sequence_mode == SEQUENCE_MODE::silo){
-        if(progress == n++){
-            if(pre_sequence == SEQUENCE_MODE::storage){
-                if(c4_flag) {
-                    RCLCPP_INFO(get_logger(),"_____silo0_storage_c6_____");
-                    command_move_interrupt_node("c6");
-                }
-                else  {
-                    RCLCPP_INFO(get_logger(),"_____silo0_storage_c3_____");
-                    command_move_interrupt_node("c3");
-                }
-                c3orc6_flag = false;
-            }
-            else if(pre_sequence == SEQUENCE_MODE::transfer) {
-                RCLCPP_INFO(get_logger(),"_____silo0_transfer_____");
-                c3orc6_flag = true;
-            }
-            progress++;
-        }
-        else if(progress == n++ && c3orc6_flag){
+        // if(progress == n++){
+        //     RCLCPP_INFO(get_logger(),"_____silo0_____");
+        //     if(pre_sequence == SEQUENCE_MODE::storage){
+        //         if(c4_flag) command_move_interrupt_node("c6");
+        //         else  command_move_interrupt_node("c3");
+        //         c3orc6_flag = false;
+        //     }
+        //     else if(pre_sequence == SEQUENCE_MODE::transfer) c3orc6_flag = true;
+        //     progress++;
+        // }
+        if(progress == n++ /*&& c3orc6_flag*/){
             RCLCPP_INFO(get_logger(),"_____silo1_____");
             command_move_node("c1");
             progress++;
@@ -379,6 +399,10 @@ void Sequencer::callback_base_control(const controller_interface_msg::msg::BaseC
         way_point = "";
         progress = 0;
         c4_flag = false;
+        c3a_flag = false;
+        c3b_flag = false;
+        c6a_flag = false;
+        c6b_flag = false;
         ball_num = 0;
     }
     if(msg->initial_state == "O") retry_flag = false;
@@ -396,10 +420,14 @@ void Sequencer::callback_is_start(const std_msgs::msg::UInt8::SharedPtr msg){
 }
 
 void Sequencer::callback_collection_point(const std_msgs::msg::String::SharedPtr msg){
-    if((!retry_flag && way_point == "c6" && msg->data == "" && sequence_mode == SEQUENCE_MODE::storage) || (retry_flag && way_point == "c3" && msg->data == "" && sequence_mode == SEQUENCE_MODE::storage)) command_sequence(SEQUENCE_MODE::transfer);
-    else if(way_point == "c3" && msg->data == "c4" && sequence_mode == SEQUENCE_MODE::storage) command_move_node("c6");
+    if((!retry_flag && way_point == "c3_b" && msg->data == "" && sequence_mode == SEQUENCE_MODE::storage) || (retry_flag && way_point == "c3_b" && msg->data == "" && sequence_mode == SEQUENCE_MODE::storage)) command_sequence(SEQUENCE_MODE::transfer);
+    else if(msg->data == "c3_a" && sequence_mode == SEQUENCE_MODE::storage) command_move_node("c3_a");
     else command_move_interrupt_node(msg->data);
     if(msg->data == "c4") c4_flag = true;
+    if(msg->data == "c3_a") c3a_flag = true;
+    if(msg->data == "c3_b") c3b_flag = true;
+    if(msg->data == "c6_a") c6a_flag = true;
+    if(msg->data == "c6_b") c6b_flag = true;
 }
 
 void Sequencer::callback_way_point(const std_msgs::msg::String::SharedPtr msg){

@@ -23,14 +23,17 @@
         fai = h_angle;                                //極座標へ変換
         theta = M_PI_2+(theta_y+v_angle)*M_PI/180;    //極座標へ変換
 
-        cout <<" fai" << fai*180/M_PI << endl;
+        // cout << "r " << r << endl;
+
+        // cout <<"h_angle" << h_angle*180/M_PI << " v_angle " << v_angle*180/M_PI <<  endl;
         // cout << "v_angle " << v_angle << " h_angle " << h_angle*180/M_PI << endl;
+        // cout << "h_angle" << h_angle*180/M_PI << endl;
     
         x = r* sin(theta) * cos(fai)*0.001; //メートル単位に変換
         y = r* sin(theta) * sin(fai)*0.001; //メートル単位に変換
         z = r* cos(theta) * 0.001;          //メートル単位に変換
 
-        cout << "x" << x << " y " << y << " z " << z << endl;
+        // cout << "x" << x << " y " << y << " z " << z << endl;
 
         Matrix3d camera_xyz;
         camera_xyz << x,0.0,0.0,
@@ -73,25 +76,48 @@
         R_self << cos(z_angle), -sin(z_angle), 0.0,
                   sin(z_angle),  cos(z_angle), 0.0,
                             0.0,          0.0, 1.0;
-    
-        before_xyz = R_self*before_xyz; //Rxyzを使用しなくしたため
-        
-        T = R_self*T;
 
         Matrix3d after_xyz;
-        after_xyz = before_xyz + T; //同上
+        after_xyz = R_self*(before_xyz + T);
+    
+        // before_xyz = R_self*before_xyz; //Rxyzを使用しなくしたため
+
+        // cout <<"before_xyz" << endl;
+        // cout << before_xyz << endl;
+
+        // cout <<"after_xyz" << endl;
+        // cout << after_xyz << endl;
+        
+        // T = R_self*T;
+
+        // Matrix3d after_xyz;
+        // after_xyz = before_xyz + T; //同上
 
         Vector3d XYZ;
         for(int i=0; i<3; i++) XYZ[i] = after_xyz(i,0);
-        XYZ = XYZ + pose;        
+        XYZ = XYZ + pose;
         return XYZ;
     }
 
     double coordinate_transformation::angle_offset(double v_angle,double h_angle){
         double angle_offset=0.0;
-        angle_offset = tanh_offset_coff[0]*tanh(tanh_offset_coff[1]*h_angle*M_PI/180) + tanh_offset_coff[2]*v_angle*sign(h_angle);//tanh関数を用いた近似(取り付け角度分補正をかける近似の次に試す)
-        cout << "angle_offset: " << angle_offset << endl;
+        double a = angle_offset_coff[0];
+        double b = angle_offset_coff[1];
+        double c = angle_offset_coff[2];
+        double d = angle_offset_coff[3];
+        double e = angle_offset_coff[4];
+        double f = angle_offset_coff[5];
+        double g = angle_offset_coff[6];
+        double h = angle_offset_coff[7];
+        double i = angle_offset_coff[8];
+        double j = angle_offset_coff[9];
+        double x = h_angle;
+        double y = v_angle;
+        // angle_offset = a + b*x + c*y + d*x*y + e*x*x + f*y*y + g*x*x*y + h*x*y*y + i*x*x*x+j*y*y*y;
+        angle_offset = tanh_offset_coff[0]*tanh(tanh_offset_coff[1]*h_angle*M_PI/180) + tanh_offset_coff[2]*v_angle*sign(h_angle);//tanh関数を用いた近似
+        // cout << "angle_offset: " << angle_offset << endl;
         return angle_offset*M_PI/180;
+        // return 0;
     }
 
     double coordinate_transformation::sign(double h_angle){
