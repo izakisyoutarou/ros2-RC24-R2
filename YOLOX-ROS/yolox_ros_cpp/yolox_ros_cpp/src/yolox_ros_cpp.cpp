@@ -7,7 +7,7 @@ namespace yolox_ros_cpp
     {
         using namespace std::chrono_literals; // NOLINT
         this->init_timer_ = this->create_wall_timer(
-            3ms, std::bind(&YoloXNode::onInit, this));
+            4ms, std::bind(&YoloXNode::onInit, this));
     }
 
     void YoloXNode::onInit()

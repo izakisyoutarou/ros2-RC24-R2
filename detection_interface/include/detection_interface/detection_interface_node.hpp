@@ -107,7 +107,7 @@ namespace detection_interface
 
             //realseneのc3、c4から見たとき、どこのSTに行くか。中でfront_ball関数を呼び出す。
             void realsense_c3_c6node(   const std::vector<int> center_x, const std::vector<int> center_y, const std::vector<int> center_depth, 
-                                        const std::vector<int> rb_ymax, const int rbp_ymax);
+                                        const std::vector<int> rb_ymax, const int rbp_ymax, const int rbp_xmax, const int rbp_xmin);
 
             void realsense_c7_c8node(const std::vector<int> center_x, const std::vector<int> center_y, const std::vector<int> center_depth);
 
@@ -148,6 +148,7 @@ namespace detection_interface
 
             //realsenseがc3 or c6nodeから見たボール1個分のy
             const int str_range_y_C3orC5;
+            const int str_range_x_C3orC5;
 
             //コートの色
             const std::string court_color;
