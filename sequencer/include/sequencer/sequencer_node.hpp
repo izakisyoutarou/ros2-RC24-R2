@@ -86,7 +86,7 @@ private:
     void command_transfer_state();
     void command_silo_state();
     void command_silo_state2();
-
+    void command_hand_lift_silo();
     void command_hand_lift_pickup();//アーム高さ_中央
 
     void silo_evaluate(std::string camera[15]);

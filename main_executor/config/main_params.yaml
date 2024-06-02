@@ -14,9 +14,9 @@ launch: #起動パラメータ
     court_color: "blue" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
-    linear_max_vel: 2.3
-    linear_max_acc: 3.5
-    linear_max_dec: 3.5
+    linear_max_vel: 2.4
+    linear_max_acc: 2.4
+    linear_max_dec: 2.4
     linear_max_jer: 0.0
     # 回転  速度[deg/sint x, int y, const std::vector<double> point1, const std::vector<double> point2],加速度[deg/s^2],加減速度[-deg/s^2],躍度[deg/s^3]
     angular_max_vel: 100.0
@@ -106,7 +106,7 @@ rasnac_localization:
     odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
     odom_weight_angler: 3.0e-4
     voxel_size: 0.06
-    trial_num: 40
+    trial_num: 50
     inlier_dist_threshold: 0.012
     inlier_length_threshold: 0.5 #インライアのしきい値
     second_ransac: false           #2回ransacをするか
@@ -144,15 +144,15 @@ detection_interface_node:
     back_depth_suction_check_value: 300
 
     realsense_max_x: 1000
-    realsense_min_x: 260
-    realsense_max_y: 500
+    realsense_min_x: 400
+    realsense_max_y: 700
 
     #c1caeraでc2nodeから見たときのxの閾値
     c2node_threshold_x: 1000
 
     #realsenseがc3 or c6nodeから見たボール1個分のy(ここの数値を下げることでc3,c6から見えるボールが例:3列から2列になる。上げると見えるボールが例:1列から2列になる)
-    str_range_y_C3orC5: 70 #65 
-    str_range_x_C3orC5: 180
+    str_range_y_C3orC5: 170 #65 
+    str_range_x_C3orC5: 180 #180
 
 sequencer_node:
   ros__parameters:

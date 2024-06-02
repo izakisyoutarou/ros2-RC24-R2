@@ -261,10 +261,10 @@ namespace controller_interface
                 msg_is_start->data = 0;
                 _pub_is_start->publish(*msg_is_start);
             }
-            // else if(msg->data == "a") gamebtn.paddy_collect_0(msg_convergence.is_arm_convergence,_pub_canusb);  
-            // else if(msg->data == "b") gamebtn.paddy_collect_1(msg_convergence.is_arm_convergence,_pub_canusb);
-            // else if(msg->data == "x") gamebtn.paddy_collect_2(msg_convergence.is_arm_convergence,_pub_canusb);
-            // else if(msg->data == "y") gamebtn.paddy_install(msg_convergence.is_arm_convergence,_pub_canusb); 
+            else if(msg->data == "a") gamebtn.canusb_test(0x231,0,_pub_canusb);  
+            else if(msg->data == "b") gamebtn.canusb_test(0x232,0,_pub_canusb); 
+            else if(msg->data == "x") gamebtn.canusb_test(0x233,0,_pub_canusb);
+            else if(msg->data == "y") gamebtn.canusb_test(0x233,0,_pub_canusb);
             // else if(msg->data == "r1") gamebtn.net_open(msg_convergence.is_net_convergence,_pub_canusb); 
             // else if(msg->data == "r2") gamebtn.net_close(msg_convergence.is_net_convergence,_pub_canusb); 
             else if(msg->data == "a") gamebtn.canusb_test(0x231, 0, _pub_canusb);
