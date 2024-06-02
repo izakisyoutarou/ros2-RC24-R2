@@ -142,7 +142,7 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
                 command_base_state();              
                 if(c3b_flag) command_move_interrupt_node("c3_b");
                 else if(c3a_flag) command_move_interrupt_node("c3_a");
-                else if(c6b_flag) command_move_interrupt_node("c6_a");
+                else if(c6a_flag) command_move_interrupt_node("c6_a");
                 else command_move_interrupt_node("c6_b");
                 get_suction_check = false;
                 special_progress = 0;
@@ -154,9 +154,9 @@ void Sequencer::callback_convergence(const controller_interface_msg::msg::Conver
         }
         if(progress == n++){
             RCLCPP_INFO(get_logger(),"_____strage0_____");
-            if(c6b_flag) command_move_node("c3_b");
-            else if(c6a_flag)command_move_node("c3_a");
-            else if(c3a_flag)command_move_node("c6_a");
+            if(c3b_flag) command_move_node("c3_b");
+            else if(c3a_flag)command_move_node("c3_a");
+            else if(c6a_flag)command_move_node("c6_a");
             else command_move_node("c6_b");
             get_ball_pose = false;
             timer(1000);
