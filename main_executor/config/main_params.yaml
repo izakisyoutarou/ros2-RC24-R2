@@ -140,8 +140,8 @@ detection_interface_node:
     #ST系の行ったときの吸引判定
     front_suction_check_point: [600, 800] #[500, 675] #[y,x]
     back_suction_check_point: [225, 800] #[225, 730] #[y,x]
-    front_depth_suction_check_value: 180
-    back_depth_suction_check_value: 290
+    front_depth_suction_check_value: 130
+    back_depth_suction_check_value: 300
 
     realsense_max_x: 1000
     realsense_min_x: 260
