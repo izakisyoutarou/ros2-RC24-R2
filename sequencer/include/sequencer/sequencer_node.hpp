@@ -132,7 +132,6 @@ private:
     bool get_ball_pose = false;
     bool tof[4] = {false, false, false, false};
     bool silo_flag = false;
-    bool c3orc6_flag = false; 
     bool c1_flag = false; 
     bool c3a_flag = false;
     bool c3b_flag = false;
