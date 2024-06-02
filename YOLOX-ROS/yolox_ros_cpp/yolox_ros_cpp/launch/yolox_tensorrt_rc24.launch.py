@@ -14,8 +14,8 @@ def generate_launch_description():
         ######################################### 学習済みデータ
         DeclareLaunchArgument(#c1cameraの学習済みデータの指定
             'model_path_c1camera',
-            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
-            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0531.trt',
+            default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honabn_c1_0513.trt',
+            # default_value='/home/kitrp/R2_ws/src/ros2-RC24-R2/YOLOX-ROS/weights/tensorrt/yolox_honban_c1_0531.trt',
             description='yolox model path.'
         ),
         DeclareLaunchArgument(#d455の学習済みデータの指定

@@ -31,6 +31,7 @@ class coordinate_transformation {
         double tz = 0.644825;
         // const double angle_offset_coff[10] = {-3.217e0,1.175e0,-2.929e-1,5.894e-2,5.350e-3,-2.400e-2,2.363e-4,1.1701e-3,-2.132e-4,-7.684e-4}; //最小二乗法の係数
         const double angle_offset_coff[10] = {-4.003e0,1.241e0,-3.386e-1,7.096e-2,1.311e-2,-2.183e-2,7.461e-4,1.487e-3,-5.936e-5,-6.829e-4}; //最小二乗法の係数
+        const double sin_offset_coff[3] = {2.11111,60.9961,-1.949};
         const double tanh_offset_coff[3] = {13.27,2.32,0.29};  //tanh近似の係数
 };
 
