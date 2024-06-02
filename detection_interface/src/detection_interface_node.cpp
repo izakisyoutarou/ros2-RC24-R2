@@ -619,7 +619,7 @@ namespace detection_interface
                     double ave_saturation = saturation / count;
                     double ave_value = value / count;
 
-                    RCLCPP_INFO(this->get_logger(), "hue%f,saturation%f,value%f" , ave_hue, ave_saturation, ave_value);
+                    // RCLCPP_INFO(this->get_logger(), "hue%f,saturation%f,value%f" , ave_hue, ave_saturation, ave_value);
 
                     if(court_color == "red"){
                         if((ave_hue >= 0 && ave_hue <= 10) ||  (ave_hue >= 160 && ave_hue <= 180)) msg_suction_check->data = "R"; //赤ボール
@@ -627,7 +627,7 @@ namespace detection_interface
                         else msg_suction_check->data = ""; //吸引機構を認識している
                     }
                     else if(court_color == "blue"){
-                        if(ave_value < 50 && ave_saturation < 50) msg_suction_check->data = ""; //吸引機構を認識している
+                        if(ave_value < 90 && ave_saturation < 190) msg_suction_check->data = ""; //吸引機構を認識している
                         else if(ave_hue >= 110) msg_suction_check->data = "P"; //紫ボール
                         else if(ave_hue >= 90)msg_suction_check->data = "B"; //青ボール
                         else msg_suction_check->data = ""; //吸引機構を認識している
