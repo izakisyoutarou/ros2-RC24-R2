@@ -88,6 +88,7 @@ private:
     void command_silo_state2();
     void command_hand_lift_silo();
     void command_hand_lift_pickup();//アーム高さ_中央
+    void command_hand_wrist_up();
 
     void silo_evaluate(std::string camera[15]);
     void command_move_autonomous(bool flag);
@@ -108,6 +109,7 @@ private:
     const int16_t can_silo_state_id;
     const int16_t can_silo_state2_id;
     const int16_t can_hand_lift_id;
+    const int16_t can_hand_wrist_id;
 
     //QoS
     rclcpp::QoS _qos = rclcpp::QoS(10);
@@ -142,6 +144,7 @@ private:
     bool net_flag = false;
     bool kado_flag = false;
     bool move_automonous = false;
+    bool coord_flag = false;
 
     geometry_msgs::msg::Vector3 self_pose;
     geometry_msgs::msg::Vector3 ball_pose;
