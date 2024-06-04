@@ -84,10 +84,10 @@ namespace yolox_cpp{
                 // cv::line(bgr, cv::Point(0, ymin+160), cv::Point(bgr.cols, ymin+160), line_color, 2);
                 // cv::line(bgr, cv::Point(0, ymin+320), cv::Point(bgr.cols, ymin+320), line_color, 2);//カメラの向きが上下逆
 
-                // cv::line(bgr, cv::Point(1000, 0), cv::Point(1000, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(1050, 0), cv::Point(1050, bgr.rows), line_color, 2);
-                // cv::line(bgr, cv::Point(1100, 0), cv::Point(1100, bgr.rows), line_color, 2);
-                cv::line(bgr, cv::Point(0, 700), cv::Point(bgr.cols, 700), line_color, 2);
+                cv::line(bgr, cv::Point(900, 0), cv::Point(900, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(485, 0), cv::Point(485, bgr.rows), line_color, 2);
+                // cv::line(bgr, cv::Point(680, 0), cv::Point(680, bgr.rows), line_color, 2);
+                cv::line(bgr, cv::Point(0, 248), cv::Point(bgr.cols, 248), line_color, 2);
                 // cv::line(bgr, cv::Point(0, 330), cv::Point(bgr.cols, 330), line_color, 2);
             }
         }

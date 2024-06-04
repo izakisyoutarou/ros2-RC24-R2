@@ -41,9 +41,6 @@ namespace detection_interface
             //yolox_ros_cppのrealsense_d455から
             rclcpp::Subscription<bboxes_ex_msgs::msg::BoundingBoxes>::SharedPtr _sub_realsense_d455;
 
-            //yolox_ros_cppのrealsense_d435iから
-            // rclcpp::Subscription<bboxes_ex_msgs::msg::BoundingBoxes>::SharedPtr _sub_realsense_d435i;
-
             //ransacから
             rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _sub_self_pose;
 
@@ -75,9 +72,6 @@ namespace detection_interface
             //yolox_ros_cppのrealsense_d455からのcallback
             void callback_realsense_d455(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
 
-            //yolox_ros_cppのrealsense_d435iからのcallback
-            // void callback_realsense_d435i(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg);
-
             //controller_interfaceからのcallback
             void callback_base_control(const controller_interface_msg::msg::BaseControl::SharedPtr msg);
 
@@ -107,9 +101,7 @@ namespace detection_interface
 
             //realseneのc3、c4から見たとき、どこのSTに行くか。中でfront_ball関数を呼び出す。
             void realsense_c3_c6node(   const std::vector<int> center_x, const std::vector<int> center_y, const std::vector<int> center_depth, 
-                                        const std::vector<int> rb_ymax, const int rbp_ymax, const int rbp_xmax, const int rbp_xmin);
-
-            void realsense_c7_c8node(const std::vector<int> center_x, const std::vector<int> center_y, const std::vector<int> center_depth);
+                                        const std::vector<int> rb_ymax, const std::vector<int> rb_xmax, const int rbp_ymax, const int rbp_xmax, const int rbp_xmin);
 
             /////////////////////////トピックのグローバル変数
             Vector3d pose;
@@ -159,5 +151,9 @@ namespace detection_interface
             //////////////////////
 
             ////////////////////////変数
+            int threshold_ymax = 0;
+            int threshold_xmin = 0;
+            int threshold_xmax = 0;
+            int threshold_count = 0;
     };
 }
