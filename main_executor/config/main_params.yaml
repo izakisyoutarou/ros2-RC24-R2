@@ -14,7 +14,7 @@ launch: #起動パラメータ
     court_color: "blue" #コート情報
 
     # 自動の並進  速度[m/s],加速度[m/s^2],加減速度[-m/s^2],躍度[m/s^3]
-    linear_max_vel: 2.6
+    linear_max_vel: 2.3
     linear_max_acc: 2.3
     linear_max_dec: 2.3
     linear_max_jer: 0.0
@@ -105,8 +105,8 @@ rasnac_localization:
     laser_weight: 1.0 #lidarの重み->値を大きくするとlidarが優先される
     odom_weight_liner: 2.0e-3 #値が大きくなると共分散が小さくなる 
     odom_weight_angler: 3.0e-4
-    voxel_size: 0.06
-    trial_num: 50
+    voxel_size: 0.07
+    trial_num: 40
     inlier_dist_threshold: 0.012
     inlier_length_threshold: 0.5 #インライアのしきい値
     second_ransac: false           #2回ransacをするか
@@ -143,16 +143,16 @@ detection_interface_node:
     front_depth_suction_check_value: 200
     back_depth_suction_check_value: 350
 
-    realsense_max_x: 900
-    realsense_min_x: 300
+    realsense_max_x: 1000 #900
+    realsense_min_x: 145 #200
     realsense_max_y: 700
 
     #c1caeraでc2nodeから見たときのxの閾値
     c2node_threshold_x: 1000
 
     #realsenseがc3 or c6nodeから見たボール1個分のy(ここの数値を下げることでc3,c6から見えるボールが例:3列から2列になる。上げると見えるボールが例:1列から2列になる)
-    str_range_y_C3orC5: 130 #130  
-    str_range_x_C3orC5: 185 #180
+    str_range_y_C3orC5: 135 #130  
+    str_range_x_C3orC5: 180 #180
 
 sequencer_node:
   ros__parameters:

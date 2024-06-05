@@ -68,6 +68,12 @@ namespace detection_interface
                 _qos,
                 std::bind(&DetectionInterface::d435iImageCallback, this, std::placeholders::_1)
             );
+
+            _sub_storage_flag = this->create_subscription<std_msgs::msg::Empty>(
+                "storage_flag",
+                _qos,
+                std::bind(&DetectionInterface::callback_storage_flag, this, std::placeholders::_1)
+            );
         
             //sequncerへ
             _pub_collection_point = this->create_publisher<std_msgs::msg::String>("collection_point", _qos);
@@ -155,6 +161,9 @@ namespace detection_interface
                 auto msg_silo_param = std::make_shared<detection_interface_msg::msg::SiloParam>();
 
                 silo_flag = false;
+                
+                storage_count = 1;
+                before_storage_size = 0;
                 
                 std::array<std::array<int, 4>, 5> silo_y;//{min_y、min_yとcnterの間、max_yとcenterの間、max_y}
                 std::vector<int> before_ball_place;//推論情報をとりあえず放り込む
@@ -331,158 +340,266 @@ namespace detection_interface
         void DetectionInterface::callback_realsense_d455(const bboxes_ex_msgs::msg::BoundingBoxes::SharedPtr msg){
             if(now_sequence == "storage"){
                 if(way_point == "c3_a" || way_point == "c3_b" || way_point == "c6_a" || way_point == "c6_b"){
-                    bool realsense_count_flag = false;
-                    auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
+                    if(c3_c4_flag){
+                        bool realsense_count_flag = false;
+                        auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
 
-                    //realsenseから受け取った情報を入れる配列
-                    std::vector<int> center_x_realsense;//バウンディングボックスの真ん中(x)
-                    std::vector<int> center_y_realsense;//バウンディングボックスの真ん中(y)
-                    std::vector<int> center_depth_realsense;//バウンディングボックスの真ん中のdepth(y)
-                    std::vector<int> rbp_ymax_realsense;//ボールのバウンディングの右下(y)(赤、青、紫)
-                    std::vector<int> rbp_xmax_realsense;//ボールのバウンディングの右下(x)(赤、青、紫)
-                    std::vector<int> rbp_xmin_realsense;//ボールのバウンディングの左上(x)(赤、青、紫)
-                    std::vector<int> rb_ymax_realsense;//ボールのバウンディングの右下(y)(赤、青)
-                    std::vector<int> rb_xmax_realsense;//ボールのバウンディングの右下(y)(赤、青)
+                        //realsenseから受け取った情報を入れる配列
+                        std::vector<int> center_x_realsense;//バウンディングボックスの真ん中(x)
+                        std::vector<int> center_y_realsense;//バウンディングボックスの真ん中(y)
+                        std::vector<int> center_depth_realsense;//バウンディングボックスの真ん中のdepth(y)
+                        std::vector<int> rbp_ymax_realsense;//ボールのバウンディングの右下(y)(赤、青、紫)
+                        std::vector<int> rbp_xmax_realsense;//ボールのバウンディングの右下(x)(赤、青、紫)
+                        std::vector<int> rbp_xmin_realsense;//ボールのバウンディングの左上(x)(赤、青、紫)
+                        std::vector<int> rb_ymax_realsense;//ボールのバウンディングの右下(y)(赤、青)
+                        std::vector<int> rb_xmax_realsense;//ボールのバウンディングの右下(y)(赤、青)
+                        std::vector<int> rb_xmin_realsense;//ボールのバウンディングの右下(y)(赤、青)
 
-                    silo_flag = true;
+                        silo_flag = true;
+                        c3_c4_flag = false;
 
-                    for (const auto& box : msg->bounding_boxes) {
+                        for (const auto& box : msg->bounding_boxes) {
 
-                        rbp_ymax_realsense.push_back(box.ymax);
-                        rbp_xmax_realsense.push_back(box.xmax);
-                        rbp_xmin_realsense.push_back(box.xmin);
+                            rbp_ymax_realsense.push_back(box.ymax);
+                            rbp_xmax_realsense.push_back(box.xmax);
+                            rbp_xmin_realsense.push_back(box.xmin);
 
-                        if(box.class_id == "redball" || box.class_id == "blueball"){
-                            int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
-                            int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
+                            if(box.class_id == "redball" || box.class_id == "blueball"){
+                                int center_x_value = static_cast<int>((box.xmax + box.xmin) / 2);
+                                int center_y_value = static_cast<int>((box.ymax + box.ymin) / 2);
 
-                            center_x_realsense.push_back(center_x_value);
-                            center_y_realsense.push_back(center_y_value);
-                            center_depth_realsense.push_back(box.center_dist);
-                            rb_ymax_realsense.push_back(box.ymax);
-                            rb_xmax_realsense.push_back(box.xmax);
+                                center_x_realsense.push_back(center_x_value);
+                                center_y_realsense.push_back(center_y_value);
+                                center_depth_realsense.push_back(box.center_dist);
+                                rb_ymax_realsense.push_back(box.ymax);
+                                rb_xmax_realsense.push_back(box.xmax);
+                                rb_xmin_realsense.push_back(box.xmin);
+                            }
                         }
-                    }
 
-                    // for (int z = 0; z < center_depth.size(); ++z) {
-                    //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, center_depth[z]);
-                    // }
+                        // for (int z = 0; z < center_depth.size(); ++z) {
+                        //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, center_depth[z]);
+                        // }
 
-                    // for (int z = 0; z < center_depth_realsense.size(); ++z) {
-                    //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, center_depth_realsense[z]);
-                    // }
+                        // for (int z = 0; z < center_depth_realsense.size(); ++z) {
+                        //     RCLCPP_INFO(this->get_logger(), "まえ%d@%d", z, center_depth_realsense[z]);
+                        // }
 
-                    if(rbp_ymax_realsense.size() != 0){//何も認識していないときに、下にいったらエラーを出す。そのためのif文
-                        //realseneのc3、c4から見たとき、どこのSTに行くか。ボールが手前か奥か
-                        auto rbp_x_max = std::remove_if(rbp_xmax_realsense.begin(), rbp_xmax_realsense.end(), [this](int value){
-                            return value > this->realsense_max_x;
-                        });
-                        rbp_xmax_realsense.erase(rbp_x_max, rbp_xmax_realsense.end());
+                        if(rbp_ymax_realsense.size() != 0){//何も認識していないときに、下にいったらエラーを出す。そのためのif文
+                            //realseneのc3、c4から見たとき、どこのSTに行くか。ボールが手前か奥か
+                            auto rbp_x_max = std::remove_if(rbp_xmax_realsense.begin(), rbp_xmax_realsense.end(), [this](int value){
+                                return value > this->realsense_max_x;
+                            });
+                            rbp_xmax_realsense.erase(rbp_x_max, rbp_xmax_realsense.end());
 
-                        auto rbp_x_min = std::remove_if(rbp_xmin_realsense.begin(), rbp_xmin_realsense.end(), [this](int value){
-                            return value < this->realsense_min_x;
-                        });
-                        rbp_xmin_realsense.erase(rbp_x_min, rbp_xmin_realsense.end());
+                            auto rbp_x_min = std::remove_if(rbp_xmin_realsense.begin(), rbp_xmin_realsense.end(), [this](int value){
+                                return value < this->realsense_min_x;
+                            });
+                            rbp_xmin_realsense.erase(rbp_x_min, rbp_xmin_realsense.end());
 
-                        auto rbp_y_max = std::remove_if(rbp_ymax_realsense.begin(), rbp_ymax_realsense.end(), [this](int value){
-                            return value > this->realsense_max_y;
-                        });
-                        rbp_ymax_realsense.erase(rbp_y_max, rbp_ymax_realsense.end());
+                            auto rbp_y_max = std::remove_if(rbp_ymax_realsense.begin(), rbp_ymax_realsense.end(), [this](int value){
+                                return value > this->realsense_max_y;
+                            });
+                            rbp_ymax_realsense.erase(rbp_y_max, rbp_ymax_realsense.end());
 
-                        int rbp_ymax = *max_element(begin(rbp_ymax_realsense), end(rbp_ymax_realsense));
-                        int rbp_xmax = *max_element(begin(rbp_xmax_realsense), end(rbp_xmax_realsense));
-                        int rbp_xmin = *min_element(begin(rbp_xmin_realsense), end(rbp_xmin_realsense));
+                            // auto rb_x_max = std::remove_if(rb_xmax_realsense.begin(), rb_xmax_realsense.end(), [this](int value){
+                            //     return value > this->realsense_max_x;
+                            // });
+                            // rb_xmax_realsense.erase(rb_x_max, rb_xmax_realsense.end());
+                            // center_x_realsense.erase(rb_x_max, center_x_realsense.end());
+                            // center_y_realsense.erase(rb_x_max, center_y_realsense.end());
+                            // center_depth_realsense.erase(rb_x_max, center_depth_realsense.end());
+                            // rb_ymax_realsense.erase(rb_x_max, rb_ymax_realsense.end());
+                            // rb_xmin_realsense.erase(rb_x_max, rb_xmin_realsense.end());
 
-                        // RCLCPP_INFO(this->get_logger(), "ymax%d,xmax%d,xmin%d" ,rbp_ymax,rbp_xmax,rbp_xmin);
+                            // auto rb_x_min = std::remove_if(rb_xmin_realsense.begin(), rb_xmin_realsense.end(), [this](int value){
+                            //     return value < this->realsense_min_x;
+                            // });
+                            // rb_xmin_realsense.erase(rb_x_min, rb_xmin_realsense.end());
+                            // center_x_realsense.erase(rb_x_min, center_x_realsense.end());
+                            // center_y_realsense.erase(rb_x_min, center_y_realsense.end());
+                            // center_depth_realsense.erase(rb_x_min, center_depth_realsense.end());
+                            // rb_ymax_realsense.erase(rb_x_min, rb_ymax_realsense.end());
+                            // rb_xmax_realsense.erase(rb_x_min, rb_xmax_realsense.end());
 
-                        realsense_c3_c6node(center_x_realsense, center_y_realsense, center_depth_realsense, rb_ymax_realsense, rb_xmax_realsense, rbp_ymax, rbp_xmax, rbp_xmin);
-                    }
-                    else {
-                        if(way_point == "c6_b") msg_collection_point->data = "c6_a";
-                        else if(way_point == "c6_a") msg_collection_point->data = "c3_a";
-                        else if(way_point == "c3_a") msg_collection_point->data = "c3_b";
-                        else if(way_point == "c3_b") msg_collection_point->data = "";
-                        _pub_collection_point->publish(*msg_collection_point);
+                            for(int i = 0; i < rb_xmax_realsense.size(); i++){
+                                if(rb_xmax_realsense[i] > realsense_max_x){
+                                    center_x_realsense.erase(center_x_realsense.begin() + i);
+                                    center_y_realsense.erase(center_y_realsense.begin() + i);
+                                    center_depth_realsense.erase(center_depth_realsense.begin() + i);
+                                    rb_ymax_realsense.erase(rb_ymax_realsense.begin() + i);
+                                    rb_xmax_realsense.erase(rb_xmax_realsense.begin() + i);
+                                    rb_xmin_realsense.erase(rb_xmin_realsense.begin() + i);
+                                    --i;
+                                }
+                            }
+
+                            for(int i = 0; i < rb_xmin_realsense.size(); i++){
+                                if(rb_xmin_realsense[i] < realsense_min_x){
+                                    center_x_realsense.erase(center_x_realsense.begin() + i);
+                                    center_y_realsense.erase(center_y_realsense.begin() + i);
+                                    center_depth_realsense.erase(center_depth_realsense.begin() + i);
+                                    rb_ymax_realsense.erase(rb_ymax_realsense.begin() + i);
+                                    rb_xmax_realsense.erase(rb_xmax_realsense.begin() + i);
+                                    rb_xmin_realsense.erase(rb_xmin_realsense.begin() + i);
+                                    --i;
+                                }
+                            }
+
+                            int rbp_ymax = *max_element(begin(rbp_ymax_realsense), end(rbp_ymax_realsense));
+                            int rbp_xmax = *max_element(begin(rbp_xmax_realsense), end(rbp_xmax_realsense));
+                            int rbp_xmin = *min_element(begin(rbp_xmin_realsense), end(rbp_xmin_realsense));
+
+                            // RCLCPP_INFO(this->get_logger(), "ymax%d,xmax%d,xmin%d" ,rbp_ymax,rbp_xmax,rbp_xmin);
+
+                            realsense_c3_c6node(center_x_realsense, center_y_realsense, center_depth_realsense, rb_ymax_realsense, rb_xmax_realsense, rb_xmin_realsense, rbp_ymax, rbp_xmax, rbp_xmin);
+                        }
+                        else {
+                            collection_point_flag = true;
+                            if(way_point == "c6_b") msg_collection_point->data = "c6_a";
+                            else if(way_point == "c6_a") msg_collection_point->data = "c3_a";
+                            else if(way_point == "c3_a") msg_collection_point->data = "c3_b";
+                            else if(way_point == "c3_b") msg_collection_point->data = "";
+                            _pub_collection_point->publish(*msg_collection_point);
+                        }
                     }
                 }
             }       
         }
 
-        void DetectionInterface::realsense_c3_c6node(   const std::vector<int> center_x, const std::vector<int> center_y, const std::vector<int> center_depth, 
-                                                        const std::vector<int> rb_ymax, const std::vector<int> rb_xmax, const int rbp_ymax, const int rbp_xmax, const int rbp_xmin){
-            if(c3_c4_flag){
-                auto msg_ball_coordinate = std::make_shared<geometry_msgs::msg::Vector3>();
-                auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
+        void DetectionInterface::realsense_c3_c6node(   std::vector<int> center_x, std::vector<int> center_y, std::vector<int> center_depth, 
+                                                        std::vector<int> rb_ymax, std::vector<int> rb_xmax, std::vector<int> rb_xmin, const int rbp_ymax, const int rbp_xmax, const int rbp_xmin){
+            // RCLCPP_INFO(this->get_logger(), "ymaxssssssssssssssssssssssss%d" ,c3_c4_flag);
+            auto msg_ball_coordinate = std::make_shared<geometry_msgs::msg::Vector3>();
+            auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
 
-                threshold_count++;
+            threshold_count++;
 
-                c1caera_c2ode_flag = true;
-                c3_c4_flag = false;
-
-                
-                if(way_point == "c6_b"  && threshold_count == 1){
-                    if(court_color == "blue"){
-                        threshold_ymax = rbp_ymax - str_range_y_C3orC5 * 2;
-                        threshold_xmin = rbp_xmin + str_range_x_C3orC5 * 2;
-                    }
-                    if(court_color == "red"){
-                        threshold_ymax = rbp_ymax - str_range_y_C3orC5 * 2;
-                        threshold_xmax = rbp_xmax + str_range_x_C3orC5 * 2;
-                    }
-                }
-
-                // int threshold_ymax = rbp_ymax - str_range_y_C3orC5 * 2;//一番手前からボール2個分引いている
-                int threshold_xmax = rbp_xmax - str_range_x_C3orC5 * 2;//一番右からボール2個分引いている
-                // int threshold_xmin = rbp_xmin + str_range_x_C3orC5 * 2;//一番左からボール2個分足している
-
+            c1caera_c2ode_flag = true;
+            
+            if(way_point == "c6_b"  && threshold_count == 1){
                 if(court_color == "blue"){
-                    threshold_xmax = rbp_xmax - str_range_x_C3orC5 * 2;
-                }
-                else if(court_color == "red"){
+                    threshold_ymax = rbp_ymax - str_range_y_C3orC5 * 2;
                     threshold_xmin = rbp_xmin + str_range_x_C3orC5 * 2;
+                    threshold_impossible_y = rbp_ymax - str_range_y_C3orC5;
+                    threshold_impossible_x = rbp_xmin + str_range_x_C3orC5;
                 }
+                if(court_color == "red"){
+                    threshold_ymax = rbp_ymax - str_range_y_C3orC5 * 2;
+                    threshold_xmax = rbp_xmax - str_range_x_C3orC5 * 2;
+                    threshold_impossible_y = rbp_ymax - str_range_y_C3orC5;
+                    threshold_impossible_x = rbp_xmax - str_range_x_C3orC5;
+                }
+            }
 
-                // RCLCPP_INFO(this->get_logger(), "ymax%d,xmax%d,xmin%d" ,threshold_ymax,threshold_xmax,threshold_xmin);
+            // int threshold_ymax = rbp_ymax - str_range_y_C3orC5 * 2;//一番手前からボール2個分引いている
+            // int threshold_xmax = rbp_xmax - str_range_x_C3orC5 * 2;//一番右からボール2個分引いている
+            // int threshold_xmin = rbp_xmin + str_range_x_C3orC5 * 2;//一番左からボール2個分足している
 
-                std::vector<std::vector<int>> xy_realsense_list;
+            if(court_color == "blue"){
+                threshold_xmax = rbp_xmax - str_range_x_C3orC5 * 2;
+            }
+            else if(court_color == "red"){
+                threshold_xmin = rbp_xmin + str_range_x_C3orC5 * 2;
+            }
 
-                if(center_x.size() != 0){
-                    for(size_t i = 0; i < center_x.size(); i++){
+            // RCLCPP_INFO(this->get_logger(), "ymax%d,xmax%d,xmin%d" ,threshold_ymax,threshold_xmax,threshold_xmin);
+
+            std::vector<std::vector<int>> xy_realsense_list;
+
+            if(center_x.size() != 0){
+                if(way_point == "c6_b"){
+                    for(int i = 0; i < center_x.size(); i++){//特異点の削除
                         if(court_color == "blue"){
-                            if(way_point == "c3_a" || way_point == "c6_a"){
-                                if(rb_ymax[i] > threshold_ymax && rb_xmax[i] > threshold_xmax){//ひし形の中で微妙な位置にいるボールに対処するためにxmaxを取得
-                                    xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                                    // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
-                                }
-                            }
-                            else if(way_point == "c3_b" || way_point == "c6_b"){
-                                if(rb_ymax[i] > threshold_ymax && center_x[i] < threshold_xmin){
-                                    xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                                    // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
-                                }
+                            if(center_y[i] > threshold_impossible_y && center_x[i] < threshold_impossible_x){
+                                center_x.erase(center_x.begin() + i);
+                                center_y.erase(center_y.begin() + i);
+                                center_depth.erase(center_depth.begin() + i);
+                                rb_ymax.erase(rb_ymax.begin() + i);
+                                rb_xmax.erase(rb_xmax.begin() + i);
+                                rb_xmin.erase(rb_xmin.begin() + i);
+                                break;
                             }
                         }
                         else if(court_color == "red"){
-                            if(way_point == "c3_a" || way_point == "c6_a"){
-                                if(rb_ymax[i] > threshold_ymax && center_x[i] < threshold_xmin){//ひし形の中で微妙な位置にいるボールに対処するためにxmaxを取得
-                                    xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                                    // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
-                                }
-                            }
-                            else if(way_point == "c3_b" || way_point == "c6_b"){
-                                if(rb_ymax[i] > threshold_ymax && center_x[i] > threshold_xmax){
-                                    xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                                    // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
-                                }
+                            if(center_y[i] > threshold_impossible_y && center_x[i] > threshold_impossible_x){
+                                center_x.erase(center_x.begin() + i);
+                                center_y.erase(center_y.begin() + i);
+                                center_depth.erase(center_depth.begin() + i);
+                                rb_ymax.erase(rb_ymax.begin() + i);
+                                rb_xmax.erase(rb_xmax.begin() + i);
+                                rb_xmin.erase(rb_xmin.begin() + i);
+                                break;
                             }
                         }
                     }
-                    if(xy_realsense_list.size() != 0){
-                        int target_value = 640;//realsenseのスクリーンの真ん中
-                        int closest_index = 0;
+                }
 
-                        int closest_distance = std::numeric_limits<int>::max();
+                for(size_t i = 0; i < center_x.size(); i++){
+                    if(court_color == "blue"){
+                        if(way_point == "c3_a" || way_point == "c6_a"){
+                            if(rb_ymax[i] > threshold_ymax && rb_xmax[i] > threshold_xmax){//ひし形の中で微妙な位置にいるボールに対処するためにxmaxを取得
+                                xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
+                                // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
+                            }
+                        }
+                        else if(way_point == "c3_b" || way_point == "c6_b"){
+                            if(rb_ymax[i] > threshold_ymax && rb_xmin[i] < threshold_xmin){
+                                xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
+                                // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
+                            }
+                        }
+                    }
+                    else if(court_color == "red"){
+                        if(way_point == "c3_a" || way_point == "c6_a"){
+                            if(rb_ymax[i] > threshold_ymax && rb_xmin[i] < threshold_xmin){
+                                xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
+                                // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
+                            }
+                        }
+                        else if(way_point == "c3_b" || way_point == "c6_b"){
+                            if(rb_ymax[i] > threshold_ymax && rb_xmax[i] > threshold_xmax){
+                                xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
+                                // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
+                            }
+                        }
+                    }
+                }
 
+                if(xy_realsense_list.size() != 0){
+                    int target_value = 640;//realsenseのスクリーンの真ん中
+                    int closest_index = 0;
+
+                    int closest_distance = std::numeric_limits<int>::max();
+
+                    int after_storage_size = 0;
+
+                    bool ball_coordinate_flag = true;
+                    bool next_point_flag = false;
+
+                    // if(storage_count == 1){
+                    //     before_storage_size = xy_realsense_list.size();
+                    //     storage_count++;
+                    // }
+
+                    // if(storage_count != 1){
+                    //     after_storage_size = xy_realsense_list.size();
+                    //     if(before_storage_size == after_storage_size){
+                    //         storage_count++;
+                    //         if(storage_count == 4){
+                    //             next_point_flag = true;
+                    //             if(xy_realsense_list.size() == 1){
+                    //                 ball_coordinate_flag = false;
+                    //             }
+                    //         }
+                    //     }
+                    // }
+                    // else{
+                    //     before_storage_size = 0;
+                    //     storage_count = 0;
+                    // }
+
+                    // if(ball_coordinate_flag){
                         for (size_t i = 0; i < xy_realsense_list.size(); ++i) {
                             int distance = std::abs(xy_realsense_list[i][0] - target_value);
                             if (distance < closest_distance) {
@@ -491,6 +608,24 @@ namespace detection_interface
                             }
                         }
 
+                        // for (size_t i = 0; i < xy_realsense_list.size(); ++i) {
+                        //     int distance = 0;
+
+                        //     if(!next_point_flag) distance = std::abs(xy_realsense_list[i][0] - target_value);
+                        //     else {
+                        //         int distance_xmin = std::abs(xy_realsense_list[i][0] - realsense_min_x);
+                        //         int distance_xmax = std::abs(xy_realsense_list[i][0] - realsense_max_x);
+
+                        //         if(distance_xmin > distance_xmax) distance = distance_xmin;
+                        //         else distance = distance_xmax;
+                        //     }
+
+                        //     if (distance < closest_distance) {
+                        //         closest_distance = distance;
+                        //         closest_index = i;
+                        //     }
+                        // }
+
                         Vector3d test = ct.Rx_Ry_Rz(static_cast<double>(xy_realsense_list[closest_index][0]), static_cast<double>(xy_realsense_list[closest_index][1]), (double)xy_realsense_list[closest_index][2], pose);
 
                         msg_ball_coordinate->x = test[0];
@@ -498,22 +633,32 @@ namespace detection_interface
                         msg_ball_coordinate->z = test[2];
 
                         _pub_ball_coordinate->publish(*msg_ball_coordinate);
-                    }
-                    else{
-                        if(way_point == "c6_b") msg_collection_point->data = "c6_a";
-                        else if(way_point == "c6_a") msg_collection_point->data = "c3_a";
-                        else if(way_point == "c3_a") msg_collection_point->data = "c3_b";
-                        else if(way_point == "c3_b") msg_collection_point->data = "";
-                        _pub_collection_point->publish(*msg_collection_point);
-                    }
+                    // }
+                    // else{
+                    //     collection_point_flag = true;
+                    //     if(way_point == "c6_b") msg_collection_point->data = "c6_a";
+                    //     else if(way_point == "c6_a") msg_collection_point->data = "c3_a";
+                    //     else if(way_point == "c3_a") msg_collection_point->data = "c3_b";
+                    //     else if(way_point == "c3_b") msg_collection_point->data = "";
+                    //     _pub_collection_point->publish(*msg_collection_point);
+                    // }
                 }
                 else{
+                    collection_point_flag = true;
                     if(way_point == "c6_b") msg_collection_point->data = "c6_a";
                     else if(way_point == "c6_a") msg_collection_point->data = "c3_a";
                     else if(way_point == "c3_a") msg_collection_point->data = "c3_b";
                     else if(way_point == "c3_b") msg_collection_point->data = "";
                     _pub_collection_point->publish(*msg_collection_point);
                 }
+            }
+            else{
+                collection_point_flag = true;
+                if(way_point == "c6_b") msg_collection_point->data = "c6_a";
+                else if(way_point == "c6_a") msg_collection_point->data = "c3_a";
+                else if(way_point == "c3_a") msg_collection_point->data = "c3_b";
+                else if(way_point == "c3_b") msg_collection_point->data = "";
+                _pub_collection_point->publish(*msg_collection_point);
             }
         }
 
@@ -575,17 +720,17 @@ namespace detection_interface
                     // RCLCPP_INFO(this->get_logger(), "front_depth%d" , front_depth_average);
                     // RCLCPP_INFO(this->get_logger(), "back_depth%d" , back_depth_average);
 
-                    if(back_depth_average > 0 && back_depth_average > front_depth_suction_check_value && back_depth_average < back_depth_suction_check_value){
+                    if(back_depth_average > 0 && back_depth_average < back_depth_suction_check_value){
                     // if(back_depth_average != 0){
                         rgb_suction_check_point_y = back_suction_check_point[0];
                         rgb_suction_check_point_x = back_suction_check_point[1];
                         suction_check_flag = true;
                     }
-                    else if(front_depth_average < front_depth_suction_check_value){
-                        rgb_suction_check_point_y = front_suction_check_point[0];
-                        rgb_suction_check_point_x = front_suction_check_point[1];
-                        suction_check_flag = true;
-                    }
+                    // else if(front_depth_average < front_depth_suction_check_value){
+                    //     rgb_suction_check_point_y = front_suction_check_point[0];
+                    //     rgb_suction_check_point_x = front_suction_check_point[1];
+                    //     suction_check_flag = true;
+                    // }
                     else{
                         msg_suction_check->data = ""; //何も吸着できていない
                     }
@@ -634,7 +779,7 @@ namespace detection_interface
                         if(court_color == "red"){
                             if(ave_value < 90 && ave_saturation < 190) msg_suction_check->data = ""; //吸引機構を認識している
                             else if((ave_hue >= 0 && ave_hue <= 10) || (ave_hue >= 100 && ave_hue <= 110) || (ave_hue >= 160 && ave_hue <= 180)) msg_suction_check->data = "R"; //赤ボール
-                            else if(ave_hue >= 130) msg_suction_check->data = "P"; //紫ボール
+                            else if(ave_hue >= 130) msg_suction_check->data = "P"; //紫ボー
                             else msg_suction_check->data = ""; //吸引機構を認識している
                         }
                         else if(court_color == "blue"){
@@ -688,7 +833,18 @@ namespace detection_interface
 
         void DetectionInterface::callback_way_point(const std_msgs::msg::String::SharedPtr msg){
             way_point = msg->data;
-            if(way_point == "c3_a" || way_point == "c3_b" || way_point == "c6_a" || way_point == "c6_b") c3_c4_flag = true;
-            if(way_point == "c1") silo_flag = true;
-        }    
+            if(collection_point_flag){
+                if(way_point == "c3_a" || way_point == "c3_b" || way_point == "c6_a" || way_point == "c6_b") {
+                    c3_c4_flag = true;
+                    collection_point_flag = false;
+                    storage_count = 1;
+                    before_storage_size = 0;
+                }
+            }
+            if(way_point == "ST8") silo_flag = true;
+        }
+
+        void DetectionInterface::callback_storage_flag(const std_msgs::msg::Empty::SharedPtr msg){
+            c3_c4_flag = true;
+        }
 }

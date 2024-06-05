@@ -33,7 +33,7 @@
         y = r* sin(theta) * sin(fai)*0.001; //メートル単位に変換
         z = r* cos(theta) * 0.001;          //メートル単位に変換
 
-        // cout << "x" << x << " y " << y << " z " << z << endl;
+        cout << "x" << x << " y " << y << " z " << z << endl;
 
         Matrix3d camera_xyz;
         camera_xyz << x,0.0,0.0,
@@ -107,16 +107,17 @@
         double d = angle_offset_coff[3];
         double e = angle_offset_coff[4];
         double f = angle_offset_coff[5];
-        double g = angle_offset_coff[6];
-        double h = angle_offset_coff[7];
-        double i = angle_offset_coff[8];
-        double j = angle_offset_coff[9];
+        // double g = angle_offset_coff[6];
+        // double h = angle_offset_coff[7];
+        // double i = angle_offset_coff[8];
+        // double j = angle_offset_coff[9];
         double x = h_angle;
         double y = v_angle;
         // angle_offset = a + b*x + c*y + d*x*y + e*x*x + f*y*y + g*x*x*y + h*x*y*y + i*x*x*x+j*y*y*y;
+        // angle_offset = a*x*x + b*y*y + c*x*y + d*x + e*y + f;   
         // angle_offset = tanh_offset_coff[0]*tanh(tanh_offset_coff[1]*h_angle*M_PI/180) + tanh_offset_coff[2]*v_angle*sign(h_angle);//tanh関数を用いた近似
-        angle_offset = sin(h_angle*M_PI/180)*(sin_offset_coff[0]*v_angle+sin_offset_coff[1])+sin_offset_coff[2];    //sin関数を用いた近似
-        // angle_offset = sin(h_angle*M_PI/180)*(sin_offset_coff_[0]*v_angle+sin_offset_coff_[1]) + sin_offset_coff_[2]*(sin_offset_coff_[3]-v_angle)*sin_offset_coff_[4];  //パラメータが決まり次第試す
+        // angle_offset = sin(h_angle*M_PI/180)*(sin_offset_coff[0]*v_angle+sin_offset_coff[1])+sin_offset_coff[2];    //sin関数を用いた近似
+        angle_offset = sin_offset_test_coff[0]*sin(sin_offset_test_coff[1]*h_angle*M_PI/180)*abs(v_angle)+sin_offset_test_coff[2]*(sin_offset_test_coff[3]-v_angle)*h_angle+sin_offset_test_coff[4];  //パラメータが決まり次第試す
         // cout << "angle_offset: " << angle_offset << endl;
         return angle_offset*M_PI/180;
         // return 0;

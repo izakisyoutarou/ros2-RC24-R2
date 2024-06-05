@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <queue>
 #include <geometry_msgs/msg/vector3.hpp>
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -68,6 +69,7 @@ private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _publisher_move_interrupt_node;
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr _publisher_coord_tracking;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _publisher_move_autonomous;
+    rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr _publisher_storage_flag;
 
     void command_move_node(const std::string node);//node位置に通常移動
     void command_move_interrupt_node(const std::string node);//node位置に割り込み直線移動
@@ -142,7 +144,6 @@ private:
     bool retry_flag = false;
     bool move_progress = false;
     bool net_flag = false;
-    bool kado_flag = false;
     bool move_automonous = false;
     bool coord_flag = false;
 
@@ -162,6 +163,21 @@ private:
     SEQUENCE_MODE pre_sequence = SEQUENCE_MODE::stop;
 
     std::chrono::system_clock::time_point time;
+
+    // std::vector<float> ball_x;
+    // std::vector<float> ball_y;
+    // int ball_count = -1;
+    // int count = 0;
+
+    std::queue<float> ball_x;
+    std::queue<float> ball_y;
+
+    bool storage_flag = false;
+
+    int transfer_num = 0;
+
+    bool loop_flag = false;
+
 };
 
 }  // namespace sequencer

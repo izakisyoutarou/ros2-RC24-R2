@@ -26,13 +26,14 @@ class coordinate_transformation {
         double theta_x = 0.0;
         double theta_y = 62.0;
         double theta_z = 0.0;
-        double tx = 0.27737; //offset robot and camera
-        double ty = -0.037; //offset robot and camera
-        double tz = 0.644825;
+        double tx = 0.2706515; //offset robot and camera
+        double ty = -0.0196488; //offset robot and camera
+        double tz = 0.6447629;
         // const double angle_offset_coff[10] = {-3.217e0,1.175e0,-2.929e-1,5.894e-2,5.350e-3,-2.400e-2,2.363e-4,1.1701e-3,-2.132e-4,-7.684e-4}; //最小二乗法の係数
-        const double angle_offset_coff[10] = {-4.003e0,1.241e0,-3.386e-1,7.096e-2,1.311e-2,-2.183e-2,7.461e-4,1.487e-3,-5.936e-5,-6.829e-4}; //最小二乗法の係数
+        // const double angle_offset_coff[10] = {-4.003e0,1.241e0,-3.386e-1,7.096e-2,1.311e-2,-2.183e-2,7.461e-4,1.487e-3,-5.936e-5,-6.829e-4}; //最小二乗法の係数
+        const double angle_offset_coff[6] = {0.0017,-0.01111,0.0410,1.0899,-0.3472,-3.4847}; //最小二乗法の係数
         const double sin_offset_coff[3] = {2.11111,60.9961,-1.949};
-        const double sin_offset_coff_[5] = {2.36559,63.7175,0.14416,-18.8934,1.42924}; //パラメータが決まり次第試す
+        const double sin_offset_test_coff[5] = {0.27765834,3.78682636,-0.04580991,-21.8009413,-1.97623217}; //パラメータが決まり次第試す
         const double tanh_offset_coff[3] = {13.27,2.32,0.29};  //tanh近似の係数
 };
 

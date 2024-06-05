@@ -9,6 +9,7 @@
 //使うmsg
 #include <std_msgs/msg/string.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include "bboxes_ex_msgs/msg/bounding_box.hpp"
@@ -53,6 +54,8 @@ namespace detection_interface
             //splineから
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr _sub_way_point;
 
+            rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr _sub_storage_flag;
+
             // realsenseのrgbdeをsub
             rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr _sub_realsense_d435i;
             void d435iImageCallback(const realsense2_camera_msgs::msg::RGBD::ConstSharedPtr&);
@@ -84,6 +87,8 @@ namespace detection_interface
             //ransacからのcallback
             void callback_self_pose(const geometry_msgs::msg::Vector3::SharedPtr msg);
 
+            void callback_storage_flag(const std_msgs::msg::Empty::SharedPtr msg);
+
             //c1cameraのc1nodeから見たとき、サイロのボール情報取得。
             void c1camera_c1node(   const std::vector<int> ymax, std::array<std::array<int, 4>, 5>& min_max_xy, 
                                     const std::vector<int> center_x, const std::vector<int> center_y, std::vector<int> bbounbox_size,
@@ -100,8 +105,8 @@ namespace detection_interface
             void c1camera_correct_silo_levels(std::vector<int> before_ball_place, const std::vector<std::string> ball_color);
 
             //realseneのc3、c4から見たとき、どこのSTに行くか。中でfront_ball関数を呼び出す。
-            void realsense_c3_c6node(   const std::vector<int> center_x, const std::vector<int> center_y, const std::vector<int> center_depth, 
-                                        const std::vector<int> rb_ymax, const std::vector<int> rb_xmax, const int rbp_ymax, const int rbp_xmax, const int rbp_xmin);
+            void realsense_c3_c6node(   std::vector<int> center_x, std::vector<int> center_y, std::vector<int> center_depth, std::vector<int> rb_ymax, 
+                                        std::vector<int> rb_xmax, std::vector<int> rb_xmin, const int rbp_ymax, const int rbp_xmax, const int rbp_xmin);
 
             /////////////////////////トピックのグローバル変数
             Vector3d pose;
@@ -116,6 +121,7 @@ namespace detection_interface
             bool storage_flag = true;
             bool c3_c4_flag = true;//ST系のcollection_pointを出すトリガー
             bool silo_flag = true;
+            bool collection_point_flag = false;
             bool c1caera_c2ode_flag = true;
             /////////////////////////
 
@@ -155,5 +161,10 @@ namespace detection_interface
             int threshold_xmin = 0;
             int threshold_xmax = 0;
             int threshold_count = 0;
+            int threshold_impossible_x = 0;
+            int threshold_impossible_y = 0;
+
+            int storage_count = 1;//同じポイントから何回同じボールを回収したかを
+            int before_storage_size = 0;
     };
 }
