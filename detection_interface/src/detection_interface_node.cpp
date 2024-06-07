@@ -11,6 +11,16 @@ namespace detection_interface
         front_depth_suction_check_value(get_parameter("front_depth_suction_check_value").as_int()),
         back_depth_suction_check_value(get_parameter("back_depth_suction_check_value").as_int()),
 
+        suction_red_brank(get_parameter("suction_red_brank").as_integer_array()),
+        suction_red_R(get_parameter("suction_red_R").as_integer_array()),
+        suction_red_P(get_parameter("suction_red_P").as_int()),
+
+        suction_blue_brank(get_parameter("suction_blue_brank").as_integer_array()),
+        suction_blue_B(get_parameter("suction_blue_B").as_int()),
+        suction_blue_P(get_parameter("suction_blue_P").as_int()),
+
+        d455i_viwer_flag(get_parameter("d455i_viwer_flag").as_bool()),
+
         realsense_max_x(get_parameter("realsense_max_x").as_int()),
         realsense_min_x(get_parameter("realsense_min_x").as_int()),
         realsense_max_y(get_parameter("realsense_max_y").as_int()),
@@ -402,26 +412,6 @@ namespace detection_interface
                             });
                             rbp_ymax_realsense.erase(rbp_y_max, rbp_ymax_realsense.end());
 
-                            // auto rb_x_max = std::remove_if(rb_xmax_realsense.begin(), rb_xmax_realsense.end(), [this](int value){
-                            //     return value > this->realsense_max_x;
-                            // });
-                            // rb_xmax_realsense.erase(rb_x_max, rb_xmax_realsense.end());
-                            // center_x_realsense.erase(rb_x_max, center_x_realsense.end());
-                            // center_y_realsense.erase(rb_x_max, center_y_realsense.end());
-                            // center_depth_realsense.erase(rb_x_max, center_depth_realsense.end());
-                            // rb_ymax_realsense.erase(rb_x_max, rb_ymax_realsense.end());
-                            // rb_xmin_realsense.erase(rb_x_max, rb_xmin_realsense.end());
-
-                            // auto rb_x_min = std::remove_if(rb_xmin_realsense.begin(), rb_xmin_realsense.end(), [this](int value){
-                            //     return value < this->realsense_min_x;
-                            // });
-                            // rb_xmin_realsense.erase(rb_x_min, rb_xmin_realsense.end());
-                            // center_x_realsense.erase(rb_x_min, center_x_realsense.end());
-                            // center_y_realsense.erase(rb_x_min, center_y_realsense.end());
-                            // center_depth_realsense.erase(rb_x_min, center_depth_realsense.end());
-                            // rb_ymax_realsense.erase(rb_x_min, rb_ymax_realsense.end());
-                            // rb_xmax_realsense.erase(rb_x_min, rb_xmax_realsense.end());
-
                             for(int i = 0; i < rb_xmax_realsense.size(); i++){
                                 if(rb_xmax_realsense[i] > realsense_max_x){
                                     center_x_realsense.erase(center_x_realsense.begin() + i);
@@ -469,7 +459,6 @@ namespace detection_interface
 
         void DetectionInterface::realsense_c3_c6node(   std::vector<int> center_x, std::vector<int> center_y, std::vector<int> center_depth, 
                                                         std::vector<int> rb_ymax, std::vector<int> rb_xmax, std::vector<int> rb_xmin, const int rbp_ymax, const int rbp_xmax, const int rbp_xmin){
-            // RCLCPP_INFO(this->get_logger(), "ymaxssssssssssssssssssssssss%d" ,c3_c4_flag);
             auto msg_ball_coordinate = std::make_shared<geometry_msgs::msg::Vector3>();
             auto msg_collection_point = std::make_shared<std_msgs::msg::String>();
 
@@ -491,10 +480,6 @@ namespace detection_interface
                     threshold_impossible_x = rbp_xmax - str_range_x_C3orC5;
                 }
             }
-
-            // int threshold_ymax = rbp_ymax - str_range_y_C3orC5 * 2;//一番手前からボール2個分引いている
-            // int threshold_xmax = rbp_xmax - str_range_x_C3orC5 * 2;//一番右からボール2個分引いている
-            // int threshold_xmin = rbp_xmin + str_range_x_C3orC5 * 2;//一番左からボール2個分足している
 
             if(court_color == "blue"){
                 threshold_xmax = rbp_xmax - str_range_x_C3orC5 * 2;
@@ -540,13 +525,11 @@ namespace detection_interface
                         if(way_point == "c3_a" || way_point == "c6_a"){
                             if(rb_ymax[i] > threshold_ymax && rb_xmax[i] > threshold_xmax){//ひし形の中で微妙な位置にいるボールに対処するためにxmaxを取得
                                 xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                                // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
                             }
                         }
                         else if(way_point == "c3_b" || way_point == "c6_b"){
                             if(rb_ymax[i] > threshold_ymax && rb_xmin[i] < threshold_xmin){
                                 xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                                // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
                             }
                         }
                     }
@@ -554,13 +537,11 @@ namespace detection_interface
                         if(way_point == "c3_a" || way_point == "c6_a"){
                             if(rb_ymax[i] > threshold_ymax && rb_xmin[i] < threshold_xmin){
                                 xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                                // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
                             }
                         }
                         else if(way_point == "c3_b" || way_point == "c6_b"){
                             if(rb_ymax[i] > threshold_ymax && rb_xmax[i] > threshold_xmax){
                                 xy_realsense_list.push_back({center_x[i], center_y[i], center_depth[i]});
-                                // RCLCPP_INFO(this->get_logger(), "depth%d" ,center_depth[i]);
                             }
                         }
                     }
@@ -721,16 +702,10 @@ namespace detection_interface
                     // RCLCPP_INFO(this->get_logger(), "back_depth%d" , back_depth_average);
 
                     if(back_depth_average > 0 && back_depth_average < back_depth_suction_check_value){
-                    // if(back_depth_average != 0){
                         rgb_suction_check_point_y = back_suction_check_point[0];
                         rgb_suction_check_point_x = back_suction_check_point[1];
                         suction_check_flag = true;
                     }
-                    // else if(front_depth_average < front_depth_suction_check_value){
-                    //     rgb_suction_check_point_y = front_suction_check_point[0];
-                    //     rgb_suction_check_point_x = front_suction_check_point[1];
-                    //     suction_check_flag = true;
-                    // }
                     else{
                         msg_suction_check->data = ""; //何も吸着できていない
                     }
@@ -774,18 +749,18 @@ namespace detection_interface
                         double ave_saturation = saturation / count;
                         double ave_value = value / count;
 
-                        // RCLCPP_INFO(this->get_logger(), "hue%f,saturation%f,value%f" , ave_hue, ave_saturation, ave_value);
-
                         if(court_color == "red"){
-                            if(ave_value < 90 && ave_saturation < 190) msg_suction_check->data = ""; //吸引機構を認識している
-                            else if((ave_hue >= 0 && ave_hue <= 10) || (ave_hue >= 100 && ave_hue <= 110) || (ave_hue >= 160 && ave_hue <= 180)) msg_suction_check->data = "R"; //赤ボール
-                            else if(ave_hue >= 130) msg_suction_check->data = "P"; //紫ボー
+                            if(ave_value < suction_red_brank[0] && ave_saturation < suction_red_brank[1]) msg_suction_check->data = ""; //吸引機構を認識している
+                            else if((ave_hue >= suction_red_R[0] && ave_hue <= suction_red_R[1]) || 
+                                    (ave_hue >= suction_red_R[2] && ave_hue <= suction_red_R[3]) || 
+                                    (ave_hue >= suction_red_R[4] && ave_hue <= suction_red_R[5])) msg_suction_check->data = "R"; //赤ボール
+                            else if(ave_hue >= suction_red_P) msg_suction_check->data = "P"; //紫ボー
                             else msg_suction_check->data = ""; //吸引機構を認識している
                         }
                         else if(court_color == "blue"){
-                            if(ave_value < 90 && ave_saturation < 190) msg_suction_check->data = ""; //吸引機構を認識している
-                            else if(ave_hue >= 110) msg_suction_check->data = "P"; //紫ボール
-                            else if(ave_hue >= 90)msg_suction_check->data = "B"; //青ボール
+                            if(ave_value < suction_blue_brank[0] && ave_saturation < suction_blue_brank[1]) msg_suction_check->data = ""; //吸引機構を認識している
+                            else if(ave_hue >= suction_blue_P) msg_suction_check->data = "P"; //紫ボール
+                            else if(ave_hue >= suction_blue_B)msg_suction_check->data = "B"; //青ボール
                             else msg_suction_check->data = ""; //吸引機構を認識している
                         }
                     }
@@ -794,17 +769,21 @@ namespace detection_interface
 
                     ////////////d435iを見る
                     // 点の座標を設定
-                    // cv::Point front_point(front_suction_check_point[1], front_suction_check_point[0]);
-                    // cv::Point back_point(back_suction_check_point[1], back_suction_check_point[0]);
+                    if(d455i_viwer_flag){
+                        RCLCPP_INFO(this->get_logger(), "hue%f,saturation%f,value%f" , ave_hue, ave_saturation, ave_value);
 
-                    // // 画像に緑色の点を描画（半径2の小さい円として）
-                    // const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
-                    // cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
-                    // cv::circle(frame_rgb, back_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
-                    // cv::Size target_size(1280, 720);
-                    // cv::resize(frame_rgb, frame_prev, target_size);
-                    // cv::imshow("d435i", frame_prev);
-                    // cv::waitKey(1);
+                        cv::Point front_point(front_suction_check_point[1], front_suction_check_point[0]);
+                        cv::Point back_point(back_suction_check_point[1], back_suction_check_point[0]);
+
+                        // 画像に緑色の点を描画（半径2の小さい円として）
+                        const cv::Scalar greenColor(0, 255, 0);  // BGRで緑色
+                        cv::circle(frame_rgb, front_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
+                        cv::circle(frame_rgb, back_point, 2, greenColor, -1);  // 塗りつぶしの円として描画
+                        cv::Size target_size(1280, 720);
+                        cv::resize(frame_rgb, frame_prev, target_size);
+                        cv::imshow("d435i", frame_prev);
+                        cv::waitKey(1);
+                    }
                     ///////////
                 }
             }

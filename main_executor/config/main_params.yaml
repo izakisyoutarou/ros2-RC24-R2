@@ -143,6 +143,16 @@ detection_interface_node:
     front_depth_suction_check_value: 200
     back_depth_suction_check_value: 350
 
+    suction_red_brank: [90, 190] 
+    suction_red_R: [0, 10, 100, 110, 160, 180] 
+    suction_red_P: 130
+
+    suction_blue_brank: [90, 190]
+    suction_blue_B: 90
+    suction_blue_P: 110
+
+    d455i_viwer_flag: false
+
     realsense_max_x: 1000 #900
     realsense_min_x: 145 #200
     realsense_max_y: 700

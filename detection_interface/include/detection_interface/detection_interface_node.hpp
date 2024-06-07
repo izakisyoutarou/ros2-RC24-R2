@@ -136,6 +136,16 @@ namespace detection_interface
             const int front_depth_suction_check_value;
             const int back_depth_suction_check_value;
 
+            const std::vector<long int> suction_red_brank;
+            const std::vector<long int> suction_red_R;
+            const int suction_red_P;
+
+            const std::vector<long int> suction_blue_brank;
+            const int suction_blue_B;
+            const int suction_blue_P;
+
+            const bool d455i_viwer_flag;
+
             //c3orc6から見たときの外れ値を防ぐ
             const int realsense_max_x;
             const int realsense_min_x;
